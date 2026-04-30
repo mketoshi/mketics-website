@@ -73,6 +73,7 @@ nav a:hover {
   width: min(360px, 90%);
   margin: 0 auto 25px;
   display: block;
+<<<<<<< HEAD
 
   filter:
     drop-shadow(0 0 25px rgba(56, 189, 248, 0.6))
@@ -80,6 +81,9 @@ nav a:hover {
     drop-shadow(0 0 80px rgba(37, 99, 235, 0.4));
 
   animation: fadeUp 0.9s ease both, glowPulse 2.5s ease-in-out infinite;
+=======
+  filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.35));
+>>>>>>> f590f07eaefd75a4832e2c0ed4d25601bd5062df
 }
 
 .hero h1 {
