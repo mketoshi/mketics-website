@@ -73,17 +73,10 @@ nav a:hover {
   width: min(360px, 90%);
   margin: 0 auto 25px;
   display: block;
-<<<<<<< HEAD
-
   filter:
     drop-shadow(0 0 25px rgba(56, 189, 248, 0.6))
-    drop-shadow(0 0 50px rgba(56, 189, 248, 0.5))
-    drop-shadow(0 0 80px rgba(37, 99, 235, 0.4));
-
-  animation: fadeUp 0.9s ease both, glowPulse 2.5s ease-in-out infinite;
-=======
-  filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.35));
->>>>>>> f590f07eaefd75a4832e2c0ed4d25601bd5062df
+    drop-shadow(0 0 50px rgba(56, 189, 248, 0.5));
+  animation: fadeUp 0.9s ease both, glowPulse 3s ease-in-out infinite;
 }
 
 .hero h1 {
@@ -116,6 +109,8 @@ nav a:hover {
   display: inline-block;
   padding: 15px 30px;
   border-radius: 12px;
+  border: none;
+  cursor: pointer;
   text-decoration: none;
   font-weight: 800;
   transition: 0.25s ease;
@@ -154,19 +149,26 @@ nav a:hover {
   gap: 26px;
 }
 
-.card {
+.card,
+.calculator,
+.contact-form,
+.booking-box {
+  max-width: 850px;
+  margin: 25px auto;
   padding: 34px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.7));
   border: 1px solid rgba(56, 189, 248, 0.25);
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-  transition: 0.25s ease;
+}
+
+.services-grid .card {
+  margin: 0;
 }
 
 .card:hover {
   transform: translateY(-8px);
   border-color: rgba(56, 189, 248, 0.75);
-  box-shadow: 0 0 35px rgba(56, 189, 248, 0.18);
 }
 
 .card h3 {
@@ -180,12 +182,42 @@ nav a:hover {
   line-height: 1.6;
 }
 
+.contact-form,
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: rgba(2, 6, 23, 0.8);
+  color: white;
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
 .about-section {
   background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 45%);
 }
 
 .glass-box,
-.contact-box {
+.contact-box,
+.booking-box {
   max-width: 850px;
   margin: auto;
   padding: 45px;
@@ -197,7 +229,8 @@ nav a:hover {
 }
 
 .glass-box p,
-.contact-box p {
+.contact-box p,
+.booking-box p {
   color: #dbeafe;
   line-height: 1.8;
   font-size: 18px;
@@ -205,6 +238,24 @@ nav a:hover {
 
 .contact-box {
   max-width: 620px;
+}
+
+.whatsapp-float {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  text-decoration: none;
+  z-index: 2000;
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.55);
 }
 
 footer {
@@ -215,28 +266,6 @@ footer {
   border-top: 1px solid rgba(56, 189, 248, 0.2);
 }
 
-@media (max-width: 720px) {
-  .navbar {
-    height: auto;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  nav a {
-    margin: 6px 10px;
-    display: inline-block;
-  }
-
-  .section {
-    padding: 70px 6%;
-  }
-
-  .glass-box,
-  .contact-box {
-    padding: 30px 22px;
-  }
-  
-}
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -262,26 +291,34 @@ footer {
 .section-subtitle,
 .card,
 .glass-box,
-.contact-box {
+.contact-box,
+.calculator,
+.contact-form,
+.booking-box {
   animation: fadeUp 0.9s ease both;
 }
 
-.hero-logo {
-  animation: fadeUp 0.9s ease both, glowPulse 3s ease-in-out infinite;
-}
+@media (max-width: 720px) {
+  .navbar {
+    height: auto;
+    flex-direction: column;
+    gap: 12px;
+  }
 
-.card:nth-child(1) {
-  animation-delay: 0.1s;
-}
+  nav a {
+    margin: 6px 10px;
+    display: inline-block;
+  }
 
-.card:nth-child(2) {
-  animation-delay: 0.2s;
-}
+  .section {
+    padding: 70px 6%;
+  }
 
-.card:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.card:nth-child(4) {
-  animation-delay: 0.4s;
+  .glass-box,
+  .contact-box,
+  .booking-box,
+  .calculator,
+  .contact-form {
+    padding: 30px 22px;
+  }
 }
