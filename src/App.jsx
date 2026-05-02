@@ -2,32 +2,32 @@ import { useState } from "react";
 import "./App.css";
 
 function App() {
-  const services = [
-    {
-      title: "WiFi Installation",
-      text: "High-speed home and business WiFi setup with coverage optimization.",
-    },
-    {
-      title: "Network Infrastructure",
-      text: "Routers, switches, structured cabling, and enterprise network setup.",
-    },
-    {
-      title: "CCTV & Security",
-      text: "Smart surveillance systems with remote monitoring and cloud backup.",
-    },
-    {
-      title: "Web & App Development",
-      text: "Modern websites, web apps, and full business systems.",
-    },
-    {
-      title: "Cloud Solutions",
-      text: "Cloud storage, hosting, and business system deployment.",
-    },
-    {
-      title: "IT Support",
-      text: "On-site and remote technical support for businesses and homes.",
-    },
-  ];
+const services = [
+  {
+    title: "IT Support",
+    text: "On-site and remote technical support for businesses and homes.",
+  },
+  {
+    title: "Software Engineering",
+    text: "Modern websites, web apps, and full business systems.",
+  },
+  {
+    title: "Cloud Systems",
+    text: "Cloud storage, hosting, and business system deployment.",
+  },
+  {
+    title: "Network Infrastructure",
+    text: "Routers, switches, structured cabling, and enterprise network setup.",
+  },
+  {
+    title: "CCTV & Security",
+    text: "Smart surveillance systems with remote monitoring and cloud backup.",
+  },
+  {
+    title: "WiFi Installation",
+    text: "High-speed home and business WiFi setup with coverage optimization.",
+  },
+];
 
   const [wifiType, setWifiType] = useState("home");
   const [rooms, setRooms] = useState(1);
@@ -173,7 +173,7 @@ function App() {
             <option>WiFi Installation</option>
             <option>Network Setup</option>
             <option>CCTV Installation</option>
-            <option>Website / App Development</option>
+            <option>Software Engineering</option>
             <option>Cloud Solutions</option>
             <option>IT Support</option>
           </select>
