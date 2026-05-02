@@ -15,8 +15,8 @@ export default function Home({
       const selectedService = params.get("service");
       
       const defaultMessage = selectedService
-      ? `Hi MKETICS, I need a quote for ${selectedService}.`
-      : "";
+      ? `Hi MKETICS, I need a quote for ${selectedService}. Please contact me with more details.`
+      : "Hi MKETICS, I need a quote. Please contact me.";
       const [quoteSent, setQuoteSent] = useState(false);
   return (
     <>
@@ -155,6 +155,11 @@ action="https://formsubmit.co/msanesphesihle968@gmail.com"
   placeholder="Describe your request..."
   defaultValue={defaultMessage}
   required
+  onFocus={(e) => {
+    if (!e.target.value) {
+      e.target.value = defaultMessage;
+    }
+  }}
 />
 
           <input
