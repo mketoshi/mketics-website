@@ -42,7 +42,8 @@ export default function Home({
     const { error } = await supabase.from("quotes").insert([data]);
 
     if (error) {
-      alert("Error submitting quote. Please try again.");
+      alert(error.message);
+      console.error(error);
       setLoading(false);
       return;
     }
