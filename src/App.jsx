@@ -174,7 +174,7 @@ const services = [
             <option>Network Setup</option>
             <option>CCTV Installation</option>
             <option>Software Engineering</option>
-            <option>Cloud Solutions</option>
+            <option>Cloud Systems</option>
             <option>IT Support</option>
           </select>
 
