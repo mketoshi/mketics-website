@@ -1,6 +1,6 @@
-import { supabase } from "../supabaseClient";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 export default function Home({
   services,
@@ -12,20 +12,46 @@ export default function Home({
   cctvCameras,
   setCctvCameras,
 }) {
+  const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  const selectedService = params.get("service");
+
+  const [selectedServiceState, setSelectedService] = useState(
+    selectedService || ""
+  );
   const [loading, setLoading] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
-  let selectedService = "";
-
-if (typeof window !== "undefined") {
-  const params = new URLSearchParams(window.location.hash.split("?")[1]);
-  selectedService = params.get("service");
-}
-  const selectedService = params.get("service");
-
-  const defaultMessage = selectedService
-    ? `Hi MKETICS, I need a quote for ${selectedService}. Please contact me with more details.`
+  const defaultMessage = selectedServiceState
+    ? `Hi MKETICS, I need a quote for ${selectedServiceState}. Please contact me with more details.`
     : "Hi MKETICS, I need a quote. Please contact me.";
+
+  const handleQuoteSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const form = e.target;
+
+    const data = {
+      name: form.name.value,
+      phone: form.phone.value,
+      email: form.email.value,
+      service: form.service.value,
+      message: form.message.value,
+    };
+
+    const { error } = await supabase.from("quotes").insert([data]);
+
+    if (error) {
+      alert("Error submitting quote. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setQuoteSent(true);
+    form.reset();
+    setSelectedService("");
+    setLoading(false);
+  };
 
   return (
     <>
@@ -138,39 +164,17 @@ if (typeof window !== "undefined") {
           </div>
         )}
 
-        <form
-          className="contact-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setLoading(true);
-
-            const form = e.target;
-
-            const data = {
-              name: form.name.value,
-              phone: form.phone.value,
-              email: form.email.value,
-              service: form.service.value,
-              message: form.message.value,
-            };
-
-            const { error } = await supabase.from("quotes").insert([data]);
-
-            if (!error) {
-              setQuoteSent(true);
-              form.reset();
-            } else {
-              alert("Error submitting quote");
-            }
-
-            setLoading(false);
-          }}
-        >
+        <form className="contact-form" onSubmit={handleQuoteSubmit}>
           <input type="text" name="name" placeholder="Full Name" required />
           <input type="tel" name="phone" placeholder="Phone Number" required />
           <input type="email" name="email" placeholder="Email Address" required />
 
-          <select name="service" defaultValue={selectedService || ""} required>
+          <select
+            name="service"
+            value={selectedServiceState}
+            onChange={(e) => setSelectedService(e.target.value)}
+            required
+          >
             <option value="">Select Service</option>
             <option value="IT Support">IT Support</option>
             <option value="Software Engineering">Software Engineering</option>
