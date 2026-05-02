@@ -4,27 +4,39 @@ import "./App.css";
 function App() {
 const services = [
   {
+    icon: "🛠️",
     title: "IT Support",
+    link: "#it-support",
     text: "On-site and remote technical support for businesses and homes.",
   },
   {
+    icon: "💻",
     title: "Software Engineering",
+    link: "#software-engineering",
     text: "Modern websites, web apps, and full business systems.",
   },
   {
+    icon: "☁️",
     title: "Cloud Systems",
+    link: "#cloud-systems",
     text: "Cloud storage, hosting, and business system deployment.",
   },
   {
+    icon: "🌐",
     title: "Network Infrastructure",
+    link: "#networking",
     text: "Routers, switches, structured cabling, and enterprise network setup.",
   },
   {
+    icon: "📹",
     title: "CCTV & Security",
+    link: "#cctv",
     text: "Smart surveillance systems with remote monitoring and cloud backup.",
   },
   {
+    icon: "📶",
     title: "WiFi Installation",
+    link: "#wifi",
     text: "High-speed home and business WiFi setup with coverage optimization.",
   },
 ];
@@ -95,10 +107,12 @@ const services = [
 
         <div className="services-grid">
           {services.map((service) => (
-            <div className="card" key={service.title}>
+            <a href={service.link} className="card service-card" key={service.title}>
+              <div className="service-icon">{service.icon}</div>
               <h3>{service.title}</h3>
               <p>{service.text}</p>
-            </div>
+              <span className="learn-more">Learn more →</span>
+            </a>
           ))}
         </div>
       </section>
