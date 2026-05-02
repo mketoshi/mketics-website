@@ -1,40 +1,47 @@
 import { useState } from "react";
 import "./App.css";
 
-function App( ) {
-const services = [
-  {
-    title: "WiFi Installation",
-    text: "High-speed home and business WiFi setup with coverage optimization.",
-  },
-  {
-    title: "Network Infrastructure",
-    text: "Routers, switches, structured cabling, and enterprise network setup.",
-  },
-  {
-    title: "CCTV & Security",
-    text: "Smart surveillance systems with remote monitoring and cloud backup.",
-  },
-  {
-    title: "Web & App Development",
-    text: "Modern websites, web apps, and full business systems.",
-  },
-  {
-    title: "Cloud Solutions",
-    text: "Cloud storage, hosting, and business system deployment.",
-  },
-  {
-    title: "IT Support",
-    text: "On-site and remote technical support for businesses and homes.",
-  },
-];
+function App() {
+  const services = [
+    {
+      title: "WiFi Installation",
+      text: "High-speed home and business WiFi setup with coverage optimization.",
+    },
+    {
+      title: "Network Infrastructure",
+      text: "Routers, switches, structured cabling, and enterprise network setup.",
+    },
+    {
+      title: "CCTV & Security",
+      text: "Smart surveillance systems with remote monitoring and cloud backup.",
+    },
+    {
+      title: "Web & App Development",
+      text: "Modern websites, web apps, and full business systems.",
+    },
+    {
+      title: "Cloud Solutions",
+      text: "Cloud storage, hosting, and business system deployment.",
+    },
+    {
+      title: "IT Support",
+      text: "On-site and remote technical support for businesses and homes.",
+    },
+  ];
 
-const [wifiType, setWifiType] = useState("home");
-const [cctvCameras, setCctvCameras] = useState(2);
+  const [wifiType, setWifiType] = useState("home");
+  const [rooms, setRooms] = useState(1);
+  const [cctvCameras, setCctvCameras] = useState(0);
 
-const wifiPrice = wifiType === "home" ? 1500 : 2500;
-const cctvPrice = cctvCameras * 650;
-const estimatedTotal = wifiPrice + cctvPrice;
+  const wifiPrice = wifiType === "home" ? 1500 : 2500;
+  const roomPrice = rooms * 500;
+  const cctvPrice = cctvCameras * 650;
+  const estimatedTotal = wifiPrice + roomPrice + cctvPrice;
+
+  const handleQuoteSubmit = (e) => {
+    e.preventDefault();
+    alert("Quote request received. MKETICS will contact you shortly.");
+  };
 
   return (
     <>
@@ -44,7 +51,9 @@ const estimatedTotal = wifiPrice + cctvPrice;
         <nav>
           <a href="#home">Home</a>
           <a href="#services">Services</a>
-          <a href="#about">About</a>
+          <a href="#calculator">Pricing</a>
+          <a href="#booking">Booking</a>
+          <a href="#quote">Quote</a>
           <a href="#contact">Contact</a>
         </nav>
       </header>
@@ -63,15 +72,16 @@ const estimatedTotal = wifiPrice + cctvPrice;
 
           <p>
             MKETICS delivers professional WiFi installation, networking, CCTV,
-            cloud systems, and software development for homes and businesses.
+            cloud systems, IT support, and software development for homes and
+            businesses.
           </p>
 
           <div className="hero-buttons">
             <a href="https://wa.me/27722864367" className="btn primary">
               Chat on WhatsApp
             </a>
-            <a href="#services" className="btn secondary">
-              View Services
+            <a href="#quote" className="btn secondary">
+              Request a Quote
             </a>
           </div>
         </div>
@@ -93,46 +103,88 @@ const estimatedTotal = wifiPrice + cctvPrice;
         </div>
       </section>
 
-<section className="section">
-  <h2>Estimate Your Cost</h2>
+      <section id="calculator" className="section">
+        <h2>Pricing Calculator</h2>
+        <p className="section-subtitle">
+          Get a quick estimate before requesting a formal quote.
+        </p>
 
-  <div className="calculator">
-    <label>Number of Rooms</label>
-    <input type="number" id="rooms" defaultValue={1} />
+        <div className="calculator">
+          <label>WiFi Installation Type</label>
+          <select value={wifiType} onChange={(e) => setWifiType(e.target.value)}>
+            <option value="home">Home WiFi - R1500</option>
+            <option value="business">Business WiFi - R2500</option>
+          </select>
 
-    <label>Include CCTV?</label>
-    <select id="cctv">
-      <option value="0">No</option>
-      <option value="2000">Yes (+R2000)</option>
-    </select>
+          <label>Number of Rooms</label>
+          <input
+            type="number"
+            min="1"
+            value={rooms}
+            onChange={(e) => setRooms(Number(e.target.value))}
+          />
 
-    <button
-      className="btn primary"
-      onClick={() => {
-        const rooms = document.getElementById("rooms").value;
-        const cctv = document.getElementById("cctv").value;
+          <label>Number of CCTV Cameras</label>
+          <input
+            type="number"
+            min="0"
+            value={cctvCameras}
+            onChange={(e) => setCctvCameras(Number(e.target.value))}
+          />
 
-        const total = rooms * 500 + parseInt(cctv);
+          <h3>Estimated Total: R{estimatedTotal}</h3>
 
-        alert("Estimated Cost: R" + total);
-      }}
-    >
-      Calculate
-    </button>
-  </div>
-</section>
+          <a
+            href={`https://wa.me/27722864367?text=Hi MKETICS, I need a quote. My estimated cost is R${estimatedTotal}`}
+            className="btn primary"
+          >
+            Send Estimate on WhatsApp
+          </a>
+        </div>
+      </section>
 
-<section className="section">
-  <h2>Book a Service</h2>
+      <section id="booking" className="section">
+        <h2>Book a Service</h2>
 
-  <p>Select a date and we will confirm your booking.</p>
+        <div className="booking-box">
+          <p>Select your preferred service date and confirm on WhatsApp.</p>
 
-  <input type="date" />
+          <input type="date" />
 
-  <a href="https://wa.me/27722864367" className="btn primary">
-    Confirm Booking on WhatsApp
-  </a>
-</section>
+          <a
+            href="https://wa.me/27722864367?text=Hi MKETICS, I would like to book a service."
+            className="btn primary"
+          >
+            Confirm Booking on WhatsApp
+          </a>
+        </div>
+      </section>
+
+      <section id="quote" className="section">
+        <h2>Request a Quote</h2>
+
+        <form className="contact-form" onSubmit={handleQuoteSubmit}>
+          <input type="text" placeholder="Full Name" required />
+          <input type="tel" placeholder="Phone Number" required />
+          <input type="email" placeholder="Email Address" required />
+
+          <select required>
+            <option value="">Select Service</option>
+            <option>WiFi Installation</option>
+            <option>Network Setup</option>
+            <option>CCTV Installation</option>
+            <option>Website / App Development</option>
+            <option>Cloud Solutions</option>
+            <option>IT Support</option>
+          </select>
+
+          <textarea placeholder="Describe your request..." required />
+
+          <button className="btn primary" type="submit">
+            Submit Request
+          </button>
+        </form>
+      </section>
 
       <section id="about" className="section about-section">
         <div className="glass-box">
@@ -140,8 +192,7 @@ const estimatedTotal = wifiPrice + cctvPrice;
           <p>
             MKETICS is a South African IT solutions company based in Ballito.
             We specialize in networking, cloud systems, CCTV, WiFi installations,
-            and software engineering. Our mission is to deliver smart, reliable,
-            and scalable technology solutions.
+            IT support, and software engineering.
           </p>
         </div>
       </section>
@@ -150,9 +201,15 @@ const estimatedTotal = wifiPrice + cctvPrice;
         <h2>Contact Us</h2>
 
         <div className="contact-box">
-          <p><strong>Phone:</strong> 072 286 4367</p>
-          <p><strong>Email:</strong> info@mketics.co.za</p>
-          <p><strong>Location:</strong> Ballito, South Africa</p>
+          <p>
+            <strong>Phone:</strong> 072 286 4367
+          </p>
+          <p>
+            <strong>Email:</strong> info@mketics.co.za
+          </p>
+          <p>
+            <strong>Location:</strong> Ballito, South Africa
+          </p>
 
           <a href="https://wa.me/27722864367" className="btn primary">
             Chat on WhatsApp
@@ -160,44 +217,16 @@ const estimatedTotal = wifiPrice + cctvPrice;
         </div>
       </section>
 
-<section className="section">
-  <h2>Request a Quote</h2>
+      <a
+        href="https://wa.me/27722864367"
+        className="whatsapp-float"
+        target="_blank"
+        rel="noreferrer"
+      >
+        💬
+      </a>
 
-  <form
-    className="contact-form"
-    onSubmit={(e) => {
-      e.preventDefault();
-      alert("Quote request sent! We will contact you.");
-    }}
-  >
-    <input type="text" placeholder="Full Name" required />
-    <input type="tel" placeholder="Phone Number" required />
-    <input type="email" placeholder="Email Address" required />
-
-    <select required>
-      <option value="">Select Service</option>
-      <option>WiFi Installation</option>
-      <option>Network Setup</option>
-      <option>CCTV Installation</option>
-      <option>Website / App Development</option>
-    </select>
-
-    <textarea placeholder="Describe your request..." />
-
-    <button className="btn primary">Submit Request</button>
-  </form>
-</section>
-
-<a
-  href="https://wa.me/27722864367"
-  className="whatsapp-float"
-  target="_blank"
->
-  💬
-</a>
-      <footer>
-        © 2026 MKETICS | Smart Solutions. Stronger Future.
-      </footer>
+      <footer>© 2026 MKETICS | Smart Solutions. Stronger Future.</footer>
     </>
   );
 }
