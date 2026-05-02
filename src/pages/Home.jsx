@@ -28,8 +28,22 @@ export default function Home({
   const handleQuoteSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setQuoteSent(true);
 
     const form = e.target;
+
+    const whatsappMessage = `Hi MKETICS, I submitted a quote request.
+
+Name: ${data.name}
+Phone: ${data.phone}
+Email: ${data.email}
+Service: ${data.service}
+Message: ${data.message}`;
+
+window.open(
+  `https://wa.me/27722864367?text=${encodeURIComponent(whatsappMessage)}`,
+  "_blank"
+);
 
     const data = {
       name: form.name.value,
