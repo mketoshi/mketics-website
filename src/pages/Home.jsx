@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import emailjs from "@emailjs/browser";
 
 export default function Home({
   services,
@@ -51,6 +52,18 @@ const handleQuoteSubmit = async (e) => {
   // ✅ Only here after success
   setQuoteSent(true);
 
+  await emailjs.send(
+  "service_j54ayfr",
+  "template_4weiuia",
+  {
+    name: data.name,
+    phone: data.phone,
+    email: data.email,
+    service: data.service,
+    message: data.message,
+  },
+  "YOUR_PUBLIC_KEY"
+);
   const whatsappMessage = `Hi MKETICS, I submitted a quote request.
 
 Name: ${data.name}
