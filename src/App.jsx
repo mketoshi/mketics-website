@@ -1,3 +1,10 @@
+import { Routes, Route, Link } from "react-router-dom";
+import ITSupport from "./pages/ITSupport";
+import SoftwareEngineering from "./pages/SoftwareEngineering";
+import CloudSystems from "./pages/CloudSystems";
+import Networking from "./pages/Networking";
+import CCTV from "./pages/CCTV";
+import WiFi from "./pages/WiFi";
 import { useState } from "react";
 import "./App.css";
 
@@ -6,37 +13,37 @@ const services = [
   {
     icon: "🛠️",
     title: "IT Support",
-    link: "#it-support",
+    link: "/it-support",
     text: "On-site and remote technical support for businesses and homes.",
   },
   {
     icon: "💻",
     title: "Software Engineering",
-    link: "#software-engineering",
+    link: "/software-engineering",
     text: "Modern websites, web apps, and full business systems.",
   },
   {
     icon: "☁️",
     title: "Cloud Systems",
-    link: "#cloud-systems",
+    link: "/cloud-systems",
     text: "Cloud storage, hosting, and business system deployment.",
   },
   {
     icon: "🌐",
     title: "Network Infrastructure",
-    link: "#networking",
+    link: "/networking",
     text: "Routers, switches, structured cabling, and enterprise network setup.",
   },
   {
     icon: "📹",
     title: "CCTV & Security",
-    link: "#cctv",
+    link: "/cctv",
     text: "Smart surveillance systems with remote monitoring and cloud backup.",
   },
   {
     icon: "📶",
     title: "WiFi Installation",
-    link: "#wifi",
+    link: "/wifi",
     text: "High-speed home and business WiFi setup with coverage optimization.",
   },
 ];
@@ -219,7 +226,13 @@ const services = [
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
 
-        <form className="contact-form" onSubmit={handleQuoteSubmit}>
+          <form
+            className="contact-form"
+            action="https://formsubmit.co/info@mketics.co.za"
+            method="POST"
+          >
+          <input type="hidden" name="_subject" value="New MKETICS Quote Request" />
+          <input type="hidden" name="_captcha" value="false" />
           <input type="text" placeholder="Full Name" required />
           <input type="tel" placeholder="Phone Number" required />
           <input type="email" placeholder="Email Address" required />
@@ -272,6 +285,16 @@ const services = [
           </a>
         </div>
       </section>
+
+<Routes>
+  <Route path="/" element={<Home />} />
+  <Route path="/it-support" element={<ITSupport />} />
+  <Route path="/software-engineering" element={<SoftwareEngineering />} />
+  <Route path="/cloud-systems" element={<CloudSystems />} />
+  <Route path="/networking" element={<Networking />} />
+  <Route path="/cctv" element={<CCTV />} />
+  <Route path="/wifi" element={<WiFi />} />
+</Routes>
 
       <a
         href="https://wa.me/27722864367"
