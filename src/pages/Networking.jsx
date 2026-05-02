@@ -41,9 +41,9 @@ export default function Networking() {
             Chat on WhatsApp
           </a>
 
-          <Link to="/#quote" className="btn primary">
-            Request Networking Quote
-          </Link>
+<Link to="/#quote?service=Network Infrastructure" className="btn primary">
+  Request Networking Quote
+</Link>
         </div>
       </div>
     </section>

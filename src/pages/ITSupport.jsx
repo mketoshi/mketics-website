@@ -42,9 +42,9 @@ export default function ITSupport() {
             Chat on WhatsApp
           </a>
 
-          <Link to="/#quote" className="btn primary">
-            Request IT Support Quote
-          </Link>
+<Link to="/#quote?service=IT Support" className="btn primary">
+  Request IT Support Quote
+</Link>
         </div>
       </div>
     </section>

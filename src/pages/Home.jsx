@@ -10,6 +10,8 @@ export default function Home({
   cctvCameras,
   setCctvCameras,
 }) {
+    const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  const selectedService = params.get("service");
   return (
     <>
       <section id="home" className="hero">
@@ -124,15 +126,15 @@ export default function Home({
           <input type="tel" name="phone" placeholder="Phone Number" required />
           <input type="email" name="email" placeholder="Email Address" required />
 
-          <select name="service" required>
-            <option value="">Select Service</option>
-            <option>IT Support</option>
-            <option>Software Engineering</option>
-            <option>Cloud Systems</option>
-            <option>Network Infrastructure</option>
-            <option>CCTV Installation</option>
-            <option>WiFi Installation</option>
-          </select>
+<select name="service" defaultValue={selectedService || ""} required>
+  <option value="">Select Service</option>
+  <option value="IT Support">IT Support</option>
+  <option value="Software Engineering">Software Engineering</option>
+  <option value="Cloud Systems">Cloud Systems</option>
+  <option value="Network Infrastructure">Network Infrastructure</option>
+  <option value="CCTV Installation">CCTV Installation</option>
+  <option value="WiFi Installation">WiFi Installation</option>
+</select>
 
           <textarea name="message" placeholder="Describe your request..." required />
 

@@ -41,9 +41,9 @@ export default function CCTV() {
             Chat on WhatsApp
           </a>
 
-          <Link to="/#quote" className="btn primary">
-            Request CCTV Quote
-          </Link>
+<Link to="/#quote?service=CCTV Installation" className="btn primary">
+  Request CCTV Quote
+</Link>
         </div>
       </div>
     </section>

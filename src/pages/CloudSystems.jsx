@@ -41,9 +41,9 @@ export default function CloudSystems() {
             Chat on WhatsApp
           </a>
 
-          <Link to="/#quote" className="btn primary">
-            Request Cloud Quote
-          </Link>
+<Link to="/#quote?service=Cloud Systems" className="btn primary">
+  Request Cloud Quote
+</Link>
         </div>
       </div>
     </section>

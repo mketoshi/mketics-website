@@ -41,9 +41,9 @@ export default function WiFi() {
             Chat on WhatsApp
           </a>
 
-          <Link to="/#quote" className="btn primary">
-            Request WiFi Quote
-          </Link>
+<Link to="/#quote?service=WiFi Installation" className="btn primary">
+  Request WiFi Quote
+</Link>
         </div>
       </div>
     </section>
