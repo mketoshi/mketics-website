@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function Home({
@@ -16,6 +17,7 @@ export default function Home({
       const defaultMessage = selectedService
       ? `Hi MKETICS, I need a quote for ${selectedService}.`
       : "";
+      const [quoteSent, setQuoteSent] = useState(false);
   return (
     <>
       <section id="home" className="hero">
@@ -120,12 +122,18 @@ export default function Home({
 
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
+{quoteSent && (
+  <div className="success-message">
+    ✅ Quote request sent successfully. MKETICS will contact you shortly.
+  </div>
+)}
 
-        <form
-          className="contact-form"
-          action="https://formsubmit.co/info@mketics.co.za"
-          method="POST"
-        >
+<form
+  className="contact-form"
+  action="https://formsubmit.co/info@mketics.co.za"
+  method="POST"
+  onSubmit={() => setQuoteSent(true)}
+>
           <input type="text" name="name" placeholder="Full Name" required />
           <input type="tel" name="phone" placeholder="Phone Number" required />
           <input type="email" name="email" placeholder="Email Address" required />
