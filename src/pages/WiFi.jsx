@@ -6,13 +6,13 @@ export default function WiFi() {
       <div className="glass-box">
         <div className="service-icon">📶</div>
 
-        <h1>WiFi Installation
-            <img
-  src="/images/services/wifi.png"
-  alt="WiFi Installation"
-  className="service-image"
-/>
-        </h1>
+        <h1>WiFi Installation</h1>
+
+        <img
+          src="/images/services/wifi.png"
+          alt="WiFi Installation"
+          className="service-image"
+        />
 
         <p>
           Reliable high-speed WiFi installation for homes, offices, shops, and
@@ -33,7 +33,14 @@ export default function WiFi() {
         <p><strong>Business WiFi Setup:</strong> From R2,500</p>
         <p><strong>Access Point Setup:</strong> From R750</p>
 
-        <div style={{ marginTop: "20px" }}>
+        <div className="service-actions">
+          <a
+            href="https://wa.me/27722864367?text=Hi MKETICS, I need WiFi Installation"
+            className="btn secondary"
+          >
+            Chat on WhatsApp
+          </a>
+
           <Link to="/#quote" className="btn primary">
             Request WiFi Quote
           </Link>

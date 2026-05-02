@@ -61,6 +61,18 @@ body {
   font-weight: 800;
 }
 
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.features-list li {
+  margin: 8px 0;
+  font-weight: 500;
+}
+
 .service-image {
   width: 100%;
   max-height: 300px;
@@ -70,6 +82,13 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 }
 
+.service-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 .features-list {
   margin: 20px 0;
   padding-left: 0;

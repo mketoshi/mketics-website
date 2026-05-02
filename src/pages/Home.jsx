@@ -12,8 +12,7 @@ export default function Home({
 }) {
   return (
     <>
-      {/* HERO */}
-      <section className="hero">
+      <section id="home" className="hero">
         <div className="hero-content">
           <div className="badge">Network • Cloud • Software Engineering</div>
 
@@ -40,8 +39,7 @@ export default function Home({
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section className="section">
+      <section id="services" className="section">
         <h2>Our Services</h2>
 
         <div className="services-grid">
@@ -60,16 +58,12 @@ export default function Home({
         </div>
       </section>
 
-      {/* CALCULATOR */}
-      <section className="section">
+      <section id="calculator" className="section">
         <h2>Pricing Calculator</h2>
 
         <div className="calculator">
           <label>WiFi Installation Type</label>
-          <select
-            value={wifiType}
-            onChange={(e) => setWifiType(e.target.value)}
-          >
+          <select value={wifiType} onChange={(e) => setWifiType(e.target.value)}>
             <option value="home">Home WiFi - R1500</option>
             <option value="business">Business WiFi - R2500</option>
           </select>
@@ -101,7 +95,23 @@ export default function Home({
         </div>
       </section>
 
-      {/* QUOTE FORM */}
+      <section id="booking" className="section">
+        <h2>Book a Service</h2>
+
+        <div className="booking-box">
+          <p>Select your preferred date and confirm your booking on WhatsApp.</p>
+
+          <input type="date" />
+
+          <a
+            href="https://wa.me/27722864367?text=Hi MKETICS, I would like to book a service."
+            className="btn primary"
+          >
+            Confirm Booking on WhatsApp
+          </a>
+        </div>
+      </section>
+
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
 
@@ -137,6 +147,20 @@ export default function Home({
             Submit Request
           </button>
         </form>
+      </section>
+
+      <section id="contact" className="section">
+        <h2>Contact Us</h2>
+
+        <div className="contact-box">
+          <p><strong>Phone:</strong> 072 286 4367</p>
+          <p><strong>Email:</strong> info@mketics.co.za</p>
+          <p><strong>Location:</strong> Ballito, South Africa</p>
+
+          <a href="https://wa.me/27722864367" className="btn primary">
+            Chat on WhatsApp
+          </a>
+        </div>
       </section>
     </>
   );

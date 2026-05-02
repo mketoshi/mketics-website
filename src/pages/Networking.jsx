@@ -6,13 +6,13 @@ export default function Networking() {
       <div className="glass-box">
         <div className="service-icon">🌐</div>
 
-        <h1>Network Infrastructure
-            <img
-  src="/images/services/networking.png"
-  alt="Network Infrastructure"
-  className="service-image"
-/>
-        </h1>
+        <h1>Network Infrastructure</h1>
+
+        <img
+          src="/images/services/networking.png"
+          alt="Network Infrastructure"
+          className="service-image"
+        />
 
         <p>
           Professional network design, structured cabling, routers, switches,
@@ -33,7 +33,14 @@ export default function Networking() {
         <p><strong>LAN Cabling:</strong> From R450 per point</p>
         <p><strong>Business Network Setup:</strong> From R3,000</p>
 
-        <div style={{ marginTop: "20px" }}>
+        <div className="service-actions">
+          <a
+            href="https://wa.me/27722864367?text=Hi MKETICS, I need Network Infrastructure services"
+            className="btn secondary"
+          >
+            Chat on WhatsApp
+          </a>
+
           <Link to="/#quote" className="btn primary">
             Request Networking Quote
           </Link>

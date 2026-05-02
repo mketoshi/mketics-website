@@ -6,13 +6,13 @@ export default function CCTV() {
       <div className="glass-box">
         <div className="service-icon">📹</div>
 
-        <h1>CCTV & Security
-            <img
-  src="/images/services/cctv.png"
-  alt="CCTV and Security"
-  className="service-image"
-/>
-        </h1>
+        <h1>CCTV & Security</h1>
+
+        <img
+          src="/images/services/cctv.png"
+          alt="CCTV and Security"
+          className="service-image"
+        />
 
         <p>
           Smart surveillance systems with camera installation, remote viewing,
@@ -33,7 +33,14 @@ export default function CCTV() {
         <p><strong>Remote Viewing Setup:</strong> From R450</p>
         <p><strong>Full CCTV Setup:</strong> From R3,500</p>
 
-        <div style={{ marginTop: "20px" }}>
+        <div className="service-actions">
+          <a
+            href="https://wa.me/27722864367?text=Hi MKETICS, I need CCTV and Security services"
+            className="btn secondary"
+          >
+            Chat on WhatsApp
+          </a>
+
           <Link to="/#quote" className="btn primary">
             Request CCTV Quote
           </Link>

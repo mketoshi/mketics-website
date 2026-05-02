@@ -65,14 +65,14 @@ function App() {
           <img src="/images/logo-clean.png" alt="MKETICS Logo" />
         </Link>
 
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/">Services</Link>
-          <Link to="/">Pricing</Link>
-          <Link to="/">Booking</Link>
-          <Link to="/">Quote</Link>
-          <Link to="/">Contact</Link>
-        </nav>
+<nav>
+  <a href="/#home">Home</a>
+  <a href="/#services">Services</a>
+  <a href="/#calculator">Pricing</a>
+  <a href="/#booking">Booking</a>
+  <a href="/#quote">Quote</a>
+  <a href="/#contact">Contact</a>
+</nav>
       </header>
 
       <Routes>
