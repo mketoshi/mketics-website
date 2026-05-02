@@ -10,8 +10,12 @@ export default function Home({
   cctvCameras,
   setCctvCameras,
 }) {
-    const params = new URLSearchParams(window.location.hash.split("?")[1]);
-  const selectedService = params.get("service");
+      const params = new URLSearchParams(window.location.hash.split("?")[1]);
+      const selectedService = params.get("service");
+      
+      const defaultMessage = selectedService
+      ? `Hi MKETICS, I need a quote for ${selectedService}.`
+      : "";
   return (
     <>
       <section id="home" className="hero">
@@ -127,6 +131,7 @@ export default function Home({
           <input type="email" name="email" placeholder="Email Address" required />
 
 <select name="service" defaultValue={selectedService || ""} required>
+
   <option value="">Select Service</option>
   <option value="IT Support">IT Support</option>
   <option value="Software Engineering">Software Engineering</option>
@@ -136,7 +141,12 @@ export default function Home({
   <option value="WiFi Installation">WiFi Installation</option>
 </select>
 
-          <textarea name="message" placeholder="Describe your request..." required />
+<textarea
+  name="message"
+  placeholder="Describe your request..."
+  defaultValue={defaultMessage}
+  required
+/>
 
           <input
             type="hidden"
