@@ -61,6 +61,17 @@ body {
   font-weight: 800;
 }
 
+.features-list {
+  margin: 20px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.features-list li {
+  margin: 8px 0;
+  font-weight: 500;
+}
+
 .navbar img {
   height: 48px;
 }
