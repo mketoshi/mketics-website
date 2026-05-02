@@ -6,7 +6,13 @@ export default function SoftwareEngineering() {
       <div className="glass-box">
         <div className="service-icon">💻</div>
 
-        <h1>Software Engineering</h1>
+        <h1>Software Engineering
+            <img
+  src="/images/services/software-engineering.png"
+  alt="Software Engineering"
+  className="service-image"
+/>
+        </h1>
 
         <p>
           We build modern websites, web applications, and full business systems

@@ -6,7 +6,13 @@ export default function Networking() {
       <div className="glass-box">
         <div className="service-icon">🌐</div>
 
-        <h1>Network Infrastructure</h1>
+        <h1>Network Infrastructure
+            <img
+  src="/images/services/networking.png"
+  alt="Network Infrastructure"
+  className="service-image"
+/>
+        </h1>
 
         <p>
           Professional network design, structured cabling, routers, switches,

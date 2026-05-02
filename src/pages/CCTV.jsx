@@ -6,7 +6,13 @@ export default function CCTV() {
       <div className="glass-box">
         <div className="service-icon">📹</div>
 
-        <h1>CCTV & Security</h1>
+        <h1>CCTV & Security
+            <img
+  src="/images/services/cctv.png"
+  alt="CCTV and Security"
+  className="service-image"
+/>
+        </h1>
 
         <p>
           Smart surveillance systems with camera installation, remote viewing,

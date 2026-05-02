@@ -6,7 +6,13 @@ export default function WiFi() {
       <div className="glass-box">
         <div className="service-icon">📶</div>
 
-        <h1>WiFi Installation</h1>
+        <h1>WiFi Installation
+            <img
+  src="/images/services/wifi.png"
+  alt="WiFi Installation"
+  className="service-image"
+/>
+        </h1>
 
         <p>
           Reliable high-speed WiFi installation for homes, offices, shops, and

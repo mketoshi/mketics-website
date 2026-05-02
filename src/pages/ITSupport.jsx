@@ -6,7 +6,13 @@ export default function ITSupport() {
       <div className="glass-box">
         <div className="service-icon">🛠️</div>
 
-        <h1>IT Support</h1>
+        <h1>IT Support
+            <img
+                src="/images/services/it-support.png"
+                alt="IT Support"
+                className="service-image"
+            />
+        </h1>
 
         <p>
           Professional on-site and remote IT support for homes and businesses.

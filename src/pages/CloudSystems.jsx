@@ -6,7 +6,13 @@ export default function CloudSystems() {
       <div className="glass-box">
         <div className="service-icon">☁️</div>
 
-        <h1>Cloud Systems</h1>
+        <h1>Cloud Systems
+            <img
+  src="/images/services/cloud-systems.png"
+  alt="Cloud Systems"
+  className="service-image"
+/>
+        </h1>
 
         <p>
           Secure cloud storage, hosting, backups, and scalable business systems
