@@ -130,10 +130,11 @@ export default function Home({
 
 <form
   className="contact-form"
-  action="https://formsubmit.co/info@mketics.co.za"
+action="https://formsubmit.co/msanesphesihle968@gmail.com"
   method="POST"
   onSubmit={() => setQuoteSent(true)}
 >
+          <input type="hidden" name="_next" value="https://mketics-website.pages.dev/#quote" />
           <input type="text" name="name" placeholder="Full Name" required />
           <input type="tel" name="phone" placeholder="Phone Number" required />
           <input type="email" name="email" placeholder="Email Address" required />
@@ -174,7 +175,7 @@ export default function Home({
 
         <div className="contact-box">
           <p><strong>Phone:</strong> 072 286 4367</p>
-          <p><strong>Email:</strong> info@mketics.co.za</p>
+          <p><strong>Email:</strong> msanesphesihle968@gmail.com</p>
           <p><strong>Location:</strong> Ballito, South Africa</p>
 
           <a href="https://wa.me/27722864367" className="btn primary">
