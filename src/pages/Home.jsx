@@ -15,7 +15,12 @@ export default function Home({
   const [loading, setLoading] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
+  let selectedService = "";
+
+if (typeof window !== "undefined") {
   const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  selectedService = params.get("service");
+}
   const selectedService = params.get("service");
 
   const defaultMessage = selectedService
