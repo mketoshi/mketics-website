@@ -117,6 +117,48 @@ const services = [
         </div>
       </section>
 
+<section id="it-support" className="section">
+  <div className="glass-box">
+    <h2>IT Support</h2>
+    <p>We provide professional on-site and remote IT support for homes and businesses, ensuring your systems run smoothly.</p>
+  </div>
+</section>
+
+<section id="software-engineering" className="section">
+  <div className="glass-box">
+    <h2>Software Engineering</h2>
+    <p>We build modern websites, web applications, and complete business systems tailored to your needs.</p>
+  </div>
+</section>
+
+<section id="cloud-systems" className="section">
+  <div className="glass-box">
+    <h2>Cloud Systems</h2>
+    <p>Secure cloud storage, hosting, and scalable business systems for modern companies.</p>
+  </div>
+</section>
+
+<section id="networking" className="section">
+  <div className="glass-box">
+    <h2>Network Infrastructure</h2>
+    <p>Professional network design, cabling, routers, and enterprise connectivity solutions.</p>
+  </div>
+</section>
+
+<section id="cctv" className="section">
+  <div className="glass-box">
+    <h2>CCTV & Security</h2>
+    <p>Smart surveillance systems with remote monitoring and secure cloud backup.</p>
+  </div>
+</section>
+
+<section id="wifi" className="section">
+  <div className="glass-box">
+    <h2>WiFi Installation</h2>
+    <p>Reliable, high-speed WiFi installation for homes and businesses.</p>
+  </div>
+</section>
+
       <section id="calculator" className="section">
         <h2>Pricing Calculator</h2>
         <p className="section-subtitle">
