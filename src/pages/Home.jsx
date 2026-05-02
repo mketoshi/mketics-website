@@ -25,14 +25,33 @@ export default function Home({
     ? `Hi MKETICS, I need a quote for ${selectedServiceState}. Please contact me with more details.`
     : "Hi MKETICS, I need a quote. Please contact me.";
 
-  const handleQuoteSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setQuoteSent(true);
+const handleQuoteSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    const form = e.target;
+  const form = e.target;
 
-    const whatsappMessage = `Hi MKETICS, I submitted a quote request.
+  const data = {
+    name: form.name.value,
+    phone: form.phone.value,
+    email: form.email.value,
+    service: form.service.value,
+    message: form.message.value,
+  };
+
+  const { error } = await supabase.from("quotes").insert([data]);
+
+  if (error) {
+    alert(error.message);
+    console.error(error);
+    setLoading(false);
+    return;
+  }
+
+  // ✅ Only here after success
+  setQuoteSent(true);
+
+  const whatsappMessage = `Hi MKETICS, I submitted a quote request.
 
 Name: ${data.name}
 Phone: ${data.phone}
@@ -40,34 +59,15 @@ Email: ${data.email}
 Service: ${data.service}
 Message: ${data.message}`;
 
-window.open(
-  `https://wa.me/27722864367?text=${encodeURIComponent(whatsappMessage)}`,
-  "_blank"
-);
+  window.open(
+    `https://wa.me/27722864367?text=${encodeURIComponent(whatsappMessage)}`,
+    "_blank"
+  );
 
-    const data = {
-      name: form.name.value,
-      phone: form.phone.value,
-      email: form.email.value,
-      service: form.service.value,
-      message: form.message.value,
-    };
-
-    const { error } = await supabase.from("quotes").insert([data]);
-
-    if (error) {
-      alert(error.message);
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-
-    setQuoteSent(true);
-    form.reset();
-    setSelectedService("");
-    setLoading(false);
-  };
-
+  form.reset();
+  setSelectedService("");
+  setLoading(false);
+};
   return (
     <>
       <section id="home" className="hero">
