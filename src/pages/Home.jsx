@@ -1,3 +1,4 @@
+import { supabase } from "../supabaseClient";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,13 +12,16 @@ export default function Home({
   cctvCameras,
   setCctvCameras,
 }) {
-      const params = new URLSearchParams(window.location.hash.split("?")[1]);
-      const selectedService = params.get("service");
-      
-      const defaultMessage = selectedService
-      ? `Hi MKETICS, I need a quote for ${selectedService}. Please contact me with more details.`
-      : "Hi MKETICS, I need a quote. Please contact me.";
-      const [quoteSent, setQuoteSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [quoteSent, setQuoteSent] = useState(false);
+
+  const params = new URLSearchParams(window.location.hash.split("?")[1]);
+  const selectedService = params.get("service");
+
+  const defaultMessage = selectedService
+    ? `Hi MKETICS, I need a quote for ${selectedService}. Please contact me with more details.`
+    : "Hi MKETICS, I need a quote. Please contact me.";
+
   return (
     <>
       <section id="home" className="hero">
@@ -122,55 +126,64 @@ export default function Home({
 
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
-{quoteSent && (
-  <div className="success-message">
-    ✅ Quote request sent successfully. MKETICS will contact you shortly.
-  </div>
-)}
 
-<form
-  className="contact-form"
-action="https://formsubmit.co/msanesphesihle968@gmail.com"
-  method="POST"
-  onSubmit={() => setQuoteSent(true)}
->
-          <input type="hidden" name="_next" value="https://mketics-website.pages.dev/#quote" />
+        {quoteSent && (
+          <div className="success-message">
+            ✅ Quote request sent successfully. MKETICS will contact you shortly.
+          </div>
+        )}
+
+        <form
+          className="contact-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+
+            const form = e.target;
+
+            const data = {
+              name: form.name.value,
+              phone: form.phone.value,
+              email: form.email.value,
+              service: form.service.value,
+              message: form.message.value,
+            };
+
+            const { error } = await supabase.from("quotes").insert([data]);
+
+            if (!error) {
+              setQuoteSent(true);
+              form.reset();
+            } else {
+              alert("Error submitting quote");
+            }
+
+            setLoading(false);
+          }}
+        >
           <input type="text" name="name" placeholder="Full Name" required />
           <input type="tel" name="phone" placeholder="Phone Number" required />
           <input type="email" name="email" placeholder="Email Address" required />
 
-<select name="service" defaultValue={selectedService || ""} required>
+          <select name="service" defaultValue={selectedService || ""} required>
+            <option value="">Select Service</option>
+            <option value="IT Support">IT Support</option>
+            <option value="Software Engineering">Software Engineering</option>
+            <option value="Cloud Systems">Cloud Systems</option>
+            <option value="Network Infrastructure">Network Infrastructure</option>
+            <option value="CCTV Installation">CCTV Installation</option>
+            <option value="WiFi Installation">WiFi Installation</option>
+          </select>
 
-  <option value="">Select Service</option>
-  <option value="IT Support">IT Support</option>
-  <option value="Software Engineering">Software Engineering</option>
-  <option value="Cloud Systems">Cloud Systems</option>
-  <option value="Network Infrastructure">Network Infrastructure</option>
-  <option value="CCTV Installation">CCTV Installation</option>
-  <option value="WiFi Installation">WiFi Installation</option>
-</select>
-
-<textarea
-  name="message"
-  placeholder="Describe your request..."
-  defaultValue={defaultMessage}
-  required
-  onFocus={(e) => {
-    if (!e.target.value) {
-      e.target.value = defaultMessage;
-    }
-  }}
-/>
-
-          <input
-            type="hidden"
-            name="_subject"
-            value="New MKETICS Quote Request"
+          <textarea
+            name="message"
+            placeholder="Describe your request..."
+            defaultValue={defaultMessage}
+            required
           />
-          <input type="hidden" name="_captcha" value="false" />
 
-          <button className="btn primary" type="submit">
-            Submit Request
+          <button className="btn primary" type="submit" disabled={loading}>
+            {loading ? "Sending..." : "Submit Request"}
           </button>
         </form>
       </section>
@@ -179,9 +192,15 @@ action="https://formsubmit.co/msanesphesihle968@gmail.com"
         <h2>Contact Us</h2>
 
         <div className="contact-box">
-          <p><strong>Phone:</strong> 072 286 4367</p>
-          <p><strong>Email:</strong> msanesphesihle968@gmail.com</p>
-          <p><strong>Location:</strong> Ballito, South Africa</p>
+          <p>
+            <strong>Phone:</strong> 072 286 4367
+          </p>
+          <p>
+            <strong>Email:</strong> msanesphesihle968@gmail.com
+          </p>
+          <p>
+            <strong>Location:</strong> Ballito, South Africa
+          </p>
 
           <a href="https://wa.me/27722864367" className="btn primary">
             Chat on WhatsApp
