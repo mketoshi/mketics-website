@@ -16,16 +16,27 @@ export default function Home({
   const params = new URLSearchParams(window.location.hash.split("?")[1]);
   const selectedService = params.get("service");
 
-  const [selectedServiceState, setSelectedService] = useState(
-    selectedService || ""
+  const [selectedServiceState, setSelectedService] = useState(selectedService || "");
+  const [message, setMessage] = useState(
+    selectedService
+      ? `Hi MKETICS, I need a quote for ${selectedService}. Please contact me with more details.`
+      : "Hi MKETICS, I need a quote. Please contact me."
   );
+
   const [lastQuote, setLastQuote] = useState(null);
   const [loading, setLoading] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
-  const defaultMessage = selectedServiceState
-    ? `Hi MKETICS, I need a quote for ${selectedServiceState}. Please contact me with more details.`
-    : "Hi MKETICS, I need a quote. Please contact me.";
+  const handleServiceChange = (e) => {
+    const value = e.target.value;
+    setSelectedService(value);
+
+    setMessage(
+      value
+        ? `Hi MKETICS, I need a quote for ${value}. Please contact me with more details.`
+        : "Hi MKETICS, I need a quote. Please contact me."
+    );
+  };
 
   const handleQuoteSubmit = async (e) => {
     e.preventDefault();
@@ -38,10 +49,9 @@ export default function Home({
       phone: form.phone.value,
       email: form.email.value,
       service: form.service.value,
-      message: form.message.value,
+      message,
     };
 
-    // ✅ Save to Supabase
     const { error } = await supabase.from("quotes").insert([data]);
 
     if (error) {
@@ -50,7 +60,6 @@ export default function Home({
       return;
     }
 
-    // ✅ Send Email
     try {
       await emailjs.send(
         "service_j54ayfr",
@@ -60,23 +69,20 @@ export default function Home({
       );
 
       await emailjs.send(
-  "service_j54ayfr",
-  "template_khwkdw7",
-  data,
-  "py8cRBCVu5UZFjux1"
-);
-
+        "service_j54ayfr",
+        "template_khwkdw7",
+        data,
+        "py8cRBCVu5UZFjux1"
+      );
     } catch (err) {
       console.error("Email error:", err);
     }
 
-    // ✅ Save last quote for WhatsApp button
     setLastQuote(data);
-
-    // ✅ Show success UI
     setQuoteSent(true);
     form.reset();
     setSelectedService("");
+    setMessage("Hi MKETICS, I need a quote. Please contact me.");
     setLoading(false);
   };
 
@@ -94,14 +100,14 @@ export default function Home({
           />
 
           <h1 className="premium-title">
-  Smart IT Solutions for a <span>Stronger Digital Future</span>
-</h1>
+            Smart IT Solutions for a <span>Stronger Digital Future</span>
+          </h1>
 
-<p className="typing-text">
-  Network Solutions • Cloud Systems • Software Engineering • IT Support
-</p>
+          <p className="typing-text">
+            Network Solutions • Cloud Systems • Software Engineering • IT Support
+          </p>
 
-          <p>
+          <p className="hero-subtitle">
             MKETICS delivers professional IT services for homes and businesses.
           </p>
 
@@ -109,10 +115,16 @@ export default function Home({
             <a href="https://wa.me/27722864367" className="btn primary">
               Chat on WhatsApp
             </a>
+
             <a href="#quote" className="btn secondary">
               Request a Quote
             </a>
           </div>
+          <div className="hero-trust">
+  <span>✓ Fast response</span>
+  <span>✓ Home & business support</span>
+  <span>✓ Professional IT solutions</span>
+</div>
         </div>
       </section>
 
@@ -129,7 +141,10 @@ export default function Home({
             >
               <div className="service-icon">{service.icon}</div>
               <h3>{service.title}</h3>
-              <p>{service.text}</p>
+              <p>
+                {service.text ||
+                  "Professional solutions designed to improve your business operations."}
+              </p>
               <span className="learn-more">Learn more →</span>
             </Link>
           ))}
@@ -166,7 +181,9 @@ export default function Home({
           <h3>Estimated Total: R{estimatedTotal}</h3>
 
           <a
-            href={`https://wa.me/27722864367?text=Hi MKETICS, my estimate is R${estimatedTotal}`}
+            href={`https://wa.me/27722864367?text=${encodeURIComponent(
+              `Hi MKETICS, my estimate is R${estimatedTotal}`
+            )}`}
             className="btn primary"
           >
             Send on WhatsApp
@@ -174,11 +191,24 @@ export default function Home({
         </div>
       </section>
 
+      {/* BOOKING */}
+      <section id="booking" className="section">
+        <h2>Book a Service</h2>
+        <p>
+          Need installation, support, or a consultation? Send a request and MKETICS
+          will confirm availability.
+        </p>
+
+<a href="#quote" className="btn primary booking-btn">
+  Book Through Quote Form
+</a>
+      </section>
+
       {/* QUOTE FORM */}
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
 
-        {quoteSent && (
+        {quoteSent ? (
           <div className="success-message">
             ✅ Quote request sent successfully. MKETICS will contact you shortly.
 
@@ -199,41 +229,77 @@ Service: ${lastQuote?.service}`
             >
               Continue to WhatsApp
             </a>
+
+            <button
+              className="btn secondary"
+              onClick={() => setQuoteSent(false)}
+              type="button"
+            >
+              Send Another Request
+            </button>
           </div>
+        ) : (
+          <form className="contact-form" onSubmit={handleQuoteSubmit}>
+            <input type="text" name="name" placeholder="Full Name" required />
+            <input type="tel" name="phone" placeholder="Phone Number" required />
+            <input type="email" name="email" placeholder="Email Address" required />
+
+            <select
+              name="service"
+              value={selectedServiceState}
+              onChange={handleServiceChange}
+              required
+            >
+              <option value="">Select Service</option>
+              <option value="IT Support">IT Support</option>
+              <option value="Software Engineering">Software Engineering</option>
+              <option value="Cloud Systems">Cloud Systems</option>
+              <option value="Network Infrastructure">Network Infrastructure</option>
+              <option value="CCTV Installation">CCTV Installation</option>
+              <option value="WiFi Installation">WiFi Installation</option>
+            </select>
+
+            <textarea
+              name="message"
+              placeholder="Describe your request..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+            />
+
+            <button className="btn primary" type="submit" disabled={loading}>
+              {loading ? "Sending..." : "Submit Request"}
+            </button>
+          </form>
         )}
-
-        <form className="contact-form" onSubmit={handleQuoteSubmit}>
-          <input type="text" name="name" placeholder="Full Name" required />
-          <input type="tel" name="phone" placeholder="Phone Number" required />
-          <input type="email" name="email" placeholder="Email Address" required />
-
-          <select
-            name="service"
-            value={selectedServiceState}
-            onChange={(e) => setSelectedService(e.target.value)}
-            required
-          >
-            <option value="">Select Service</option>
-            <option value="IT Support">IT Support</option>
-            <option value="Software Engineering">Software Engineering</option>
-            <option value="Cloud Systems">Cloud Systems</option>
-            <option value="Network Infrastructure">Network Infrastructure</option>
-            <option value="CCTV Installation">CCTV Installation</option>
-            <option value="WiFi Installation">WiFi Installation</option>
-          </select>
-
-          <textarea
-            name="message"
-            placeholder="Describe your request..."
-            defaultValue={defaultMessage}
-            required
-          />
-
-          <button className="btn primary" type="submit" disabled={loading}>
-            {loading ? "Sending..." : "Submit Request"}
-          </button>
-        </form>
       </section>
+
+      {/* CONTACT */}
+<section id="contact" className="contact">
+  <h2>Contact MKETICS</h2>
+  <p>For quick help, reach us instantly via WhatsApp or call us directly.</p>
+
+  <div className="contact-actions">
+
+    {/* WhatsApp */}
+    <a
+      href="https://wa.me/27722864367"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="contact-btn whatsapp"
+    >
+      <span className="icon">💬</span>
+      Chat on WhatsApp
+    </a>
+
+    {/* Call */}
+    <a href="tel:+27722864367" className="contact-btn call">
+      <span className="icon">📞</span>
+      Call Now
+    </a>
+
+  </div>
+</section>
     </>
   );
 }

@@ -1,51 +1,99 @@
 import { Link } from "react-router-dom";
 
 export default function CCTV() {
+  const service = {
+    icon: "📹",
+    title: "CCTV & Security",
+    image: "/images/services/cctv.png",
+    alt: "CCTV and Security",
+    description:
+      "Smart surveillance systems with camera installation, remote viewing, monitoring setup, and cloud-ready security options.",
+    whatsappText: "Hi MKETICS, I need CCTV and Security services",
+    quoteService: "CCTV Installation",
+  };
+
+  const features = [
+    "CCTV camera installation",
+    "Remote viewing setup",
+    "DVR/NVR configuration",
+    "Mobile app connection",
+    "Maintenance and troubleshooting",
+  ];
+
+  const pricing = [
+    { name: "Camera Installation", price: "From R650 per camera" },
+    { name: "Remote Viewing Setup", price: "From R450" },
+    { name: "Full CCTV Setup", price: "From R3,500" },
+  ];
+
   return (
-    <section className="section">
-      <div className="glass-box">
-        <div className="service-icon">📹</div>
+    <section className="service-page">
 
-        <h1>CCTV & Security</h1>
+      {/* HERO */}
+      <div className="service-hero">
+        <div className="service-icon">{service.icon}</div>
 
-        <img
-          src="/images/services/cctv.png"
-          alt="CCTV and Security"
-          className="service-image"
-        />
+        <h1>
+          CCTV & <span>Security</span>
+        </h1>
 
-        <p>
-          Smart surveillance systems with camera installation, remote viewing,
-          monitoring setup, and cloud-ready security options.
-        </p>
-
-        <h2>What You Get</h2>
-        <ul className="features-list">
-          <li>✔ CCTV camera installation</li>
-          <li>✔ Remote viewing setup</li>
-          <li>✔ DVR/NVR configuration</li>
-          <li>✔ Mobile app connection</li>
-          <li>✔ Maintenance and troubleshooting</li>
-        </ul>
-
-        <h2>Pricing</h2>
-        <p><strong>Camera Installation:</strong> From R650 per camera</p>
-        <p><strong>Remote Viewing Setup:</strong> From R450</p>
-        <p><strong>Full CCTV Setup:</strong> From R3,500</p>
-
-        <div className="service-actions">
-          <a
-            href="https://wa.me/27722864367?text=Hi MKETICS, I need CCTV and Security services"
-            className="btn secondary"
-          >
-            Chat on WhatsApp
-          </a>
-
-<Link to="/#quote?service=CCTV Installation" className="btn primary">
-  Request CCTV Quote
-</Link>
-        </div>
+        <p className="service-description">{service.description}</p>
       </div>
+
+      {/* IMAGE */}
+      <div className="service-image-wrapper">
+        <img src={service.image} alt={service.alt} />
+      </div>
+
+      {/* CONTENT */}
+      <div className="service-content">
+
+        {/* FEATURES */}
+        <div className="service-card premium-service-card">
+          <h2>What You Get</h2>
+
+          <ul className="features-list">
+            {features.map((feature) => (
+              <li key={feature}>✔ {feature}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* PRICING */}
+        <div className="service-card pricing-card premium-service-card">
+          <h2>Pricing</h2>
+
+          {pricing.map((item) => (
+            <div className="price-item" key={item.name}>
+              <span>{item.name}</span>
+              <strong>{item.price}</strong>
+            </div>
+          ))}
+        </div>
+
+      </div>
+
+      {/* CTA */}
+      <div className="service-actions premium">
+        <a
+          href={`https://wa.me/27722864367?text=${encodeURIComponent(
+            service.whatsappText
+          )}`}
+          className="btn primary"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Chat on WhatsApp
+        </a>
+
+        <Link
+          to={`/#quote?service=${encodeURIComponent(service.quoteService)}`}
+          className="btn secondary"
+        >
+          Request Quote
+        </Link>
+      </div>
+
     </section>
   );
 }
