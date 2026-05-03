@@ -93,7 +93,13 @@ export default function Home({
             className="hero-logo"
           />
 
-          <h1>Smart IT Solutions for a Stronger Digital Future</h1>
+          <h1 className="premium-title">
+  Smart IT Solutions for a <span>Stronger Digital Future</span>
+</h1>
+
+<p className="typing-text">
+  Network Solutions • Cloud Systems • Software Engineering • IT Support
+</p>
 
           <p>
             MKETICS delivers professional IT services for homes and businesses.
