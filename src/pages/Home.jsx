@@ -19,6 +19,7 @@ export default function Home({
   const [selectedServiceState, setSelectedService] = useState(
     selectedService || ""
   );
+  const [lastQuote, setLastQuote] = useState(null);
   const [loading, setLoading] = useState(false);
   const [quoteSent, setQuoteSent] = useState(false);
 
@@ -40,26 +41,11 @@ export default function Home({
       message: form.message.value,
     };
 
-    // ✅ WhatsApp FIRST (prevents blocking)
-    const whatsappMessage = `Hi MKETICS, I submitted a quote request.
-
-Name: ${data.name}
-Phone: ${data.phone}
-Email: ${data.email}
-Service: ${data.service}
-Message: ${data.message}`;
-
-    window.open(
-      `https://wa.me/27722864367?text=${encodeURIComponent(whatsappMessage)}`,
-      "_blank"
-    );
-
     // ✅ Save to Supabase
     const { error } = await supabase.from("quotes").insert([data]);
 
     if (error) {
       alert(error.message);
-      console.error(error);
       setLoading(false);
       return;
     }
@@ -72,12 +58,14 @@ Message: ${data.message}`;
         data,
         "py8cRBCVu5UZFjux1"
       );
-      console.log("Email sent successfully");
     } catch (err) {
       console.error("Email error:", err);
     }
 
-    // ✅ UI update
+    // ✅ Save last quote for WhatsApp button
+    setLastQuote(data);
+
+    // ✅ Show success UI
     setQuoteSent(true);
     form.reset();
     setSelectedService("");
@@ -86,6 +74,7 @@ Message: ${data.message}`;
 
   return (
     <>
+      {/* HERO */}
       <section id="home" className="hero">
         <div className="hero-content">
           <div className="badge">Network • Cloud • Software Engineering</div>
@@ -113,6 +102,7 @@ Message: ${data.message}`;
         </div>
       </section>
 
+      {/* SERVICES */}
       <section id="services" className="section">
         <h2>Our Services</h2>
 
@@ -132,6 +122,7 @@ Message: ${data.message}`;
         </div>
       </section>
 
+      {/* CALCULATOR */}
       <section id="calculator" className="section">
         <h2>Pricing Calculator</h2>
 
@@ -169,12 +160,31 @@ Message: ${data.message}`;
         </div>
       </section>
 
+      {/* QUOTE FORM */}
       <section id="quote" className="section">
         <h2>Request a Quote</h2>
 
         {quoteSent && (
           <div className="success-message">
             ✅ Quote request sent successfully. MKETICS will contact you shortly.
+
+            <br />
+            <br />
+
+            <a
+              href={`https://wa.me/27722864367?text=${encodeURIComponent(
+                `Hi MKETICS, I just submitted a quote request.
+
+Name: ${lastQuote?.name}
+Phone: ${lastQuote?.phone}
+Service: ${lastQuote?.service}`
+              )}`}
+              className="btn primary"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Continue to WhatsApp
+            </a>
           </div>
         )}
 

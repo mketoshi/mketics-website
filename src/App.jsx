@@ -7,6 +7,7 @@ import CloudSystems from "./pages/CloudSystems";
 import Networking from "./pages/Networking";
 import CCTV from "./pages/CCTV";
 import WiFi from "./pages/WiFi";
+import AdminDashboard from "./pages/AdminDashboard";
 import "./App.css";
 
 function App() {
@@ -98,6 +99,7 @@ function App() {
         <Route path="/networking" element={<Networking />} />
         <Route path="/cctv" element={<CCTV />} />
         <Route path="/wifi" element={<WiFi />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
 
       <a
