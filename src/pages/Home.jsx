@@ -58,6 +58,14 @@ export default function Home({
         data,
         "py8cRBCVu5UZFjux1"
       );
+
+      await emailjs.send(
+  "service_j54ayfr",
+  "template_khwkdw7",
+  data,
+  "py8cRBCVu5UZFjux1"
+);
+
     } catch (err) {
       console.error("Email error:", err);
     }
