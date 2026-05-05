@@ -38,6 +38,8 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
 
+  console.log("Dashboard loaded", leads);
+
   const fetchLeads = async () => {
     setLoading(true);
     setError("");
@@ -88,9 +90,7 @@ console.log("Today's follow-ups:", dueFollowUps);
     if (error) {
       console.error(error);
       setLeads(previous);
-      if (dueFollowUps.length > 0) {
-  setError(`⚠️ You have ${dueFollowUps.length} follow-ups today.`);
-}
+alert("Status update failed. Check Supabase policy.");
     }
   };
 
@@ -112,12 +112,7 @@ const updateFollowUp = async (id, field, value) => {
   );
 };
 
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      const matchesStatus = statusFilter === "All" || lead.status === statusFilter;
-      const text = `${lead.name || ""} ${lead.phone || ""} ${lead.email || ""} ${lead.service || ""} ${lead.message || ""}`.toLowerCase();
-      const matchesSearch = text.includes(search.toLowerCase());
-      const filteredLeads = useMemo(() => {
+const filteredLeads = useMemo(() => {
   const today = new Date().toISOString().split("T")[0];
 
   return leads
@@ -131,18 +126,30 @@ const updateFollowUp = async (id, field, value) => {
 
       return matchesStatus && matchesSearch;
     })
+
     .sort((a, b) => {
-      const aDueToday = a.follow_up_date === today;
-      const bDueToday = b.follow_up_date === today;
+  const aDate = a.follow_up_date?.split("T")[0];
+  const bDate = b.follow_up_date?.split("T")[0];
 
-      if (aDueToday && !bDueToday) return -1;
-      if (!aDueToday && bDueToday) return 1;
+  const aOverdue = aDate && aDate < today && a.status !== "Closed";
+  const bOverdue = bDate && bDate < today && b.status !== "Closed";
 
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
+  const aDueToday = aDate === today;
+  const bDueToday = bDate === today;
+
+  // 1. Overdue first
+  if (aOverdue && !bOverdue) return -1;
+  if (!aOverdue && bOverdue) return 1;
+
+  // 2. Follow-up today second
+  if (aDueToday && !bDueToday) return -1;
+  if (!aDueToday && bDueToday) return 1;
+
+  // 3. Newest leads after that
+  return new Date(b.created_at) - new Date(a.created_at);
+});
+
 }, [leads, search, statusFilter]);
-    });
-  }, [leads, search, statusFilter]);
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -196,6 +203,16 @@ const analytics = useMemo(() => {
     });
   };
 
+const today = new Date().toISOString().split("T")[0];
+
+const isFollowUpToday = (lead) =>
+  lead.follow_up_date?.split("T")[0] === today;
+
+const isOverdue = (lead) =>
+  lead.follow_up_date &&
+  lead.follow_up_date.split("T")[0] < today &&
+  lead.status !== "Closed";
+  
   const whatsappLink = (lead) => {
     const phone = (lead.phone || "").replace(/\D/g, "");
     const cleanPhone = phone.startsWith("0") ? `27${phone.slice(1)}` : phone;
@@ -323,19 +340,6 @@ const analytics = useMemo(() => {
                 />
               </div>
 
-<select
-  value={lead.status}
-  onChange={(e) => updateStatus(lead.id, e.target.value)}
-  className="bg-slate-800 text-white px-2 py-1 rounded"
->
-  {["New", "Contacted", "Quoted", "Approved", "Paid", "Closed", "Lost"].map(
-    (status) => (
-      <option key={status} value={status}>
-        {status}
-      </option>
-    )
-  )}
-</select>
 
             </div>
           </div>
@@ -375,100 +379,144 @@ const analytics = useMemo(() => {
                   </tr>
                 ) : (
                   filteredLeads.map((lead) => (
+
 <tr
   key={lead.id}
-  className={`rounded-3xl ${
-    lead.follow_up_date === new Date().toISOString().split("T")[0]
-      ? "bg-yellow-500/20 ring-2 ring-yellow-400/50"
-      : "bg-white/[0.035]"
-  }`}
+className={`rounded-3xl ${
+  isOverdue(lead)
+    ? "bg-red-500/10 ring-1 ring-red-400/30 hover:bg-red-500/20 transition"
+    : isFollowUpToday(lead)
+    ? "bg-yellow-500/20 ring-2 ring-yellow-400/50"
+    : "bg-white/[0.035]"
+}`}
 >
-                      <td className="rounded-l-3xl px-4 py-4">
+  {/* CLIENT */}
+  <td className="rounded-l-3xl px-4 py-4">
+
 <div className="flex items-center gap-2 font-bold text-white">
   {lead.name || "Unknown"}
 
-  {lead.follow_up_date === new Date().toISOString().split("T")[0] && (
-    <span className="rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-black text-black">
+  {isOverdue(lead) && (
+    <span className="ml-2 rounded-full bg-red-500 px-2 py-1 text-[10px] font-black text-white">
+      OVERDUE
+    </span>
+  )}
+
+  {isFollowUpToday(lead) && (
+    <span className="ml-2 rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-black text-black">
       FOLLOW UP TODAY
     </span>
   )}
 </div>
-                        <div className="mt-1 text-xs text-slate-400">{lead.phone || "No phone"}</div>
-                        <div className="text-xs text-slate-500">{lead.email || "No email"}</div>
-                      </td>
 
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-200">{lead.service || "-"}</div>
-                        <div className="mt-1 text-xs text-slate-400">{lead.size || "-"}</div>
-                        {lead.message && (
-                          <div className="mt-2 max-w-xs truncate text-xs text-slate-500">{lead.message}</div>
-                        )}
-                      </td>
+    <div className="mt-1 text-xs text-slate-400">
+      {lead.phone || "No phone"}
+    </div>
 
-                      <td className="px-4 py-4 font-black text-sky-300">
-                        R{Number(lead.estimated_price || 0).toLocaleString()}
-                      </td>
+    <div className="text-xs text-slate-500">
+      {lead.email || "No email"}
+    </div>
+  </td>
 
-                      <td className="px-4 py-4">
+  {/* SERVICE */}
+  <td className="px-4 py-4">
+    <div className="font-semibold text-slate-200">
+      {lead.service || "-"}
+    </div>
+    <div className="mt-1 text-xs text-slate-400">
+      {lead.size || "-"}
+    </div>
+  </td>
 
-                      </td>
+  {/* BUDGET */}
+  <td className="px-4 py-4 font-black text-sky-300">
+    R{Number(lead.estimated_price || 0).toLocaleString()}
+  </td>
 
-<td>
-  <div className="flex flex-col gap-2">
-    {/* Follow-up date */}
-    <input
-      type="date"
-      value={lead.follow_up_date || ""}
-      onChange={(e) =>
-        updateFollowUp(lead.id, "follow_up_date", e.target.value)
-      }
-      className="rounded bg-slate-800 px-2 py-1 text-white"
-    />
+  {/* STATUS */}
+  <td className="px-4 py-4">
+    <select
+      value={lead.status || "New"}
+      onChange={(e) => updateStatus(lead.id, e.target.value)}
+      className="rounded-full border border-white/10 bg-slate-950 px-3 py-2 text-xs font-bold outline-none"
+    >
+      {STATUS_OPTIONS.map((status) => (
+        <option key={status}>{status}</option>
+      ))}
+    </select>
+  </td>
 
-    {/* Last contacted */}
-    <input
-      type="date"
-      value={lead.last_contacted || ""}
-      onChange={(e) =>
-        updateFollowUp(lead.id, "last_contacted", e.target.value)
-      }
-      className="rounded bg-slate-800 px-2 py-1 text-white"
-    />
+  {/* DATE */}
+  <td className="px-4 py-4 text-xs text-slate-400">
+    {formatDate(lead.created_at)}
+  </td>
 
-    {/* Notes */}
-    <textarea
-      value={lead.notes || ""}
-      onChange={(e) =>
-        updateFollowUp(lead.id, "notes", e.target.value)
-      }
-      placeholder="Notes..."
-      className="rounded bg-slate-800 px-2 py-1 text-white"
-    />
+  {/* CRM */}
+  <td className="px-4 py-4">
+    <div className="flex flex-col gap-2">
+<input
+  type="date"
+  value={lead.follow_up_date?.split("T")[0] || ""}
+  onChange={(e) =>
+    updateFollowUp(lead.id, "follow_up_date", e.target.value)
+  }
+  className="rounded bg-slate-800 px-2 py-1 text-white"
+/>
 
-  </div>
-</td>
-                      <td className="px-4 py-4 text-xs text-slate-400">{formatDate(lead.created_at)}</td>
+<input
+  type="date"
+  value={lead.last_contacted?.split("T")[0] || ""}
+  onChange={(e) =>
+    updateFollowUp(lead.id, "last_contacted", e.target.value)
+  }
+  className="rounded bg-slate-800 px-2 py-1 text-white"
+/>
 
-                      <td className="rounded-r-3xl px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          {lead.phone && (
-                            <a href={whatsappLink(lead)} target="_blank" rel="noreferrer" className="grid h-10 w-10 place-items-center rounded-full bg-green-500/15 text-green-300 hover:bg-green-500/25">
-                              <MessageCircle className="h-4 w-4" />
-                            </a>
-                          )}
-                          {lead.phone && (
-                            <a href={`tel:${lead.phone}`} className="grid h-10 w-10 place-items-center rounded-full bg-sky-500/15 text-sky-300 hover:bg-sky-500/25">
-                              <PhoneCall className="h-4 w-4" />
-                            </a>
-                          )}
-                          {lead.email && (
-                            <a href={`mailto:${lead.email}`} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-slate-200 hover:bg-white/15">
-                              <Mail className="h-4 w-4" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+      <textarea
+        value={lead.notes || ""}
+        onChange={(e) =>
+          updateFollowUp(lead.id, "notes", e.target.value)
+        }
+        placeholder="Notes..."
+        className="rounded bg-slate-800 px-2 py-1 text-white"
+      />
+    </div>
+  </td>
+
+  {/* ACTIONS */}
+  <td className="rounded-r-3xl px-4 py-4">
+    <div className="flex items-center gap-2">
+      {lead.phone && (
+        <a
+          href={whatsappLink(lead)}
+          target="_blank"
+          rel="noreferrer"
+          className="grid h-10 w-10 place-items-center rounded-full bg-green-500/15 text-green-300 hover:bg-green-500/25"
+        >
+          <MessageCircle className="h-4 w-4" />
+        </a>
+      )}
+
+      {lead.phone && (
+        <a
+          href={`tel:${lead.phone}`}
+          className="grid h-10 w-10 place-items-center rounded-full bg-sky-500/15 text-sky-300 hover:bg-sky-500/25"
+        >
+          <PhoneCall className="h-4 w-4" />
+        </a>
+      )}
+
+      {lead.email && (
+        <a
+          href={`mailto:${lead.email}`}
+          className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-slate-200 hover:bg-white/15"
+        >
+          <Mail className="h-4 w-4" />
+        </a>
+      )}
+    </div>
+  </td>
+</tr>
                   ))
                 )}
               </tbody>
