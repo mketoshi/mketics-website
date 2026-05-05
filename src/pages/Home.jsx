@@ -1,3 +1,4 @@
+import jsPDF from "jspdf";
 import emailjs from "@emailjs/browser";
 import { supabase } from "../lib/supabaseClient";
 import React, { useMemo, useState, useEffect } from "react";
@@ -160,6 +161,24 @@ export default function Home() {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  const quoteLink = `${window.location.origin}/quote`;
+  const whatsappText = `
+📩 *MKETICS QUOTE REQUEST*
+
+👤 *Name:* ${form.name}
+📞 *Phone:* ${form.phone}
+📧 *Email:* ${form.email}
+
+🛠 *Service:* ${form.service}
+🏢 *Project Type:* ${form.size}
+💬 *Message:* ${form.message || "N/A"}
+
+💰 *Estimated Budget:* R${estimatedPrice.toLocaleString()}
+
+━━━━━━━━━━━━━━━
+Please review my request and contact me.
+`;
+
   setSubmitting(true);
 
   const leadData = {
@@ -260,6 +279,37 @@ setNotice({
   }
 };
 
+const whatsappUrl = submittedLead
+  ? `https://wa.me/27722864367?text=${encodeURIComponent(
+      submittedLead.whatsappText
+    )}`
+  : "";
+
+const generatePDF = () => {
+  const doc = new jsPDF();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("MKETICS QUOTE", 20, 20);
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+
+  doc.text(`Client: ${submittedLead.name}`, 20, 40);
+  doc.text(`Service: ${submittedLead.service}`, 20, 50);
+  doc.text(`Project Type: ${submittedLead.size}`, 20, 60);
+  doc.text(
+    `Estimated Price: R${submittedLead.estimatedPrice.toLocaleString()}`,
+    20,
+    70
+  );
+
+  doc.text(" ", 20, 80);
+  doc.text("Thank you for choosing MKETICS.", 20, 90);
+
+  doc.save(`MKETICS_Quote_${submittedLead.name}.pdf`);
+};
+
 if (submittedLead) {
   return (
     <main className="min-h-[100svh] flex items-center justify-center bg-slate-950 px-4 text-white">
@@ -290,12 +340,7 @@ if (submittedLead) {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <a
-            href={`https://wa.me/27722864367?text=${submittedLead.whatsappText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-sky-500 px-6 py-4 font-black text-white hover:bg-sky-400"
-          >
+<a href={whatsappUrl}>
             Continue to WhatsApp
           </a>
 
@@ -305,6 +350,12 @@ if (submittedLead) {
           >
             Submit Another Request
           </button>
+          <button
+  onClick={generatePDF}
+  className="rounded-full bg-sky-500 px-6 py-4 font-black text-white hover:bg-sky-400"
+>
+  Download PDF Quote
+</button>
         </div>
       </div>
     </main>
@@ -450,7 +501,7 @@ if (submittedLead) {
       <section id="services" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
         <div className="mb-12 max-w-3xl">
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Services</p>
-          <h2 className="mt-3 text-4xl font-black md:text-5xl">Everything your business needs to look professional and operate smarter.</h2>
+          <h2 className="mt-3 text-4xl font-black md:text-5xl">Complete IT solutions for homes, businesses, and growing companies.</h2>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -461,6 +512,12 @@ if (submittedLead) {
               </div>
               <h3 className="text-xl font-black">{service.title}</h3>
               <p className="mt-3 text-sm leading-7 text-slate-300">{service.desc}</p>
+              <a
+  href="#quote"
+  className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-sky-300 hover:text-sky-200"
+>
+  Request this service <ArrowRight className="h-4 w-4" />
+</a>
             </motion.div>
           ))}
         </div>
@@ -572,9 +629,9 @@ if (submittedLead) {
         <div>
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Smart Quote</p>
           <h2 className="mt-3 text-4xl font-black md:text-5xl">Let clients request quotes instantly.</h2>
-          <p className="mt-5 text-slate-300 leading-8">
-            This form opens WhatsApp with the client details and quote estimate. Next upgrade: connect EmailJS and Supabase so every lead is emailed and stored in your dashboard.
-          </p>
+<p className="mt-5 text-slate-300 leading-8">
+  Submit your details and MKETICS will review your request, send a confirmation email, and follow up with the best solution for your project.
+</p>
         </div>
 
 {notice.message && (
@@ -627,9 +684,17 @@ if (submittedLead) {
             <p className="text-3xl font-black" style={{ color: BRAND.accent }}>R{estimatedPrice.toLocaleString()}</p>
           </div>
 
-          <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-full brand-gradient px-6 py-4 font-black text-white" type="submit">
-            Continue to WhatsApp <ArrowRight className="h-5 w-5" />
-          </button>
+<p className="mt-4 text-sm text-slate-400">
+  Your request is securely saved and sent directly to MKETICS.
+</p>
+
+<button
+  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full brand-gradient px-6 py-4 font-black text-white"
+  type="submit"
+>
+  {submitting ? "Sending request..." : "Send Quote Request"}
+  <ArrowRight className="h-5 w-5" />
+</button>
         </form>
       </section>
 

@@ -63,6 +63,7 @@ export default function AdminDashboard() {
 
   const updateStatus = async (id, status) => {
     const previous = leads;
+    
 
     setLeads((current) =>
       current.map((lead) => (lead.id === id ? { ...lead, status } : lead))
@@ -76,6 +77,24 @@ export default function AdminDashboard() {
       alert("Status update failed. Check Supabase RLS UPDATE policy.");
     }
   };
+
+const updateFollowUp = async (id, field, value) => {
+  const { error } = await supabase
+    .from("leads")
+    .update({ [field]: value })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Follow-up update error:", error);
+    return;
+  }
+
+  setLeads((prev) =>
+    prev.map((lead) =>
+      lead.id === id ? { ...lead, [field]: value } : lead
+    )
+  );
+};
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -265,16 +284,20 @@ const analytics = useMemo(() => {
                 />
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-full border border-white/10 bg-slate-950/70 px-4 py-3 text-sm outline-none ring-sky-400/20 focus:ring-4"
-              >
-                <option>All</option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status}>{status}</option>
-                ))}
-              </select>
+<select
+  value={lead.status}
+  onChange={(e) => updateStatus(lead.id, e.target.value)}
+  className="bg-slate-800 text-white px-2 py-1 rounded"
+>
+  {["New", "Contacted", "Quoted", "Approved", "Paid", "Closed", "Lost"].map(
+    (status) => (
+      <option key={status} value={status}>
+        {status}
+      </option>
+    )
+  )}
+</select>
+
             </div>
           </div>
 
@@ -286,16 +309,17 @@ const analytics = useMemo(() => {
 
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[980px] border-separate border-spacing-y-3 text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="px-4 py-2">Client</th>
-                  <th className="px-4 py-2">Service</th>
-                  <th className="px-4 py-2">Budget</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Actions</th>
-                </tr>
-              </thead>
+<thead className="text-xs uppercase tracking-wider text-slate-400">
+  <tr>
+    <th className="px-4 py-2">Client</th>
+    <th className="px-4 py-2">Service</th>
+    <th className="px-4 py-2">Budget</th>
+    <th className="px-4 py-2">Status</th>
+    <th className="px-4 py-2">Date</th>
+    <th className="px-4 py-2">CRM</th> {/* ✅ added here */}
+    <th className="px-4 py-2">Actions</th>
+  </tr>
+</thead>
 
               <tbody>
                 {loading ? (
@@ -335,14 +359,50 @@ const analytics = useMemo(() => {
                         <select
                           value={lead.status || "New"}
                           onChange={(e) => updateStatus(lead.id, e.target.value)}
+                          
                           className="rounded-full border border-white/10 bg-slate-950 px-3 py-2 text-xs font-bold outline-none"
                         >
                           {STATUS_OPTIONS.map((status) => (
                             <option key={status}>{status}</option>
                           ))}
                         </select>
+                        
                       </td>
 
+<td>
+  <div className="flex flex-col gap-2">
+    {/* Follow-up date */}
+    <input
+      type="date"
+      value={lead.follow_up_date || ""}
+      onChange={(e) =>
+        updateFollowUp(lead.id, "follow_up_date", e.target.value)
+      }
+      className="rounded bg-slate-800 px-2 py-1 text-white"
+    />
+
+    {/* Last contacted */}
+    <input
+      type="date"
+      value={lead.last_contacted || ""}
+      onChange={(e) =>
+        updateFollowUp(lead.id, "last_contacted", e.target.value)
+      }
+      className="rounded bg-slate-800 px-2 py-1 text-white"
+    />
+
+    {/* Notes */}
+    <textarea
+      value={lead.notes || ""}
+      onChange={(e) =>
+        updateFollowUp(lead.id, "notes", e.target.value)
+      }
+      placeholder="Notes..."
+      className="rounded bg-slate-800 px-2 py-1 text-white"
+    />
+
+  </div>
+</td>
                       <td className="px-4 py-4 text-xs text-slate-400">{formatDate(lead.created_at)}</td>
 
                       <td className="rounded-r-3xl px-4 py-4">
