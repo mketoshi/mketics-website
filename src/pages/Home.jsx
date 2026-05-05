@@ -87,9 +87,21 @@ const packages = [
 ];
 
 const stats = [
-  { icon: Gauge, label: "Enterprise support experience", value: "400+ Users" },
-  { icon: Users, label: "Current campus IT support", value: "200+ Users" },
-  { icon: BriefcaseBusiness, label: "ICT qualification", value: "DUT Degree" },
+  {
+    icon: Gauge,
+    label: "Enterprise support experience",
+    value: "400+ Users",
+  },
+  {
+    icon: Users,
+    label: "Current campus IT support",
+    value: "200+ Users",
+  },
+  {
+    icon: BriefcaseBusiness,
+    label: "ICT qualification",
+    value: "DUT Degree",
+  },
 ];
 
 const trustPoints = [
@@ -383,12 +395,14 @@ if (submittedLead) {
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-2xl">
         <nav className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <a href="#home" className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl brand-gradient shadow-lg shadow-sky-500/20 sm:h-11 sm:w-11">
-              <ShieldCheck className="h-6 w-6 text-white" />
-            </div>
+<img
+  src="/images/logo-icon.png"
+  alt="MKETICS"
+  className="h-12 w-12 rounded-2xl object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.6)]"
+/>
             <div className="min-w-0">
               <p className="truncate text-base font-black tracking-wide sm:text-lg">MKETICS</p>
-              <p className="-mt-1 hidden text-xs text-slate-400 xs:block sm:block">Digital • Network • Security</p>
+              <p className="-mt-1 hidden text-xs text-slate-400 xs:block sm:block">Innovate • Integrate • Elevate</p>
             </div>
           </a>
 
@@ -400,7 +414,7 @@ if (submittedLead) {
             <a href="#quote" className="hover:text-white">Quote</a>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 transition hover:translate-x-1">
             <a href="#quote" className="hidden rounded-full brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-500/20 sm:inline-flex">
               Request Quote
             </a>
@@ -427,79 +441,144 @@ if (submittedLead) {
         )}
       </header>
 
-      {/* Hero */}
-      <section id="home" className="relative mx-auto grid min-h-[100svh] w-full max-w-[1600px] items-center gap-10 px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16 lg:px-10 xl:pb-24">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/5 px-4 py-2 text-sm font-semibold text-slate-300 shadow-lg shadow-sky-500/5">
-            <Sparkles className="h-4 w-4" style={{ color: BRAND.accent }} />
-            Premium IT systems for serious businesses
-          </div>
+{/* Hero */}
+{/* Hero */}
+<section
+  id="home"
+className="relative mx-auto flex w-full max-w-[1400px] flex-col justify-center px-4 pt-24 pb-10 sm:min-h-[calc(100svh-88px)] sm:px-6 lg:px-8"
+>
+  <div className="pointer-events-none absolute inset-0 overflow-hidden">
+  <div className="absolute left-[-10%] top-[-10%] h-[400px] w-[400px] rounded-full bg-sky-500/20 blur-[120px]" />
+  <div className="absolute right-[-10%] bottom-[-10%] h-[400px] w-[400px] rounded-full bg-blue-500/20 blur-[120px]" />
+</div>
+  <div className="grid items-center gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-8">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7 }}
+    >
+<motion.img
+  src="/images/logo-clean.png"
+  alt="MKETICS"
+  className="mx-auto mb-5 w-[115px] drop-shadow-[0_0_25px_rgba(56,189,248,0.35)] sm:mx-0 sm:w-[160px] md:w-[180px]"
+  animate={{ y: [0, -6, 0] }}
+  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+/>
 
-          <h1 className="max-w-3xl text-[clamp(2.7rem,5.6vw,4.9rem)] font-black leading-[1.02] tracking-[-0.055em]">
-            Enterprise-level IT solutions for <span className="brand-text">modern businesses</span>.
-          </h1>
+      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/5 px-4 py-2 text-xs font-semibold text-slate-300">
+        <Sparkles className="h-4 w-4" style={{ color: BRAND.accent }} />
+        Premium IT systems for serious businesses
+      </div>
 
-          <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300/90 sm:text-lg">
-            We design, install, and support professional IT systems including networks, CCTV, cloud platforms, web applications, and automated quote workflows — built to scale, perform, and help your business operate smarter.
-          </p>
+      <h1 className="max-w-2xl text-[clamp(2.1rem,11vw,4rem)] font-black leading-[0.98] tracking-[-0.055em]">
+        Enterprise-level <span className="brand-text drop-shadow-[0_0_20px_rgba(56,189,248,0.6)]">
+  IT solutions
+</span> for growing companies.
+      </h1>
 
-          <div className="mt-10 flex flex-col gap-4 min-[420px]:flex-row">
-            <a href="#quote" className="inline-flex items-center justify-center gap-2 rounded-full brand-gradient px-7 py-4 font-bold text-white shadow-xl shadow-sky-500/20">
-              Start a Project <ArrowRight className="h-5 w-5" />
-            </a>
-            <a href="#services" className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 py-4 font-bold text-white hover:bg-white/10">
-              View Services
-            </a>
-          </div>
-        </motion.div>
+      <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300/90 sm:text-base">
+        MKETICS designs, installs, and supports professional networks, cloud systems,
+        business websites, CRM dashboards, CCTV solutions, and automation tools.
+      </p>
 
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.15 }} className="relative">
-          <div className="absolute -inset-8 rounded-[3rem] blur-3xl opacity-20 brand-gradient" />
-          <div className="relative glass-card rounded-[2rem] p-4 shadow-2xl sm:p-6">
-            <div className="grid gap-4">
-              {stats.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-3xl bg-white/[0.045] p-5 ring-1 ring-white/5">
-                  <div className="flex items-center gap-4">
-                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
-                      <item.icon className="h-6 w-6" style={{ color: BRAND.primary }} />
-                    </div>
-                    <p className="text-slate-300">{item.label}</p>
-                  </div>
-                  <p className="font-black" style={{ color: BRAND.accent }}>{item.value}</p>
-                </div>
-              ))}
-            </div>
+      <div className="mt-6 flex flex-col gap-3 min-[420px]:flex-row">
+<a
+  href="#quote"
+  onClick={(e) => {
+    e.preventDefault();
+    document.getElementById("quote")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      
+    });
+  }}
+  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition hover:-translate-y-1 hover:scale-105 hover:shadow-sky-500/50 min-[420px]:w-auto"
+>
+  Start a Project <ArrowRight className="h-4 w-4" />
+</a>
 
-            <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/70 p-6">
-              <p className="mb-2 text-sm text-slate-400">Business system pipeline</p>
-              <div className="space-y-3">
-                {["Client submits quote", "Email + WhatsApp notification", "Lead saved to dashboard", "Follow up and close deal"].map((step) => (
-                  <div key={step} className="flex items-center gap-3 text-sm">
-                    <CheckCircle2 className="h-5 w-5" style={{ color: BRAND.accent }} />
-                    {step}
-                  </div>
-                ))}
+<a
+  href="#services"
+  onClick={(e) => {
+    e.preventDefault();
+    document.getElementById("services")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }}
+  className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-1 hover:scale-105 hover:bg-white/10 min-[420px]:w-auto"
+>
+  View Services
+</a>
+      </div>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.15 }}
+      className="relative lg:mt-10"
+    >
+      <div className="absolute -inset-6 rounded-[3rem] blur-3xl opacity-20 brand-gradient" />
+
+      <div className="relative glass-card rounded-[2rem] p-4 shadow-2xl sm:p-5">
+<div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-r from-sky-500/20 to-blue-500/20 blur-3xl opacity-30" />
+        <div className="grid gap-3 md:grid-cols-3">
+          {stats.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-3xl bg-white/[0.05] p-4 ring-1 ring-white/10 backdrop-blur-xl transition hover:scale-[1.03] hover:bg-white/[0.08]"
+            >
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10">
+                <item.icon className="h-5 w-5" style={{ color: BRAND.primary }} />
               </div>
+
+              <p className="mt-3 text-xs text-slate-300">{item.label}</p>
+
+              <p className="mt-1 text-lg font-black" style={{ color: BRAND.accent }}>
+                {item.value}
+              </p>
             </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-3xl border border-white/10 bg-slate-950/70 p-5">
+          <p className="mb-3 text-xs text-slate-400">Business system pipeline</p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              "Client submits quote",
+              "Email + WhatsApp notification",
+              "Lead saved to dashboard",
+              "Follow up and close deal",
+            ].map((step) => (
+              <div key={step} className="flex items-center gap-3 text-xs sm:text-sm">
+                <CheckCircle2 className="h-4 w-4" style={{ color: BRAND.accent }} />
+                {step}
+              </div>
+            ))}
           </div>
-        </motion.div>
-      </section>
+        </div>
+      </div>
+    </motion.div>
+  </div>
+</section>
 
       {/* Services */}
-      <section id="services" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-12 max-w-3xl">
+      <section id="services" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+        <div className="mb-7 sm:mb-12 max-w-3xl">
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Services</p>
-          <h2 className="mt-3 text-4xl font-black md:text-5xl">Complete IT solutions for homes, businesses, and growing companies.</h2>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Complete IT solutions for homes, businesses, and growing companies.</h2>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {services.map((service) => (
-            <motion.div whileHover={{ y: -6 }} key={service.title} className="glass-card rounded-3xl p-6">
+            <motion.div whileHover={{ y: -6 }} key={service.title} className="glass-card rounded-3xl p-5 sm:p-6">
               <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
                 <service.icon className="h-7 w-7" style={{ color: BRAND.primary }} />
               </div>
               <h3 className="text-xl font-black">{service.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">{service.desc}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300 sm:leading-7">{service.desc}</p>
               <a
   href="#quote"
   className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-sky-300 hover:text-sky-200"
@@ -512,11 +591,11 @@ if (submittedLead) {
       </section>
 
       {/* Trust */}
-      <section id="trust" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+      <section id="trust" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Why Choose MKETICS</p>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">Qualified experience, not guesswork.</h2>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Qualified experience, not guesswork.</h2>
             <p className="mt-5 text-slate-300 leading-8">
               MKETICS is built on real enterprise IT experience across government and education environments, backed by formal ICT training and hands-on technical delivery.
             </p>
@@ -536,15 +615,15 @@ if (submittedLead) {
       </section>
 
       {/* Experience */}
-      <section id="experience" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-12 max-w-3xl">
+      <section id="experience" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+        <div className="mb-7 sm:mb-12 max-w-3xl">
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Experience Highlights</p>
-          <h2 className="mt-3 text-4xl font-black md:text-5xl">Enterprise background clients can trust.</h2>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Enterprise background clients can trust.</h2>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {experienceHighlights.map((item) => (
-            <motion.div whileHover={{ y: -6 }} key={item.role} className="glass-card rounded-3xl p-6">
+            <motion.div whileHover={{ y: -6 }} key={item.role} className="glass-card rounded-3xl p-5 sm:p-6">
               <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
                 <BriefcaseBusiness className="h-7 w-7" style={{ color: BRAND.primary }} />
               </div>
@@ -557,12 +636,12 @@ if (submittedLead) {
       </section>
 
       {/* Registered Business */}
-      <section id="registered" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+      <section id="registered" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
         <div className="glass-card overflow-hidden rounded-[2rem]">
           <div className="grid gap-8 p-7 lg:grid-cols-[0.9fr_1.1fr] lg:p-10">
             <div>
               <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Registered Business</p>
-              <h2 className="mt-3 text-4xl font-black md:text-5xl">Professional company. Accountable service.</h2>
+              <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Professional company. Accountable service.</h2>
               <p className="mt-5 text-slate-300 leading-8">
                 MKETICS (Pty) Ltd operates as a registered South African business, giving clients confidence when requesting quotes, approving projects, and making payments.
               </p>
@@ -586,10 +665,10 @@ if (submittedLead) {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="mx-auto w-full max-w-[1600px] px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-12 text-center">
+      <section id="pricing" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+        <div className="mb-7 sm:mb-12 text-center">
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Packages</p>
-          <h2 className="mt-3 text-4xl font-black md:text-5xl">Clear options. Premium delivery.</h2>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Clear options. Premium delivery.</h2>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -613,10 +692,10 @@ if (submittedLead) {
       </section>
 
       {/* Quote */}
-      <section id="quote" className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:px-8 lg:py-24">
+      <section id="quote" className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 py-10 sm:px-6 sm:py-20 lg:grid-cols-2 lg:px-8 lg:py-24">
         <div>
           <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Smart Quote</p>
-          <h2 className="mt-3 text-4xl font-black md:text-5xl">Let clients request quotes instantly.</h2>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Let clients request quotes instantly.</h2>
 <p className="mt-5 text-slate-300 leading-8">
   Submit your details and MKETICS will review your request, send a confirmation email, and follow up with the best solution for your project.
 </p>
@@ -648,12 +727,12 @@ if (submittedLead) {
   </div>
   
 )}
-        <form onSubmit={handleSubmit} className="glass-card rounded-[2rem] p-6">
+        <form onSubmit={handleSubmit} className="glass-card rounded-[2rem] p-4 sm:p-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none" name="name" placeholder="Your name" value={form.name} onChange={handleChange} required />
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none" name="phone" placeholder="Phone number" value={form.phone} onChange={handleChange} required />
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none md:col-span-2" name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} />
-            <select className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 outline-none" name="service" value={form.service} onChange={handleChange}>
+            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none" name="name" placeholder="Your name" value={form.name} onChange={handleChange} required />
+            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none" name="phone" placeholder="Phone number" value={form.phone} onChange={handleChange} required />
+            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none md:col-span-2" name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} />
+            <select className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm outline-none" name="service" value={form.service} onChange={handleChange}>
               <option>WiFi Installation</option>
               <option>CCTV Installation</option>
               <option>Website Development</option>
