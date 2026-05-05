@@ -61,6 +61,20 @@ export default function AdminDashboard() {
     fetchLeads();
   }, []);
 
+  useEffect(() => {
+  const today = new Date().toISOString().split("T")[0];
+
+  const dueFollowUps = leads.filter(
+    (lead) => lead.follow_up_date === today
+  );
+
+console.log("Today's follow-ups:", dueFollowUps);
+
+  if (dueFollowUps.length > 0) {
+    alert(`You have ${dueFollowUps.length} follow-ups today.`);
+  }
+}, [leads]);
+
   const updateStatus = async (id, status) => {
     const previous = leads;
     
@@ -74,7 +88,9 @@ export default function AdminDashboard() {
     if (error) {
       console.error(error);
       setLeads(previous);
-      alert("Status update failed. Check Supabase RLS UPDATE policy.");
+      if (dueFollowUps.length > 0) {
+  setError(`⚠️ You have ${dueFollowUps.length} follow-ups today.`);
+}
     }
   };
 
@@ -101,7 +117,30 @@ const updateFollowUp = async (id, field, value) => {
       const matchesStatus = statusFilter === "All" || lead.status === statusFilter;
       const text = `${lead.name || ""} ${lead.phone || ""} ${lead.email || ""} ${lead.service || ""} ${lead.message || ""}`.toLowerCase();
       const matchesSearch = text.includes(search.toLowerCase());
+      const filteredLeads = useMemo(() => {
+  const today = new Date().toISOString().split("T")[0];
+
+  return leads
+    .filter((lead) => {
+      const matchesStatus =
+        statusFilter === "All" || lead.status === statusFilter;
+
+      const text = `${lead.name || ""} ${lead.phone || ""} ${lead.email || ""} ${lead.service || ""} ${lead.message || ""}`.toLowerCase();
+
+      const matchesSearch = text.includes(search.toLowerCase());
+
       return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      const aDueToday = a.follow_up_date === today;
+      const bDueToday = b.follow_up_date === today;
+
+      if (aDueToday && !bDueToday) return -1;
+      if (!aDueToday && bDueToday) return 1;
+
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+}, [leads, search, statusFilter]);
     });
   }, [leads, search, statusFilter]);
 
@@ -336,9 +375,24 @@ const analytics = useMemo(() => {
                   </tr>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="rounded-3xl bg-white/[0.035]">
+<tr
+  key={lead.id}
+  className={`rounded-3xl ${
+    lead.follow_up_date === new Date().toISOString().split("T")[0]
+      ? "bg-yellow-500/20 ring-2 ring-yellow-400/50"
+      : "bg-white/[0.035]"
+  }`}
+>
                       <td className="rounded-l-3xl px-4 py-4">
-                        <div className="font-bold text-white">{lead.name || "Unknown"}</div>
+<div className="flex items-center gap-2 font-bold text-white">
+  {lead.name || "Unknown"}
+
+  {lead.follow_up_date === new Date().toISOString().split("T")[0] && (
+    <span className="rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-black text-black">
+      FOLLOW UP TODAY
+    </span>
+  )}
+</div>
                         <div className="mt-1 text-xs text-slate-400">{lead.phone || "No phone"}</div>
                         <div className="text-xs text-slate-500">{lead.email || "No email"}</div>
                       </td>
@@ -356,17 +410,7 @@ const analytics = useMemo(() => {
                       </td>
 
                       <td className="px-4 py-4">
-                        <select
-                          value={lead.status || "New"}
-                          onChange={(e) => updateStatus(lead.id, e.target.value)}
-                          
-                          className="rounded-full border border-white/10 bg-slate-950 px-3 py-2 text-xs font-bold outline-none"
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status}>{status}</option>
-                          ))}
-                        </select>
-                        
+
                       </td>
 
 <td>

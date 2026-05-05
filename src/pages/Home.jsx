@@ -162,22 +162,6 @@ export default function Home() {
 const handleSubmit = async (e) => {
   e.preventDefault();
   const quoteLink = `${window.location.origin}/quote`;
-  const whatsappText = `
-📩 *MKETICS QUOTE REQUEST*
-
-👤 *Name:* ${form.name}
-📞 *Phone:* ${form.phone}
-📧 *Email:* ${form.email}
-
-🛠 *Service:* ${form.service}
-🏢 *Project Type:* ${form.size}
-💬 *Message:* ${form.message || "N/A"}
-
-💰 *Estimated Budget:* R${estimatedPrice.toLocaleString()}
-
-━━━━━━━━━━━━━━━
-Please review my request and contact me.
-`;
 
   setSubmitting(true);
 
@@ -256,12 +240,13 @@ setNotice({
   message: "Quote request sent successfully.",
 });
 
-/*setTimeout(() => {
+setTimeout(() => {
   window.open(
     `https://wa.me/27722864367?text=${whatsappText}`,
     "_blank"
   );
-}, 3000); // 3 seconds delay*/
+}, 2000);
+
     setForm({
       name: "",
       phone: "",
@@ -280,9 +265,7 @@ setNotice({
 };
 
 const whatsappUrl = submittedLead
-  ? `https://wa.me/27722864367?text=${encodeURIComponent(
-      submittedLead.whatsappText
-    )}`
+  ? `https://wa.me/27722864367?text=${submittedLead.whatsappText}`
   : "";
 
 const generatePDF = () => {
@@ -340,9 +323,14 @@ if (submittedLead) {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-<a href={whatsappUrl}>
-            Continue to WhatsApp
-          </a>
+<a
+  href={whatsappUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="rounded-full bg-green-500 px-6 py-4 font-black text-white hover:bg-green-400"
+>
+  Continue to WhatsApp
+</a>
 
           <button
             onClick={() => setSubmittedLead(null)}
