@@ -5,4 +5,146 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
+
+  :root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: #f8fafc;
+}
+
+.dark body {
+  background: #020617;
+}
+
+.app-bg {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dark .app-bg {
+  background: #020617;
+  color: #ffffff;
+}
+
+.surface {
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(15,23,42,0.1);
+}
+
+.dark .surface {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.muted-text {
+  color: #475569;
+}
+
+.dark .muted-text {
+  color: #cbd5e1;
+}
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: #f8fafc;
+}
+
+.dark body {
+  background: #020617;
+}
+
+.app-bg {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dark .app-bg {
+  background: #020617;
+  color: #ffffff;
+}
+
+.app-surface {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.dark .app-surface {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.dark .app-card {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.app-muted {
+  color: #475569;
+}
+
+.dark .app-muted {
+  color: #cbd5e1;
+}
+
+.app-subtle {
+  color: #64748b;
+}
+
+.dark .app-subtle {
+  color: #94a3b8;
+}
+
+.app-input {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #0f172a;
+}
+
+.dark .app-input {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.dark .glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+}
 }

@@ -1,41 +1,29 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 import {
-  ShieldCheck,
-  Users,
-  FileText,
   FolderKanban,
+  FileText,
+  MessageSquare,
+  ShieldCheck,
+  UserCircle2,
   LogOut,
-  UserCog,
 } from "lucide-react";
 
-const ADMIN_EMAILS = [
-  "smsane0505@gmail.com",
-  "admin@mketics.co.za",
-];
-
-export default function AdminDashboard() {
+export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkSession = async () => {
       const { data } =
         await supabase.auth.getSession();
 
-      const user = data?.session?.user;
-
-      if (!user) {
+      if (!data.session) {
         window.location.href = "/client-login";
-        return;
-      }
-
-      if (!ADMIN_EMAILS.includes(user.email)) {
-        window.location.href = "/";
         return;
       }
 
@@ -43,7 +31,7 @@ export default function AdminDashboard() {
       setLoading(false);
     };
 
-    checkAdmin();
+    checkSession();
   }, []);
 
   const logout = async () => {
@@ -62,7 +50,7 @@ export default function AdminDashboard() {
           />
 
           <p className="mt-5 text-lg font-bold app-muted">
-            Loading Admin Dashboard...
+            Loading Client Portal...
           </p>
         </div>
       </main>
@@ -78,29 +66,29 @@ export default function AdminDashboard() {
         <div className="glass-card rounded-[2rem] p-8 md:p-12">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-sm font-bold text-red-500">
+              <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-4 py-2 text-sm font-bold text-sky-600 dark:text-sky-300">
                 <ShieldCheck className="h-4 w-4" />
-                Internal Operations
+                Secure Client Access
               </div>
 
               <h1 className="mt-6 text-4xl font-black md:text-6xl">
-                MKETICS Admin
+                Welcome Back
               </h1>
 
               <p className="mt-5 max-w-2xl text-lg leading-8 app-muted">
-                Internal management system for
-                projects, invoices, clients,
-                infrastructure, and operational workflows.
+                Access your MKETICS projects,
+                invoices, support requests,
+                and digital services.
               </p>
             </div>
 
             <div className="rounded-[2rem] app-surface p-6">
               <div className="flex items-center gap-4">
-                <UserCog className="h-14 w-14 text-red-500" />
+                <UserCircle2 className="h-14 w-14 text-sky-500" />
 
                 <div>
                   <p className="text-sm app-subtle">
-                    Administrator
+                    Logged in as
                   </p>
 
                   <p className="font-bold">
@@ -123,27 +111,7 @@ export default function AdminDashboard() {
 
       {/* DASHBOARD */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="glass-card rounded-[2rem] p-8">
-            <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
-              <Users className="h-8 w-8" />
-            </div>
-
-            <h2 className="text-2xl font-black">
-              Clients
-            </h2>
-
-            <p className="mt-4 leading-8 app-muted">
-              Manage client accounts,
-              registrations, portal access,
-              and business relationships.
-            </p>
-
-            <button className="mt-6 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">
-              Manage Clients
-            </button>
-          </div>
-
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <div className="glass-card rounded-[2rem] p-8">
             <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
               <FolderKanban className="h-8 w-8" />
@@ -154,9 +122,10 @@ export default function AdminDashboard() {
             </h2>
 
             <p className="mt-4 leading-8 app-muted">
-              Monitor software,
-              infrastructure, and
-              digital project progress.
+              Track active projects,
+              deployment progress,
+              infrastructure work,
+              and software systems.
             </p>
 
             <button className="mt-6 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">
@@ -174,34 +143,40 @@ export default function AdminDashboard() {
             </h2>
 
             <p className="mt-4 leading-8 app-muted">
-              Create quotations,
-              invoices, payment tracking,
-              and PDF exports.
+              Access invoices,
+              quotations, billing
+              records, and downloadable
+              PDF documents.
             </p>
 
             <button className="mt-6 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">
-              Manage Billing
+              View Invoices
             </button>
           </div>
 
           <div className="glass-card rounded-[2rem] p-8">
             <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
-              <ShieldCheck className="h-8 w-8" />
+              <MessageSquare className="h-8 w-8" />
             </div>
 
             <h2 className="text-2xl font-black">
-              Operations
+              Support
             </h2>
 
             <p className="mt-4 leading-8 app-muted">
-              Internal monitoring,
-              workflows, deployments,
-              and enterprise management.
+              Contact MKETICS regarding
+              support, technical issues,
+              upgrades, or service requests.
             </p>
 
-            <button className="mt-6 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">
-              Open Operations
-            </button>
+            <a
+              href="https://wa.me/27722864367"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
+            >
+              Contact Support
+            </a>
           </div>
         </div>
       </section>

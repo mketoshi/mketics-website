@@ -1,789 +1,478 @@
+import Hero from "../components/Hero";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import QuoteForm from "../components/QuoteForm";
+
 import jsPDF from "jspdf";
 import emailjs from "@emailjs/browser";
 import { supabase } from "../lib/supabaseClient";
-import React, { useMemo, useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useMemo, useState, useEffect } from "react";
+
 import {
-  ShieldCheck,
-  Wifi,
-  Camera,
-  Code2,
-  Cloud,
-  Server,
-  ArrowRight,
   CheckCircle2,
-  PhoneCall,
-  Mail,
-  MapPin,
-  Gauge,
-  Users,
-  BriefcaseBusiness,
+  Code2,
+  Network,
   Sparkles,
 } from "lucide-react";
 
-/*
-  MKETICS Premium Home Page
-  --------------------------------------------------
-  Branding:
-  Replace the CSS variables in BRAND below with your exact logo colors.
-  Example:
-  primary: "#00AEEF",
-  secondary: "#0A1A2F",
-  accent: "#D4AF37",
-*/
-
-const BRAND = {
-  primary: "#0ea5e9",
-  secondary: "#020617",
-  accent: "#38bdf8",
-  text: "#F8FAFC",
-  muted: "#94A3B8",
-};
-
-
-const services = [
-  {
-    icon: Wifi,
-    title: "WiFi & Network Installation",
-    desc: "Reliable home and business WiFi, point-to-point links, routers, switches, and structured cabling.",
-  },
-  {
-    icon: Camera,
-    title: "CCTV & Security Systems",
-    desc: "Camera installations, remote viewing, monitoring-ready setups, storage planning, and maintenance.",
-  },
-  {
-    icon: Code2,
-    title: "Web & App Development",
-    desc: "Modern websites, quote systems, dashboards, booking systems, and business automation tools.",
-  },
-  {
-    icon: Cloud,
-    title: "Cloud, Hosting & IT Support",
-    desc: "Business email, cloud storage, backups, hosting setup, technical support, and system maintenance.",
-  },
-];
-
-const packages = [
-  {
-    name: "Starter",
-    price: "From R1,500",
-    desc: "For small businesses needing a clean online presence or basic IT setup.",
-    features: ["Landing page or basic setup", "WhatsApp contact integration", "Basic support", "Mobile-friendly design"],
-  },
-  {
-    name: "Business",
-    price: "From R4,500",
-    desc: "Best for companies that need leads, automation, and a stronger business system.",
-    popular: true,
-    features: ["Premium website", "Quote request system", "EmailJS notifications", "Lead capture", "SEO foundation"],
-  },
-  {
-    name: "Enterprise",
-    price: "Custom Quote",
-    desc: "For CCTV, networking, dashboards, cloud storage, and larger infrastructure projects.",
-    features: ["Admin dashboard", "Supabase database", "CCTV/network planning", "Cloud/server setup", "Monthly maintenance"],
-  },
-];
-
-const stats = [
-  {
-    icon: Gauge,
-    label: "Enterprise support experience",
-    value: "400+ Users",
-  },
-  {
-    icon: Users,
-    label: "Current campus IT support",
-    value: "200+ Users",
-  },
-  {
-    icon: BriefcaseBusiness,
-    label: "ICT qualification",
-    value: "DUT Degree",
-  },
-];
-
 const trustPoints = [
-  "Proven experience supporting 400+ users in government environments",
-  "Current IT Technician / Systems Administrator experience in education infrastructure",
-  "Skilled in LAN/WAN, routers, switches, firewalls, Active Directory, and end-user support",
-  "Formal Bachelor of Information and Communications Technology qualification",
-  "Practical background in web development, scripting, CCTV, cloud, and business systems",
-];
-
-const experienceHighlights = [
-  {
-    role: "IT Technician / Systems Administrator",
-    place: "Ehlanzeni TVET College",
-    detail: "Supporting 200+ users, campus systems, networks, applications, documentation, audits, interns, and web-based systems.",
-  },
-  {
-    role: "IT Technician",
-    place: "Department of Home Affairs",
-    detail: "Supported 400+ users across offices, branches, and mobile units, including routers, switches, firewalls, printers, biometrics, and critical systems.",
-  },
-  {
-    role: "Founder / Technical Lead",
-    place: "MKETICS",
-    detail: "Delivering professional IT support, network setup, CCTV installation, websites, cloud systems, and business automation.",
-  },
-];
-
-const businessTrust = [
-  "Registered South African private company: MKETICS (Pty) Ltd",
-  "CIPC Registration Number: 2026/290708/07",
-  "Tax registered with SARS",
-  "Business banking account under MKETICS (Pty) Ltd",
-  "Professional quotes, invoices, and business-level service standards",
+  "Enterprise IT and infrastructure experience",
+  "Modern software and cloud solutions",
+  "Professional support and system delivery",
+  "Registered South African business",
 ];
 
 export default function Home() {
-  const [submitting, setSubmitting] = useState(false);
-  const [submittedLead, setSubmittedLead] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", service: "WiFi Installation", size: "Home", message: "" });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [notice, setNotice] = useState({ type: "", message: "" });
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [submittedLead, setSubmittedLead] =
+    useState(null);
+
+  const [notice, setNotice] =
+    useState({
+      type: "",
+      message: "",
+    });
+
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    service:
+      "System Design & Development",
+    size: "Business",
+    message: "",
+  });
 
   useEffect(() => {
-  if (notice.message) {
-    const timer = setTimeout(() => {
-      setNotice({ type: "", message: "" });
-    }, 4000);
+    if (notice.message) {
+      const timer = setTimeout(() => {
+        setNotice({
+          type: "",
+          message: "",
+        });
+      }, 4000);
 
-    return () => clearTimeout(timer);
-  }
-}, [notice]);
+      return () =>
+        clearTimeout(timer);
+    }
+  }, [notice]);
 
   const estimatedPrice = useMemo(() => {
-    const base = {
-      "WiFi Installation": 1500,
-      "CCTV Installation": 2500,
-      "Website Development": 3500,
-      "Cloud / IT Support": 1200,
-    }[form.service] || 1500;
+    const base =
+      {
+        "System Design & Development":
+          4500,
 
-    const multiplier = form.size === "Business" ? 2.2 : form.size === "Enterprise" ? 4 : 1;
-    return Math.round(base * multiplier);
+        "IT & Network Infrastructure":
+          3500,
+
+        "Digital Hub": 2500,
+      }[form.service] || 2500;
+
+    const multiplier =
+      form.size === "Enterprise"
+        ? 3
+        : form.size === "Business"
+        ? 1.8
+        : 1;
+
+    return Math.round(
+      base * multiplier
+    );
   }, [form.service, form.size]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm({
+      ...form,
+      [e.target.name]:
+        e.target.value,
+    });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const quoteLink = `${window.location.origin}/quote`;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  setSubmitting(true);
+    setSubmitting(true);
 
-  const leadData = {
-    name: form.name,
-    phone: form.phone,
-    email: form.email,
-    service: form.service,
-    size: form.size,
-    message: form.message,
-    estimated_price: estimatedPrice,
-    status: "New",
-  };
-
-  try {
-    const { error } = await supabase.from("leads").insert([leadData]);
-
-    if (error) {
-      throw error;
-    }
-
-    await emailjs.send(
-      "service_j54ayfr",
-      "template_4weiuia",
-      {
+    try {
+      const leadData = {
         name: form.name,
         phone: form.phone,
         email: form.email,
         service: form.service,
         size: form.size,
         message: form.message,
-        created_at: new Date().toLocaleString("en-ZA"),
-        company: "MKETICS",
-        estimated_price: `R${estimatedPrice.toLocaleString()}`,
-      },
-      "py8cRBCVu5UZFjux1"
-    );
+        estimated_price:
+          estimatedPrice,
+        status: "New",
+      };
 
+      const { error } =
+        await supabase
+          .from("leads")
+          .insert([leadData]);
 
-const whatsappText = encodeURIComponent(
-  `Hi MKETICS 👋
+      if (error) throw error;
 
-I just submitted a quote request.
+      await emailjs.send(
+        "service_j54ayfr",
+        "template_4weiuia",
+        {
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          service: form.service,
+          size: form.size,
+          message: form.message,
+          estimated_price: `R${estimatedPrice.toLocaleString()}`,
+        },
+        "py8cRBCVu5UZFjux1"
+      );
+
+      const whatsappText =
+        encodeURIComponent(`
+Hi MKETICS,
+
+I submitted a quote request.
 
 Name: ${form.name}
-Phone: ${form.phone}
-Email: ${form.email}
 Service: ${form.service}
 Project Type: ${form.size}
-Estimated Budget: R${estimatedPrice.toLocaleString()}
+Budget: R${estimatedPrice.toLocaleString()}
 
-Message:
-${form.message}
+Please assist me.
+      `);
 
-Please assist me.`
-);
+      setSubmittedLead({
+        name: form.name,
+        service: form.service,
+        estimatedPrice,
+        whatsappText,
+      });
 
+      setNotice({
+        type: "success",
+        message:
+          "Quote request sent successfully.",
+      });
 
-setNotice({
-  type: "success",
-  message: "Quote sent successfully. Opening WhatsApp...",
-});
+      setTimeout(() => {
+        window.open(
+          `https://wa.me/27722864367?text=${whatsappText}`,
+          "_blank"
+        );
+      }, 1500);
 
-const leadSummary = {
-  name: form.name,
-  service: form.service,
-  size: form.size,
-  estimatedPrice,
-  whatsappText,
-};
+      setForm({
+        name: "",
+        phone: "",
+        email: "",
+        service:
+          "System Design & Development",
+        size: "Business",
+        message: "",
+      });
+    } catch (err) {
+      console.error(err);
 
-setSubmittedLead(leadSummary);
+      setNotice({
+        type: "error",
+        message:
+          "Something went wrong.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-setNotice({
-  type: "success",
-  message: "Quote request sent successfully.",
-});
+  const generatePDF = () => {
+    const doc = new jsPDF();
 
-setTimeout(() => {
-  window.open(
-    `https://wa.me/27722864367?text=${whatsappText}`,
-    "_blank"
-  );
-}, 2000);
+    doc.setFontSize(22);
 
-    setForm({
-      name: "",
-      phone: "",
-      email: "",
-      service: "WiFi Installation",
-      size: "Home",
-      message: "",
-    });
-  } catch (err) {
-    console.error("Quote submit error:", err);
-setNotice({
-  type: "error",
-  message: "Something went wrong. Please try again.",
-});
-  }
-};
+    doc.text(
+      "MKETICS Quote",
+      20,
+      20
+    );
 
-const whatsappUrl = submittedLead
-  ? `https://wa.me/27722864367?text=${submittedLead.whatsappText}`
-  : "";
+    doc.setFontSize(12);
 
-const generatePDF = () => {
-  const doc = new jsPDF();
+    doc.text(
+      `Client: ${submittedLead.name}`,
+      20,
+      50
+    );
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("MKETICS QUOTE", 20, 20);
+    doc.text(
+      `Service: ${submittedLead.service}`,
+      20,
+      65
+    );
 
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
+    doc.text(
+      `Estimated Budget: R${submittedLead.estimatedPrice.toLocaleString()}`,
+      20,
+      80
+    );
 
-  doc.text(`Client: ${submittedLead.name}`, 20, 40);
-  doc.text(`Service: ${submittedLead.service}`, 20, 50);
-  doc.text(`Project Type: ${submittedLead.size}`, 20, 60);
-  doc.text(
-    `Estimated Price: R${submittedLead.estimatedPrice.toLocaleString()}`,
-    20,
-    70
-  );
+    doc.save(
+      "MKETICS_Quote.pdf"
+    );
+  };
 
-  doc.text(" ", 20, 80);
-  doc.text("Thank you for choosing MKETICS.", 20, 90);
+  if (submittedLead) {
+    return (
+      <main className="flex min-h-screen items-center justify-center app-bg px-4">
+        <div className="w-full max-w-2xl rounded-[2rem] app-card p-8 text-center shadow-2xl">
+          <img
+            src="/images/logo-icon.webp"
+            alt="MKETICS"
+            className="mx-auto mb-6 h-20 w-20 object-contain"
+          />
 
-  doc.save(`MKETICS_Quote_${submittedLead.name}.pdf`);
-};
+          <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-green-500/20 text-green-500">
+            <CheckCircle2 className="h-10 w-10" />
+          </div>
 
-if (submittedLead) {
-  return (
-    <main className="min-h-[100svh] flex items-center justify-center bg-slate-950 px-4 text-white">
-      <div className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl">
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-green-500/20 text-green-300">
-          <CheckCircle2 className="h-10 w-10" />
-        </div>
+          <h1 className="mt-6 text-4xl font-black">
+            Quote Request Sent
+          </h1>
 
-        <h1 className="mt-6 text-3xl font-black">
-          Quote Request Sent Successfully
-        </h1>
-
-        <p className="mt-3 text-slate-300">
-          Thank you, {submittedLead.name}. MKETICS has received your request.
-        </p>
-
-        <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-left">
-          <p className="text-sm text-slate-400">Service</p>
-          <p className="font-bold">{submittedLead.service}</p>
-
-          <p className="mt-4 text-sm text-slate-400">Project Type</p>
-          <p className="font-bold">{submittedLead.size}</p>
-
-          <p className="mt-4 text-sm text-slate-400">Estimated Starting Budget</p>
-          <p className="text-2xl font-black text-sky-300">
-            R{submittedLead.estimatedPrice.toLocaleString()}
+          <p className="mt-4 app-muted">
+            Thank you for contacting
+            MKETICS.
           </p>
-        </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-<a
-  href={whatsappUrl}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="rounded-full bg-green-500 px-6 py-4 font-black text-white hover:bg-green-400"
->
-  Continue to WhatsApp
-</a>
+          <div className="mt-8 rounded-3xl app-surface p-6 text-left">
+            <p className="text-sm app-subtle">
+              Service
+            </p>
 
-          <button
-            onClick={() => setSubmittedLead(null)}
-            className="rounded-full border border-white/10 bg-white/5 px-6 py-4 font-black text-white hover:bg-white/10"
-          >
-            Submit Another Request
-          </button>
-          <button
-  onClick={generatePDF}
-  className="rounded-full bg-sky-500 px-6 py-4 font-black text-white hover:bg-sky-400"
->
-  Download PDF Quote
-</button>
-        </div>
-      </div>
-    </main>
-  );
-}
+            <p className="font-bold">
+              {submittedLead.service}
+            </p>
 
-  return (
-    <main
-      className="min-h-[100svh] w-full overflow-x-hidden text-slate-50"
-      style={{
-        background: `radial-gradient(circle at top left, ${BRAND.primary}18, transparent 35%), radial-gradient(circle at top right, ${BRAND.accent}18, transparent 30%), ${BRAND.secondary}`,
-      }}
-    >
-      <style>{`
-        :root {
-          --mketics-primary: ${BRAND.primary};
-          --mketics-secondary: ${BRAND.secondary};
-          --mketics-accent: ${BRAND.accent};
-        }
-        .glass-card {
-          background: rgba(255,255,255,0.055);
-          border: 1px solid rgba(255,255,255,0.11);
-          backdrop-filter: blur(20px);
-          box-shadow: 0 24px 80px rgba(0,0,0,0.22);
-        }
-        .brand-gradient {
-          background: linear-gradient(135deg, #0284c7, #38bdf8);
-        }
-        .brand-text {
-          background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-      `}</style>
+            <p className="mt-5 text-sm app-subtle">
+              Estimated Budget
+            </p>
 
-      {/* Navbar */}
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-2xl">
-        <nav className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <a href="#home" className="flex min-w-0 items-center gap-3">
-<img
-  src="/images/logo-icon.png"
-  alt="MKETICS"
-  className="h-12 w-12 rounded-2xl object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.6)]"
-/>
-            <div className="min-w-0">
-              <p className="truncate text-base font-black tracking-wide sm:text-lg">MKETICS</p>
-              <p className="-mt-1 hidden text-xs text-slate-400 xs:block sm:block">Innovate • Integrate • Elevate</p>
-            </div>
-          </a>
-
-          <div className="hidden items-center gap-8 text-sm text-slate-300 lg:flex">
-            <a href="#services" className="hover:text-white">Services</a>
-            <a href="#trust" className="hover:text-white">Trust</a>
-            <a href="#registered" className="hover:text-white">Company</a>
-            <a href="#pricing" className="hover:text-white">Pricing</a>
-            <a href="#quote" className="hover:text-white">Quote</a>
-          </div>
-
-          <div className="flex items-center gap-3 transition hover:translate-x-1">
-            <a href="#quote" className="hidden rounded-full brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-500/20 sm:inline-flex">
-              Request Quote
-            </a>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white lg:hidden"
-              type="button"
-            >
-              Menu
-            </button>
-          </div>
-        </nav>
-
-        {menuOpen && (
-          <div className="border-t border-white/10 bg-slate-950/95 px-4 py-4 lg:hidden">
-            <div className="mx-auto grid max-w-[1600px] gap-3 text-sm text-slate-200">
-              {["services", "trust", "experience", "registered", "pricing", "quote", "contact"].map((item) => (
-                <a key={item} onClick={() => setMenuOpen(false)} href={`#${item}`} className="rounded-2xl bg-white/5 px-4 py-3 capitalize">
-                  {item}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </header>
-
-{/* Hero */}
-{/* Hero */}
-<section
-  id="home"
-className="relative mx-auto flex w-full max-w-[1400px] flex-col justify-center px-4 pt-24 pb-10 sm:min-h-[calc(100svh-88px)] sm:px-6 lg:px-8"
->
-  <div className="pointer-events-none absolute inset-0 overflow-hidden">
-  <div className="absolute left-[-10%] top-[-10%] h-[400px] w-[400px] rounded-full bg-sky-500/20 blur-[120px]" />
-  <div className="absolute right-[-10%] bottom-[-10%] h-[400px] w-[400px] rounded-full bg-blue-500/20 blur-[120px]" />
-</div>
-  <div className="grid items-center gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-8">
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-    >
-<motion.img
-  src="/images/logo-clean.png"
-  alt="MKETICS"
-  className="mx-auto mb-5 w-[115px] drop-shadow-[0_0_25px_rgba(56,189,248,0.35)] sm:mx-0 sm:w-[160px] md:w-[180px]"
-  animate={{ y: [0, -6, 0] }}
-  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-/>
-
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/5 px-4 py-2 text-xs font-semibold text-slate-300">
-        <Sparkles className="h-4 w-4" style={{ color: BRAND.accent }} />
-        Premium IT systems for serious businesses
-      </div>
-
-      <h1 className="max-w-2xl text-[clamp(2.1rem,11vw,4rem)] font-black leading-[0.98] tracking-[-0.055em]">
-        Enterprise-level <span className="brand-text drop-shadow-[0_0_20px_rgba(56,189,248,0.6)]">
-  IT solutions
-</span> for growing companies.
-      </h1>
-
-      <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300/90 sm:text-base">
-        MKETICS designs, installs, and supports professional networks, cloud systems,
-        business websites, CRM dashboards, CCTV solutions, and automation tools.
-      </p>
-
-      <div className="mt-6 flex flex-col gap-3 min-[420px]:flex-row">
-<a
-  href="#quote"
-  onClick={(e) => {
-    e.preventDefault();
-    document.getElementById("quote")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-      
-    });
-  }}
-  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition hover:-translate-y-1 hover:scale-105 hover:shadow-sky-500/50 min-[420px]:w-auto"
->
-  Start a Project <ArrowRight className="h-4 w-4" />
-</a>
-
-<a
-  href="#services"
-  onClick={(e) => {
-    e.preventDefault();
-    document.getElementById("services")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }}
-  className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:-translate-y-1 hover:scale-105 hover:bg-white/10 min-[420px]:w-auto"
->
-  View Services
-</a>
-      </div>
-    </motion.div>
-
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.15 }}
-      className="relative lg:mt-10"
-    >
-      <div className="absolute -inset-6 rounded-[3rem] blur-3xl opacity-20 brand-gradient" />
-
-      <div className="relative glass-card rounded-[2rem] p-4 shadow-2xl sm:p-5">
-<div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-r from-sky-500/20 to-blue-500/20 blur-3xl opacity-30" />
-        <div className="grid gap-3 md:grid-cols-3">
-          {stats.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-3xl bg-white/[0.05] p-4 ring-1 ring-white/10 backdrop-blur-xl transition hover:scale-[1.03] hover:bg-white/[0.08]"
-            >
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10">
-                <item.icon className="h-5 w-5" style={{ color: BRAND.primary }} />
-              </div>
-
-              <p className="mt-3 text-xs text-slate-300">{item.label}</p>
-
-              <p className="mt-1 text-lg font-black" style={{ color: BRAND.accent }}>
-                {item.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 rounded-3xl border border-white/10 bg-slate-950/70 p-5">
-          <p className="mb-3 text-xs text-slate-400">Business system pipeline</p>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              "Client submits quote",
-              "Email + WhatsApp notification",
-              "Lead saved to dashboard",
-              "Follow up and close deal",
-            ].map((step) => (
-              <div key={step} className="flex items-center gap-3 text-xs sm:text-sm">
-                <CheckCircle2 className="h-4 w-4" style={{ color: BRAND.accent }} />
-                {step}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  </div>
-</section>
-
-      {/* Services */}
-      <section id="services" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-7 sm:mb-12 max-w-3xl">
-          <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Services</p>
-          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Complete IT solutions for homes, businesses, and growing companies.</h2>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {services.map((service) => (
-            <motion.div whileHover={{ y: -6 }} key={service.title} className="glass-card rounded-3xl p-5 sm:p-6">
-              <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
-                <service.icon className="h-7 w-7" style={{ color: BRAND.primary }} />
-              </div>
-              <h3 className="text-xl font-black">{service.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-300 sm:leading-7">{service.desc}</p>
-              <a
-  href="#quote"
-  className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-sky-300 hover:text-sky-200"
->
-  Request this service <ArrowRight className="h-4 w-4" />
-</a>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Trust */}
-      <section id="trust" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Why Choose MKETICS</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Qualified experience, not guesswork.</h2>
-            <p className="mt-5 text-slate-300 leading-8">
-              MKETICS is built on real enterprise IT experience across government and education environments, backed by formal ICT training and hands-on technical delivery.
+            <p className="text-3xl font-black text-sky-500">
+              R
+              {submittedLead.estimatedPrice.toLocaleString()}
             </p>
           </div>
 
-          <div className="glass-card rounded-[2rem] p-6">
-            <div className="grid gap-4">
-              {trustPoints.map((point) => (
-                <div key={point} className="flex gap-3 rounded-2xl bg-white/5 p-4 text-sm leading-6 text-slate-200">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: BRAND.accent }} />
-                  {point}
-                </div>
-              ))}
-            </div>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <a
+              href={`https://wa.me/27722864367?text=${submittedLead.whatsappText}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-green-500 px-6 py-4 font-black text-white hover:bg-green-400"
+            >
+              Continue to WhatsApp
+            </a>
+
+            <button
+              onClick={generatePDF}
+              className="rounded-full bg-sky-500 px-6 py-4 font-black text-white hover:bg-sky-400"
+            >
+              Download PDF
+            </button>
+
+            <button
+              onClick={() =>
+                setSubmittedLead(null)
+              }
+              className="rounded-full app-surface px-6 py-4 font-black"
+            >
+              Submit Another Request
+            </button>
           </div>
         </div>
-      </section>
+      </main>
+    );
+  }
 
-      {/* Experience */}
-      <section id="experience" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-7 sm:mb-12 max-w-3xl">
-          <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Experience Highlights</p>
-          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Enterprise background clients can trust.</h2>
-        </div>
+  return (
+    <main className="min-h-screen overflow-x-hidden app-bg">
+      <Navbar />
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {experienceHighlights.map((item) => (
-            <motion.div whileHover={{ y: -6 }} key={item.role} className="glass-card rounded-3xl p-5 sm:p-6">
-              <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-white/10">
-                <BriefcaseBusiness className="h-7 w-7" style={{ color: BRAND.primary }} />
-              </div>
-              <h3 className="text-xl font-black">{item.role}</h3>
-              <p className="mt-1 text-sm font-bold" style={{ color: BRAND.accent }}>{item.place}</p>
-              <p className="mt-4 text-sm leading-7 text-slate-300">{item.detail}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      <Hero />
 
-      {/* Registered Business */}
-      <section id="registered" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="glass-card overflow-hidden rounded-[2rem]">
-          <div className="grid gap-8 p-7 lg:grid-cols-[0.9fr_1.1fr] lg:p-10">
-            <div>
-              <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Registered Business</p>
-              <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Professional company. Accountable service.</h2>
-              <p className="mt-5 text-slate-300 leading-8">
-                MKETICS (Pty) Ltd operates as a registered South African business, giving clients confidence when requesting quotes, approving projects, and making payments.
-              </p>
-              <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/50 p-5">
-                <p className="text-sm text-slate-400">Registered Company</p>
-                <p className="mt-1 text-2xl font-black">MKETICS (Pty) Ltd</p>
-                <p className="mt-2 text-sm" style={{ color: BRAND.accent }}>Reg No: 2026/290708/07</p>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              {businessTrust.map((point) => (
-                <div key={point} className="flex gap-3 rounded-2xl bg-white/5 p-4 text-sm leading-6 text-slate-200">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" style={{ color: BRAND.primary }} />
-                  {point}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="mb-7 sm:mb-12 text-center">
-          <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Packages</p>
-          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Clear options. Premium delivery.</h2>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {packages.map((pkg) => (
-            <div key={pkg.name} className={`relative rounded-[2rem] p-7 ${pkg.popular ? "brand-gradient text-white" : "glass-card"}`}>
-              {pkg.popular && <div className="absolute right-6 top-6 rounded-full bg-white/20 px-3 py-1 text-xs font-black">MOST POPULAR</div>}
-              <h3 className="text-2xl font-black">{pkg.name}</h3>
-              <p className="mt-3 text-sm leading-7 opacity-85">{pkg.desc}</p>
-              <p className="mt-6 text-3xl font-black">{pkg.price}</p>
-              <div className="mt-7 space-y-3">
-                {pkg.features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-3 text-sm">
-                    <CheckCircle2 className="h-5 w-5" />
-                    {feature}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Quote */}
-      <section id="quote" className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 py-10 sm:px-6 sm:py-20 lg:grid-cols-2 lg:px-8 lg:py-24">
-        <div>
-          <p className="font-bold uppercase tracking-[0.3em]" style={{ color: BRAND.accent }}>Smart Quote</p>
-          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl md:text-5xl">Let clients request quotes instantly.</h2>
-<p className="mt-5 text-slate-300 leading-8">
-  Submit your details and MKETICS will review your request, send a confirmation email, and follow up with the best solution for your project.
-</p>
-        </div>
-
-{notice.message && (
-  
-  <div
-    className={`mb-5 rounded-2xl px-4 py-3 text-sm ${
-      notice.type === "success"
-        ? "border border-green-400/30 bg-green-500/10 text-green-200"
-        : "border border-red-400/30 bg-red-500/10 text-red-200"
-    }`}
-  >
-    {notice.message}
-        {/* ✅ WhatsApp fallback link */}
-    {notice.type === "success" && (
-      <a
-        href={`https://wa.me/27722864367?text=${encodeURIComponent(
-          `Hi MKETICS, I just submitted a quote request.`
-        )}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 block text-blue-400 underline"
+      {/* SERVICES */}
+      <section
+        id="services"
+        className="mx-auto max-w-7xl px-4 py-24"
       >
-        Open WhatsApp manually
-      </a>
-    )}
-  </div>
-  
-)}
-        <form onSubmit={handleSubmit} className="glass-card rounded-[2rem] p-4 sm:p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none" name="name" placeholder="Your name" value={form.name} onChange={handleChange} required />
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none" name="phone" placeholder="Phone number" value={form.phone} onChange={handleChange} required />
-            <input className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none md:col-span-2" name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} />
-            <select className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm outline-none" name="service" value={form.service} onChange={handleChange}>
-              <option>WiFi Installation</option>
-              <option>CCTV Installation</option>
-              <option>Website Development</option>
-              <option>Cloud / IT Support</option>
-            </select>
-            <select className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 outline-none" name="size" value={form.size} onChange={handleChange}>
-              <option>Home</option>
-              <option>Business</option>
-              <option>Enterprise</option>
-            </select>
-            <textarea className="min-h-32 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none md:col-span-2" name="message" placeholder="Tell us what you need" value={form.message} onChange={handleChange} />
+        <div className="text-center">
+          <p className="font-bold uppercase tracking-[0.3em] text-sky-500">
+            Core Services
+          </p>
+
+          <h2 className="mt-4 text-4xl font-black md:text-5xl">
+            Enterprise Technology
+            Solutions
+          </h2>
+
+          <p className="mx-auto mt-5 max-w-3xl app-muted">
+            MKETICS delivers modern
+            software systems,
+            enterprise infrastructure,
+            and digital innovation
+            solutions for businesses
+            and organizations.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
+          <div className="glass-card rounded-[2rem] p-8">
+            <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
+              <Code2 className="h-8 w-8" />
+            </div>
+
+            <h3 className="text-2xl font-black">
+              System Design &
+              Development
+            </h3>
+
+            <p className="mt-4 leading-8 app-muted">
+              Custom software systems,
+              dashboards, automation
+              platforms, portals,
+              APIs, and enterprise web
+              applications.
+            </p>
           </div>
 
-          <div className="mt-5 rounded-2xl bg-white/5 p-4">
-            <p className="text-sm text-slate-400">Estimated starting budget</p>
-            <p className="text-3xl font-black" style={{ color: BRAND.accent }}>R{estimatedPrice.toLocaleString()}</p>
+          <div className="glass-card rounded-[2rem] p-8">
+            <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
+              <Network className="h-8 w-8" />
+            </div>
+
+            <h3 className="text-2xl font-black">
+              IT & Network
+              Infrastructure
+            </h3>
+
+            <p className="mt-4 leading-8 app-muted">
+              Enterprise networking,
+              WiFi deployment, CCTV
+              integration, cloud
+              infrastructure, support,
+              and systems management.
+            </p>
           </div>
 
-<p className="mt-4 text-sm text-slate-400">
-  Your request is securely saved and sent directly to MKETICS.
-</p>
+          <div className="glass-card rounded-[2rem] p-8">
+            <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
+              <Sparkles className="h-8 w-8" />
+            </div>
 
-<button
-  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full brand-gradient px-6 py-4 font-black text-white"
-  type="submit"
->
-  {submitting ? "Sending request..." : "Send Quote Request"}
-  <ArrowRight className="h-5 w-5" />
-</button>
-        </form>
-      </section>
+            <h3 className="text-2xl font-black">
+              Digital Hub
+            </h3>
 
-      {/* Contact */}
-      <footer id="contact" className="border-t border-white/10 px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[1600px] gap-8 md:grid-cols-3">
-          <div>
-            <h3 className="text-2xl font-black">MKETICS</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-400">Premium digital, networking, cloud, CCTV, and business automation systems.</p>
-            <p className="mt-3 text-xs text-slate-500">MKETICS (Pty) Ltd • Reg No: 2026/290708/07</p>
-          </div>
-          <div className="space-y-3 text-sm text-slate-300">
-            <p className="flex items-center gap-3"><PhoneCall className="h-5 w-5" /> 072 286 4367</p>
-            <p className="flex items-center gap-3"><Mail className="h-5 w-5" /> info@mketics.co.za</p>
-            <p className="flex items-center gap-3"><MapPin className="h-5 w-5" /> KwaZulu-Natal, South Africa</p>
-            <p className="text-xs text-slate-500">Registered with CIPC • Tax registered with SARS</p>
-          </div>
-          <div className="md:text-right">
-            <a href="#quote" className="inline-flex rounded-full brand-gradient px-6 py-3 font-bold text-white">Request Quote</a>
+            <p className="mt-4 leading-8 app-muted">
+              Branding, websites, SEO,
+              online business systems,
+              and digital experiences.
+            </p>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* WHY */}
+      <section className="mx-auto max-w-7xl px-4 py-24">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <p className="font-bold uppercase tracking-[0.3em] text-sky-500">
+              Why MKETICS
+            </p>
+
+            <h2 className="mt-4 text-4xl font-black md:text-5xl">
+              Technology solutions
+              built for modern
+              business.
+            </h2>
+
+            <p className="mt-6 leading-8 app-muted">
+              MKETICS combines
+              enterprise IT experience,
+              infrastructure expertise,
+              and modern development
+              to deliver scalable
+              digital solutions.
+            </p>
+          </div>
+
+          <div className="glass-card rounded-[2rem] p-8">
+            <div className="grid gap-4">
+              {trustPoints.map(
+                (point) => (
+                  <div
+                    key={point}
+                    className="flex gap-3 rounded-2xl app-surface p-4"
+                  >
+                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-sky-500" />
+
+                    <p className="app-muted">
+                      {point}
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* QUOTE */}
+      <section
+        id="quote"
+        className="mx-auto grid max-w-7xl gap-10 px-4 py-24 lg:grid-cols-2"
+      >
+        <div>
+          <img
+            loading="lazy"
+            src="/images/logo-clean.webp"
+            alt="MKETICS"
+            className="logo-glow mb-6 h-24 object-contain"
+          />
+
+          <p className="font-bold uppercase tracking-[0.3em] text-sky-500">
+            Request Quote
+          </p>
+
+          <h2 className="mt-4 text-4xl font-black md:text-5xl">
+            Start your next
+            technology project.
+          </h2>
+
+          <p className="mt-6 leading-8 app-muted">
+            Request a professional
+            consultation for software
+            systems, infrastructure
+            deployment, networking,
+            or digital transformation.
+          </p>
+        </div>
+
+        <QuoteForm
+          form={form}
+          handleChange={handleChange}
+          handleSubmit={handleSubmit}
+          estimatedPrice={
+            estimatedPrice
+          }
+          submitting={submitting}
+          notice={notice}
+        />
+      </section>
+
+      <Footer />
     </main>
   );
 }
