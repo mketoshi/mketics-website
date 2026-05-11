@@ -45,12 +45,84 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const seo = {
+      "/": {
+        title: "MKETICS | Enterprise Technology Solutions",
+        description:
+          "MKETICS provides enterprise software systems, IT infrastructure, cloud solutions, networking, CCTV systems, and digital business platforms.",
+      },
+      "/services": {
+        title: "Services | MKETICS",
+        description:
+          "Explore MKETICS software development, networking infrastructure, cloud systems, digital platforms, and enterprise technology services.",
+      },
+      "/portfolio": {
+        title: "Portfolio | MKETICS",
+        description:
+          "View MKETICS technology projects, infrastructure deployments, software systems, and digital business solutions.",
+      },
+      "/contact": {
+        title: "Contact MKETICS",
+        description:
+          "Contact MKETICS for software systems, networking infrastructure, cloud solutions, and digital transformation services.",
+      },
+      "/mketics-digital-hub": {
+        title: "MKETICS Digital Hub",
+        description:
+          "Digital branding, websites, SEO, online business systems, and modern digital experiences.",
+      },
+      "/client-login": {
+        title: "Client Login | MKETICS",
+        description:
+          "Secure MKETICS client portal login for projects, invoices, and support.",
+      },
+      "/client-register": {
+        title: "Create Client Account | MKETICS",
+        description:
+          "Create a secure MKETICS client account to access projects, invoices, and support.",
+      },
+      "/forgot-password": {
+        title: "Forgot Password | MKETICS",
+        description:
+          "Recover access to your MKETICS client portal account.",
+      },
+      "/reset-password": {
+        title: "Reset Password | MKETICS",
+        description:
+          "Reset your MKETICS client portal password securely.",
+      },
+      "/client-portal": {
+        title: "Client Portal | MKETICS",
+        description:
+          "Access your MKETICS projects, invoices, and support requests.",
+      },
+      "/admin": {
+        title: "Admin | MKETICS",
+        description:
+          "Restricted MKETICS internal operations dashboard.",
+      },
+    };
+
+    const current = seo[path] || seo["/"];
+
+    document.title = current.title;
+
+    const meta = document.querySelector(
+      'meta[name="description"]'
+    );
+
+    if (meta) {
+      meta.setAttribute("content", current.description);
+    }
+  }, [path]);
+
   if (checking) {
     return (
       <main className="grid min-h-screen place-items-center app-bg">
         <div className="text-center">
           <img
-            src="/images/logo-icon.webp"
+            src="/images/logo-icon.webp?v=2"
             alt="MKETICS"
             className="mx-auto h-16 w-16 animate-pulse object-contain"
           />
@@ -109,7 +181,7 @@ function App() {
         <main className="flex min-h-screen items-center justify-center app-bg px-4">
           <div className="w-full max-w-md rounded-[2rem] app-card p-8 text-center shadow-2xl">
             <img
-              src="/images/logo-icon.webp"
+              src="/images/logo-icon.webp?v=2"
               alt="MKETICS"
               className="mx-auto h-16 w-16 object-contain"
             />
@@ -119,8 +191,8 @@ function App() {
             </h1>
 
             <p className="mt-4 app-muted">
-              This page is restricted to authorized
-              MKETICS administrators only.
+              This page is restricted to authorized MKETICS
+              administrators only.
             </p>
 
             <a

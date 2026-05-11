@@ -3,22 +3,16 @@ import {
   X,
   UserCircle,
   LogOut,
-  Sun,
-  Moon,
-  Monitor,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
 import { supabase } from "../lib/supabaseClient";
-import { useTheme } from "../context/ThemeContext";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [session, setSession] = useState(null);
-
-  const { theme, setTheme } = useTheme();
 
   const links = [
     {
@@ -49,9 +43,11 @@ export default function Navbar() {
     });
 
     const { data: listener } =
-      supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-      });
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          setSession(session);
+        }
+      );
 
     return () => {
       listener.subscription.unsubscribe();
@@ -63,22 +59,13 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  const cycleTheme = () => {
-    if (theme === "system") setTheme("light");
-    else if (theme === "light") setTheme("dark");
-    else setTheme("system");
-  };
-
-  const ThemeIcon =
-    theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
-
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-2xl dark:border-white/10 dark:bg-[#020617]/90">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         {/* LOGO */}
         <a href="/" className="flex items-center gap-4">
           <img
-            src="/images/logo-icon.webp"
+            src="/images/logo-icon.webp?v=2"
             alt="MKETICS"
             className="h-14 w-14 object-contain drop-shadow-[0_0_20px_rgba(14,165,233,0.35)]"
           />
@@ -113,16 +100,6 @@ export default function Navbar() {
             Request Quote
           </a>
 
-          {/* THEME */}
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${theme}`}
-            className="grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition hover:bg-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-          >
-            <ThemeIcon className="h-5 w-5" />
-          </button>
-
-          {/* AUTH */}
           {!session ? (
             <a
               href="/client-login"
@@ -133,7 +110,9 @@ export default function Navbar() {
           ) : (
             <div className="relative">
               <button
-                onClick={() => setProfileOpen(!profileOpen)}
+                onClick={() =>
+                  setProfileOpen(!profileOpen)
+                }
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
               >
                 <UserCircle className="h-5 w-5 text-sky-500" />
@@ -171,7 +150,11 @@ export default function Navbar() {
           onClick={() => setOpen(!open)}
           className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-3 text-slate-900 lg:hidden dark:border-white/10 dark:bg-white/5 dark:text-white"
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {open ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </button>
       </div>
 
@@ -189,13 +172,6 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
-
-            <button
-              onClick={cycleTheme}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
-            >
-              Theme: {theme}
-            </button>
 
             <a
               href="/#quote"
