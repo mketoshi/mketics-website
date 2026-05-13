@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
+import exportInvoicePDF from "../utils/generateInvoicePdf";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -12,8 +13,6 @@ import {
   LogOut,
   UserCog,
   Activity,
-  TrendingUp,
-  Clock3,
   Search,
   Trash2,
   Archive,
@@ -49,6 +48,16 @@ export default function AdminDashboard() {
   const [selectedLead, setSelectedLead] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [invoiceEmail, setInvoiceEmail] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [invoiceService, setInvoiceService] = useState("");
+  const [invoiceAmount, setInvoiceAmount] = useState("");
+
+  const [projectName, setProjectName] = useState("");
+  const [projectClient, setProjectClient] = useState("");
+  const [projectStatus, setProjectStatus] = useState("Planning");
+  const [projectProgress, setProjectProgress] = useState(0);
+  
   useEffect(() => {
     const initialize = async () => {
       const { data } = await supabase.auth.getSession();
@@ -131,6 +140,101 @@ export default function AdminDashboard() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const createInvoice = async () => {
+  if (
+    !invoiceEmail ||
+    !invoiceNumber ||
+    !invoiceService ||
+    !invoiceAmount
+  ) {
+    alert("Complete all invoice fields.");
+    return;
+  }
+
+  await supabase.from("invoices").insert([
+    {
+      client_email: invoiceEmail,
+      invoice_number: invoiceNumber,
+      service: invoiceService,
+      amount: invoiceAmount,
+      status: "Unpaid",
+    },
+  ]);
+
+  setInvoiceEmail("");
+  setInvoiceNumber("");
+  setInvoiceService("");
+  setInvoiceAmount("");
+
+  await loadDashboardData();
+};
+
+const markInvoicePaid = async (id, currentStatus) => {
+  await supabase
+    .from("invoices")
+    .update({
+      status: currentStatus === "Paid" ? "Unpaid" : "Paid",
+    })
+    .eq("id", id);
+
+  await loadDashboardData();
+};
+
+const createProject = async () => {
+  if (!projectName || !projectClient) {
+    alert("Complete all project fields.");
+    return;
+  }
+
+  await supabase.from("projects").insert([
+    {
+      project_name: projectName,
+      client_email: projectClient,
+      status: projectStatus,
+      progress: Math.min(
+        100,
+        Math.max(0, Number(projectProgress))
+        ),
+    },
+  ]);
+
+  setProjectName("");
+  setProjectClient("");
+  setProjectStatus("Planning");
+  setProjectProgress(0);
+
+  await loadDashboardData();
+};
+
+const updateProjectStatus = async (
+  id,
+  status
+) => {
+  await supabase
+    .from("projects")
+    .update({ status })
+    .eq("id", id);
+
+  await loadDashboardData();
+};
+
+const updateProjectProgress = async (
+  id,
+  progress
+) => {
+  await supabase
+    .from("projects")
+    .update({
+      progress: Math.min(
+        100,
+        Math.max(0, Number(progress))
+        ),
+    })
+    .eq("id", id);
+
+  await loadDashboardData();
+};
 
   const totalInvoiceValue = invoices.reduce(
     (sum, invoice) => sum + Number(invoice.amount || 0),
@@ -337,6 +441,319 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
+
+<section className="mx-auto max-w-7xl px-4 pb-10">
+  <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+          Invoice System
+        </p>
+
+        <h2 className="mt-3 text-3xl font-black">
+          Create Invoice
+        </h2>
+      </div>
+    </div>
+
+    <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+      <input
+        type="email"
+        placeholder="Client Email"
+        value={invoiceEmail}
+        onChange={(e) => setInvoiceEmail(e.target.value)}
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <input
+        type="text"
+        placeholder="Invoice Number"
+        value={invoiceNumber}
+        onChange={(e) => setInvoiceNumber(e.target.value)}
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <input
+        type="text"
+        placeholder="Service"
+        value={invoiceService}
+        onChange={(e) => setInvoiceService(e.target.value)}
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <input
+        type="number"
+        placeholder="Amount"
+        value={invoiceAmount}
+        onChange={(e) => setInvoiceAmount(e.target.value)}
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <button
+        onClick={createInvoice}
+        className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
+      >
+        Create Invoice
+      </button>
+    </div>
+
+    <div className="mt-10 overflow-x-auto">
+      <table className="min-w-full">
+        <thead>
+          <tr className="border-b border-slate-200 dark:border-white/10">
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Invoice
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Client
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Service
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Amount
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Status
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {invoices.map((invoice) => (
+            <tr
+              key={invoice.id}
+              className="border-b border-slate-100 dark:border-white/5"
+            >
+              <td className="px-4 py-5 font-bold">
+                {invoice.invoice_number}
+              </td>
+
+              <td className="px-4 py-5">
+                {invoice.client_email}
+              </td>
+
+              <td className="px-4 py-5">
+                {invoice.service}
+              </td>
+
+              <td className="px-4 py-5 font-black text-sky-500">
+                R{Number(invoice.amount || 0).toLocaleString()}
+              </td>
+
+              <td className="px-4 py-5">
+                <span
+                  className={`rounded-full px-4 py-2 text-xs font-black ${
+                    invoice.status === "Paid"
+                      ? "bg-green-500/10 text-green-500"
+                      : "bg-orange-500/10 text-orange-500"
+                  }`}
+                >
+                  {invoice.status}
+                </span>
+              </td>
+
+              <td className="px-4 py-5">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() =>
+                      markInvoicePaid(invoice.id, invoice.status)
+                    }
+                    className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"
+                  >
+                    Toggle Status
+                  </button>
+
+                  <button
+                    onClick={() => exportInvoicePDF(invoice)}
+                    className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
+                  >
+                    PDF
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section className="mx-auto max-w-7xl px-4 pb-10">
+  <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+          Project Tracking
+        </p>
+
+        <h2 className="mt-3 text-3xl font-black">
+          Project Boards
+        </h2>
+      </div>
+    </div>
+
+    {/* CREATE PROJECT */}
+    <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+      <input
+        type="text"
+        placeholder="Project Name"
+        value={projectName}
+        onChange={(e) =>
+          setProjectName(e.target.value)
+        }
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <input
+        type="email"
+        placeholder="Client Email"
+        value={projectClient}
+        onChange={(e) =>
+          setProjectClient(e.target.value)
+        }
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <select
+        value={projectStatus}
+        onChange={(e) =>
+          setProjectStatus(e.target.value)
+        }
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      >
+        <option>Planning</option>
+        <option>In Progress</option>
+        <option>Testing</option>
+        <option>Completed</option>
+      </select>
+
+      <input
+        type="number"
+        placeholder="Progress %"
+        value={projectProgress}
+        onChange={(e) =>
+          setProjectProgress(e.target.value)
+        }
+        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+      />
+
+      <button
+        onClick={createProject}
+        className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
+      >
+        Create Project
+      </button>
+    </div>
+
+    {/* PROJECT TABLE */}
+    <div className="mt-10 overflow-x-auto">
+      <table className="min-w-full">
+        <thead>
+          <tr className="border-b border-slate-200 dark:border-white/10">
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Project
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Client
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Status
+            </th>
+
+            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+              Progress
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {projects.map((project) => (
+            <tr
+              key={project.id}
+              className="border-b border-slate-100 dark:border-white/5"
+            >
+              <td className="px-4 py-5 font-bold">
+                {project.project_name}
+              </td>
+
+              <td className="px-4 py-5">
+                {project.client_email}
+              </td>
+
+              <td className="px-4 py-5">
+                <select
+                  value={project.status}
+                  onChange={(e) =>
+                    updateProjectStatus(
+                      project.id,
+                      e.target.value
+                    )
+                  }
+                  className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
+                >
+                  <option>Planning</option>
+                  <option>In Progress</option>
+                  <option>Testing</option>
+                  <option>Completed</option>
+                </select>
+              </td>
+
+
+              <td className="px-4 py-5">
+                <div className="flex items-center gap-4">
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-purple-500"
+                      style={{
+                        width: `${project.progress || 0}%`,
+                      }}
+                    />
+                  </div>
+
+                  <input
+                    type="number"
+                    value={project.progress || 0}
+                    onChange={(e) =>
+                      updateProjectProgress(
+                        project.id,
+                        e.target.value
+                      )
+                    }
+                    className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black outline-none dark:border-white/10 dark:bg-white/5"
+                  />
+                </div>
+              </td>
+            </tr>
+          ))}
+          {!projects.length && (
+  <tr>
+    <td
+      colSpan={4}
+      className="px-4 py-16 text-center"
+    >
+      <p className="text-lg font-bold app-muted">
+        No projects found.
+      </p>
+    </td>
+  </tr>
+)}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
