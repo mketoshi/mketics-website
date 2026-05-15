@@ -20,6 +20,8 @@ export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [invoices, setInvoices] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [projectUpdates, setProjectUpdates] = useState([]);
 
   const [ticketSubject, setTicketSubject] = useState("");
   const [ticketMessage, setTicketMessage] = useState("");
@@ -47,6 +49,26 @@ export default function ClientPortal() {
         });
 
       setInvoices(invoiceData || []);
+
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("client_email", email)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      setProjects(projectData || []);
+
+      const { data: updatesData } = await supabase
+        .from("project_updates")
+        .select("*")
+        .eq("client_email", email)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      setProjectUpdates(updatesData || []);
 
       const { data: ticketData } = await supabase
         .from("support_tickets")
@@ -187,9 +209,9 @@ export default function ClientPortal() {
               infrastructure work, and software systems.
             </p>
 
-            <button className="mt-6 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">
-              Coming Soon
-            </button>
+            <p className="mt-6 text-3xl font-black text-sky-500">
+              {projects.length}
+            </p>
           </div>
 
           <div className="glass-card rounded-[2rem] p-8">
@@ -224,6 +246,123 @@ export default function ClientPortal() {
             <p className="mt-6 text-3xl font-black text-sky-500">
               {tickets.length}
             </p>
+          </div>
+        </div>
+      </section>
+
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Project Timeline
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            My Projects & Updates
+          </h2>
+
+          <p className="mt-4 max-w-3xl leading-8 app-muted">
+            Track active project progress, delivery stages, and MKETICS
+            project communication updates.
+          </p>
+
+          <div className="mt-8 grid gap-5">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="rounded-[2rem] app-surface p-6"
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h3 className="text-2xl font-black">
+                      {project.project_name}
+                    </h3>
+
+                    <p className="mt-2 app-muted">
+                      Status: {project.status || "Planning"}
+                    </p>
+
+                    <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-purple-500"
+                        style={{
+                          width: `${project.progress || 0}%`,
+                        }}
+                      />
+                    </div>
+
+                    <p className="mt-2 text-sm font-bold text-sky-500">
+                      {project.progress || 0}% Complete
+                    </p>
+                  </div>
+
+                  <p className="text-sm app-subtle">
+                    {project.created_at
+                      ? new Date(project.created_at).toLocaleDateString("en-ZA")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!projects.length && (
+              <div className="rounded-[2rem] app-surface p-8 text-center">
+                <FolderKanban className="mx-auto h-12 w-12 text-sky-500" />
+
+                <h3 className="mt-5 text-2xl font-black">
+                  No projects yet
+                </h3>
+
+                <p className="mx-auto mt-3 max-w-xl app-muted">
+                  When MKETICS creates a project for you, it will appear here.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-10">
+            <h3 className="text-2xl font-black">
+              Timeline Updates
+            </h3>
+
+            <div className="mt-6 grid gap-5">
+              {projectUpdates.map((update) => (
+                <div
+                  key={update.id}
+                  className="rounded-[2rem] app-surface p-6"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.2em] text-sky-500">
+                        Project Update
+                      </p>
+
+                      <h4 className="mt-2 text-xl font-black">
+                        {update.update_title}
+                      </h4>
+
+                      <p className="mt-3 leading-8 app-muted">
+                        {update.update_message || "No additional details provided."}
+                      </p>
+                    </div>
+
+                    <p className="shrink-0 text-sm app-subtle">
+                      {update.created_at
+                        ? new Date(update.created_at).toLocaleString("en-ZA")
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {!projectUpdates.length && (
+                <div className="rounded-[2rem] app-surface p-8 text-center">
+                  <p className="font-bold app-muted">
+                    No project timeline updates yet.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

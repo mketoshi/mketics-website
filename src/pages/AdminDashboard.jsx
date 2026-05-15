@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [invoices, setInvoices] = useState([]);
   const [quotes, setQuotes] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -58,6 +59,11 @@ export default function AdminDashboard() {
   const [projectClient, setProjectClient] = useState("");
   const [projectStatus, setProjectStatus] = useState("Planning");
   const [projectProgress, setProjectProgress] = useState(0);
+
+  const [projectUpdates, setProjectUpdates] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [updateTitle, setUpdateTitle] = useState("");
+  const [updateMessage, setUpdateMessage] = useState("");
 
   useEffect(() => {
     const initialize = async () => {
@@ -89,12 +95,27 @@ export default function AdminDashboard() {
       invoicesRes,
       quotesRes,
       ticketsRes,
+      activityRes,
+      projectUpdatesRes,
     ] = await Promise.all([
       supabase.from("leads").select("*").order("created_at", { ascending: false }),
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
       supabase.from("invoices").select("*").order("created_at", { ascending: false }),
       supabase.from("quotes").select("*").order("created_at", { ascending: false }),
       supabase.from("support_tickets").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("activity_logs")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(15),
+      supabase
+        .from("project_updates")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        }),
     ]);
 
     setLeads(leadsRes.data || []);
@@ -102,6 +123,8 @@ export default function AdminDashboard() {
     setInvoices(invoicesRes.data || []);
     setQuotes(quotesRes.data || []);
     setTickets(ticketsRes.data || []);
+    setActivityLogs(activityRes.data || []);
+    setProjectUpdates(projectUpdatesRes.data || []);
   };
 
   const refreshDashboard = async () => {
@@ -115,8 +138,19 @@ export default function AdminDashboard() {
     window.location.href = "/client-login";
   };
 
+  const logActivity = async (action, module = "General") => {
+    await supabase.from("activity_logs").insert([
+      {
+        user_email: session?.user?.email,
+        action,
+        module,
+      },
+    ]);
+  };
+
   const updateLeadStatus = async (id, status) => {
     await supabase.from("leads").update({ status }).eq("id", id);
+    await logActivity(`Updated lead status to ${status}`, "Leads");
     await loadDashboardData();
   };
 
@@ -126,6 +160,7 @@ export default function AdminDashboard() {
     if (!confirmed) return;
 
     await supabase.from("leads").delete().eq("id", id);
+    await logActivity("Deleted lead", "Leads");
     await loadDashboardData();
   };
 
@@ -149,6 +184,8 @@ export default function AdminDashboard() {
       },
     ]);
 
+    await logActivity(`Created invoice ${invoiceNumber}`, "Invoices");
+
     setInvoiceEmail("");
     setInvoiceNumber("");
     setInvoiceService("");
@@ -165,6 +202,7 @@ export default function AdminDashboard() {
       })
       .eq("id", id);
 
+    await logActivity("Updated invoice payment status", "Invoices");
     await loadDashboardData();
   };
 
@@ -183,6 +221,8 @@ export default function AdminDashboard() {
       },
     ]);
 
+    await logActivity(`Created project ${projectName}`, "Projects");
+
     setProjectName("");
     setProjectClient("");
     setProjectStatus("Planning");
@@ -193,6 +233,7 @@ export default function AdminDashboard() {
 
   const updateProjectStatus = async (id, status) => {
     await supabase.from("projects").update({ status }).eq("id", id);
+    await logActivity(`Updated project status to ${status}`, "Projects");
     await loadDashboardData();
   };
 
@@ -204,6 +245,40 @@ export default function AdminDashboard() {
       })
       .eq("id", id);
 
+    await logActivity(`Updated project progress to ${progress}%`, "Projects");
+    await loadDashboardData();
+  };
+
+  const createProjectUpdate = async () => {
+    if (!selectedProjectId || !updateTitle) {
+      alert("Select a project and add an update title.");
+      return;
+    }
+
+    const selectedProject = projects.find(
+      (project) => project.id === selectedProjectId
+    );
+
+    if (!selectedProject) {
+      alert("Selected project was not found.");
+      return;
+    }
+
+    await supabase.from("project_updates").insert([
+      {
+        project_id: selectedProjectId,
+        client_email: selectedProject.client_email,
+        update_title: updateTitle,
+        update_message: updateMessage,
+      },
+    ]);
+
+    await logActivity(`Added project update: ${updateTitle}`, "Projects");
+
+    setSelectedProjectId("");
+    setUpdateTitle("");
+    setUpdateMessage("");
+
     await loadDashboardData();
   };
 
@@ -213,6 +288,7 @@ export default function AdminDashboard() {
       .update({ status })
       .eq("id", id);
 
+    await logActivity(`Updated support ticket to ${status}`, "Support");
     await loadDashboardData();
   };
 
@@ -249,6 +325,12 @@ export default function AdminDashboard() {
     1
   );
 
+  const completedLeads = leads.filter((lead) => lead.status === "Completed").length;
+  const paidInvoices = invoices.filter((invoice) => invoice.status === "Paid").length;
+  const completedProjects = projects.filter(
+    (project) => project.status === "Completed"
+  ).length;
+
   const stats = [
     {
       title: "Total Leads",
@@ -261,6 +343,12 @@ export default function AdminDashboard() {
       value: projects.length,
       icon: FolderKanban,
       color: "text-purple-500",
+    },
+    {
+      title: "Timeline Updates",
+      value: projectUpdates.length,
+      icon: Activity,
+      color: "text-sky-500",
     },
     {
       title: "Invoices",
@@ -350,7 +438,7 @@ export default function AdminDashboard() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
@@ -368,6 +456,98 @@ export default function AdminDashboard() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 lg:grid-cols-2">
+        <div className="glass-card rounded-[2rem] p-7">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Analytics
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Business Insights
+          </h2>
+
+          <div className="mt-8 space-y-6">
+            {[
+              ["Lead Conversion", completedLeads, leads.length, "bg-green-500"],
+              ["Paid Invoices", paidInvoices, invoices.length, "bg-sky-500"],
+              [
+                "Completed Projects",
+                completedProjects,
+                projects.length,
+                "bg-purple-500",
+              ],
+            ].map(([label, done, total, color]) => (
+              <div key={label}>
+                <div className="mb-2 flex justify-between text-sm font-bold">
+                  <span>{label}</span>
+                  <span>
+                    {done}/{total}
+                  </span>
+                </div>
+
+                <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                  <div
+                    className={`h-full rounded-full ${color}`}
+                    style={{
+                      width: `${total ? (done / total) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[2rem] p-7">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Activity Logs
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Recent Actions
+          </h2>
+
+          <div className="mt-8 space-y-4">
+            {activityLogs.map((log) => (
+              <div
+                key={log.id}
+                className="rounded-2xl app-surface p-5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-black">
+                      {log.action}
+                    </p>
+
+                    <p className="mt-1 text-sm app-subtle">
+                      {log.module}
+                    </p>
+
+                    <p className="mt-2 text-xs app-muted">
+                      {log.user_email}
+                    </p>
+                  </div>
+
+                  <p className="text-xs app-subtle">
+                    {log.created_at
+                      ? new Date(log.created_at).toLocaleString("en-ZA")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!activityLogs.length && (
+              <div className="rounded-2xl app-surface p-6 text-center">
+                <p className="font-bold app-muted">
+                  No activity logs found.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -737,6 +917,105 @@ export default function AdminDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+                Project Timeline
+              </p>
+
+              <h2 className="mt-3 text-3xl font-black">
+                Project Updates
+              </h2>
+
+              <p className="mt-4 max-w-3xl leading-8 app-muted">
+                Post timeline updates that clients can see inside their
+                secure MKETICS portal.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="">Select Project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.project_name} — {project.client_email}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              placeholder="Update Title"
+              value={updateTitle}
+              onChange={(e) => setUpdateTitle(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <input
+              type="text"
+              placeholder="Update Message"
+              value={updateMessage}
+              onChange={(e) => setUpdateMessage(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <button
+              onClick={createProjectUpdate}
+              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
+            >
+              Add Update
+            </button>
+          </div>
+
+          <div className="mt-10 grid gap-5">
+            {projectUpdates.map((update) => (
+              <div
+                key={update.id}
+                className="rounded-[2rem] app-surface p-6"
+              >
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-[0.2em] text-sky-500">
+                      {update.client_email}
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black">
+                      {update.update_title}
+                    </h3>
+
+                    <p className="mt-3 leading-8 app-muted">
+                      {update.update_message || "No additional details provided."}
+                    </p>
+                  </div>
+
+                  <p className="shrink-0 text-sm app-subtle">
+                    {update.created_at
+                      ? new Date(update.created_at).toLocaleString("en-ZA")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!projectUpdates.length && (
+              <div className="rounded-[2rem] app-surface p-8 text-center">
+                <p className="font-bold app-muted">
+                  No project timeline updates found.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
