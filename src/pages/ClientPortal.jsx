@@ -21,6 +21,10 @@ export default function ClientPortal() {
   const [session, setSession] = useState(null);
   const [invoices, setInvoices] = useState([]);
 
+  const [ticketSubject, setTicketSubject] = useState("");
+  const [ticketMessage, setTicketMessage] = useState("");
+  const [tickets, setTickets] = useState([]);
+
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -43,6 +47,17 @@ export default function ClientPortal() {
         });
 
       setInvoices(invoiceData || []);
+
+      const { data: ticketData } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("client_email", email)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      setTickets(ticketData || []);
+
       setLoading(false);
     };
 
@@ -52,6 +67,44 @@ export default function ClientPortal() {
   const logout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/client-login";
+  };
+
+  const createTicket = async () => {
+    if (!ticketSubject || !ticketMessage) {
+      alert("Complete all ticket fields.");
+      return;
+    }
+
+    const email = session.user.email;
+
+    await supabase.from("support_tickets").insert([
+      {
+        client_email: email,
+        subject: ticketSubject,
+        message: ticketMessage,
+      },
+    ]);
+
+    await supabase.from("activity_logs").insert([
+      {
+        user_email: email,
+        action: "Created support ticket",
+        module: "Support",
+      },
+    ]);
+
+    setTicketSubject("");
+    setTicketMessage("");
+
+    const { data: refreshedTickets } = await supabase
+      .from("support_tickets")
+      .select("*")
+      .eq("client_email", email)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    setTickets(refreshedTickets || []);
   };
 
   if (loading) {
@@ -76,7 +129,6 @@ export default function ClientPortal() {
     <main className="min-h-screen app-bg">
       <Navbar />
 
-      {/* HERO */}
       <section className="mx-auto max-w-7xl px-4 pb-16 pt-32">
         <div className="glass-card rounded-[2rem] p-8 md:p-12">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
@@ -101,9 +153,7 @@ export default function ClientPortal() {
                 <UserCircle2 className="h-14 w-14 text-sky-500" />
 
                 <div>
-                  <p className="text-sm app-subtle">
-                    Logged in as
-                  </p>
+                  <p className="text-sm app-subtle">Logged in as</p>
 
                   <p className="max-w-[260px] break-words font-bold">
                     {session?.user?.email}
@@ -123,7 +173,6 @@ export default function ClientPortal() {
         </div>
       </section>
 
-      {/* OVERVIEW */}
       <section className="mx-auto max-w-7xl px-4 pb-10">
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           <div className="glass-card rounded-[2rem] p-8">
@@ -131,9 +180,7 @@ export default function ClientPortal() {
               <FolderKanban className="h-8 w-8" />
             </div>
 
-            <h2 className="text-2xl font-black">
-              Projects
-            </h2>
+            <h2 className="text-2xl font-black">Projects</h2>
 
             <p className="mt-4 leading-8 app-muted">
               Track active projects, deployment progress,
@@ -150,9 +197,7 @@ export default function ClientPortal() {
               <FileText className="h-8 w-8" />
             </div>
 
-            <h2 className="text-2xl font-black">
-              Invoices
-            </h2>
+            <h2 className="text-2xl font-black">Invoices</h2>
 
             <p className="mt-4 leading-8 app-muted">
               View invoices, download branded PDF copies,
@@ -169,28 +214,96 @@ export default function ClientPortal() {
               <MessageSquare className="h-8 w-8" />
             </div>
 
-            <h2 className="text-2xl font-black">
-              Support
-            </h2>
+            <h2 className="text-2xl font-black">Support</h2>
 
             <p className="mt-4 leading-8 app-muted">
-              Contact MKETICS regarding support,
-              technical issues, upgrades, or service requests.
+              Create support tickets and track MKETICS
+              responses inside your portal.
             </p>
 
-            <a
-              href="https://wa.me/27722864367"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-flex rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-            >
-              Contact Support
-            </a>
+            <p className="mt-6 text-3xl font-black text-sky-500">
+              {tickets.length}
+            </p>
           </div>
         </div>
       </section>
 
-      {/* INVOICES */}
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Support Center
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Support Tickets
+          </h2>
+
+          <div className="mt-8 grid gap-5">
+            <input
+              type="text"
+              placeholder="Ticket Subject"
+              value={ticketSubject}
+              onChange={(e) => setTicketSubject(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <textarea
+              placeholder="Describe your issue..."
+              value={ticketMessage}
+              onChange={(e) => setTicketMessage(e.target.value)}
+              rows={5}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <button
+              onClick={createTicket}
+              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
+            >
+              Submit Ticket
+            </button>
+          </div>
+
+          <div className="mt-10 grid gap-5">
+            {tickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="rounded-[2rem] app-surface p-6"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-black">
+                      {ticket.subject}
+                    </h3>
+
+                    <p className="mt-2 app-muted">
+                      {ticket.message}
+                    </p>
+
+                    <p className="mt-3 text-sm app-subtle">
+                      {ticket.created_at
+                        ? new Date(ticket.created_at).toLocaleString("en-ZA")
+                        : "—"}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-orange-500/10 px-4 py-2 text-xs font-black text-orange-500">
+                    {ticket.status || "Open"}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {!tickets.length && (
+              <div className="rounded-[2rem] app-surface p-8 text-center">
+                <p className="font-bold app-muted">
+                  No support tickets yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
           <div>
@@ -233,32 +346,23 @@ export default function ClientPortal() {
                         </span>
                       </div>
 
-                      <p className="mt-2 app-muted">
-                        {invoice.service}
-                      </p>
+                      <p className="mt-2 app-muted">{invoice.service}</p>
 
                       <p className="mt-4 text-3xl font-black text-sky-500">
-                        R
-                        {Number(
-                          invoice.amount || 0
-                        ).toLocaleString()}
+                        R{Number(invoice.amount || 0).toLocaleString()}
                       </p>
 
                       <p className="mt-2 text-sm app-subtle">
                         Created:{" "}
                         {invoice.created_at
-                          ? new Date(
-                              invoice.created_at
-                            ).toLocaleDateString("en-ZA")
+                          ? new Date(invoice.created_at).toLocaleDateString("en-ZA")
                           : "—"}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-3">
                       <button
-                        onClick={() =>
-                          exportInvoicePDF(invoice)
-                        }
+                        onClick={() => exportInvoicePDF(invoice)}
                         className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
                       >
                         <Download className="h-4 w-4" />

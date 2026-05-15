@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [projects, setProjects] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [quotes, setQuotes] = useState([]);
+  const [tickets, setTickets] = useState([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -57,7 +58,7 @@ export default function AdminDashboard() {
   const [projectClient, setProjectClient] = useState("");
   const [projectStatus, setProjectStatus] = useState("Planning");
   const [projectProgress, setProjectProgress] = useState(0);
-  
+
   useEffect(() => {
     const initialize = async () => {
       const { data } = await supabase.auth.getSession();
@@ -82,18 +83,25 @@ export default function AdminDashboard() {
   }, []);
 
   const loadDashboardData = async () => {
-    const [leadsRes, projectsRes, invoicesRes, quotesRes] =
-      await Promise.all([
-        supabase.from("leads").select("*").order("created_at", { ascending: false }),
-        supabase.from("projects").select("*").order("created_at", { ascending: false }),
-        supabase.from("invoices").select("*").order("created_at", { ascending: false }),
-        supabase.from("quotes").select("*").order("created_at", { ascending: false }),
-      ]);
+    const [
+      leadsRes,
+      projectsRes,
+      invoicesRes,
+      quotesRes,
+      ticketsRes,
+    ] = await Promise.all([
+      supabase.from("leads").select("*").order("created_at", { ascending: false }),
+      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("invoices").select("*").order("created_at", { ascending: false }),
+      supabase.from("quotes").select("*").order("created_at", { ascending: false }),
+      supabase.from("support_tickets").select("*").order("created_at", { ascending: false }),
+    ]);
 
     setLeads(leadsRes.data || []);
     setProjects(projectsRes.data || []);
     setInvoices(invoicesRes.data || []);
     setQuotes(quotesRes.data || []);
+    setTickets(ticketsRes.data || []);
   };
 
   const refreshDashboard = async () => {
@@ -125,6 +133,89 @@ export default function AdminDashboard() {
     await updateLeadStatus(id, "Archived");
   };
 
+  const createInvoice = async () => {
+    if (!invoiceEmail || !invoiceNumber || !invoiceService || !invoiceAmount) {
+      alert("Complete all invoice fields.");
+      return;
+    }
+
+    await supabase.from("invoices").insert([
+      {
+        client_email: invoiceEmail,
+        invoice_number: invoiceNumber,
+        service: invoiceService,
+        amount: invoiceAmount,
+        status: "Unpaid",
+      },
+    ]);
+
+    setInvoiceEmail("");
+    setInvoiceNumber("");
+    setInvoiceService("");
+    setInvoiceAmount("");
+
+    await loadDashboardData();
+  };
+
+  const markInvoicePaid = async (id, currentStatus) => {
+    await supabase
+      .from("invoices")
+      .update({
+        status: currentStatus === "Paid" ? "Unpaid" : "Paid",
+      })
+      .eq("id", id);
+
+    await loadDashboardData();
+  };
+
+  const createProject = async () => {
+    if (!projectName || !projectClient) {
+      alert("Complete all project fields.");
+      return;
+    }
+
+    await supabase.from("projects").insert([
+      {
+        project_name: projectName,
+        client_email: projectClient,
+        status: projectStatus,
+        progress: Math.min(100, Math.max(0, Number(projectProgress))),
+      },
+    ]);
+
+    setProjectName("");
+    setProjectClient("");
+    setProjectStatus("Planning");
+    setProjectProgress(0);
+
+    await loadDashboardData();
+  };
+
+  const updateProjectStatus = async (id, status) => {
+    await supabase.from("projects").update({ status }).eq("id", id);
+    await loadDashboardData();
+  };
+
+  const updateProjectProgress = async (id, progress) => {
+    await supabase
+      .from("projects")
+      .update({
+        progress: Math.min(100, Math.max(0, Number(progress))),
+      })
+      .eq("id", id);
+
+    await loadDashboardData();
+  };
+
+  const updateTicketStatus = async (id, status) => {
+    await supabase
+      .from("support_tickets")
+      .update({ status })
+      .eq("id", id);
+
+    await loadDashboardData();
+  };
+
   const filteredLeads = leads.filter((lead) => {
     const searchTerm = search.toLowerCase();
 
@@ -141,101 +232,6 @@ export default function AdminDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const createInvoice = async () => {
-  if (
-    !invoiceEmail ||
-    !invoiceNumber ||
-    !invoiceService ||
-    !invoiceAmount
-  ) {
-    alert("Complete all invoice fields.");
-    return;
-  }
-
-  await supabase.from("invoices").insert([
-    {
-      client_email: invoiceEmail,
-      invoice_number: invoiceNumber,
-      service: invoiceService,
-      amount: invoiceAmount,
-      status: "Unpaid",
-    },
-  ]);
-
-  setInvoiceEmail("");
-  setInvoiceNumber("");
-  setInvoiceService("");
-  setInvoiceAmount("");
-
-  await loadDashboardData();
-};
-
-const markInvoicePaid = async (id, currentStatus) => {
-  await supabase
-    .from("invoices")
-    .update({
-      status: currentStatus === "Paid" ? "Unpaid" : "Paid",
-    })
-    .eq("id", id);
-
-  await loadDashboardData();
-};
-
-const createProject = async () => {
-  if (!projectName || !projectClient) {
-    alert("Complete all project fields.");
-    return;
-  }
-
-  await supabase.from("projects").insert([
-    {
-      project_name: projectName,
-      client_email: projectClient,
-      status: projectStatus,
-      progress: Math.min(
-        100,
-        Math.max(0, Number(projectProgress))
-        ),
-    },
-  ]);
-
-  setProjectName("");
-  setProjectClient("");
-  setProjectStatus("Planning");
-  setProjectProgress(0);
-
-  await loadDashboardData();
-};
-
-const updateProjectStatus = async (
-  id,
-  status
-) => {
-  await supabase
-    .from("projects")
-    .update({ status })
-    .eq("id", id);
-
-  await loadDashboardData();
-};
-
-const updateProjectProgress = async (
-  id,
-  progress
-) => {
-  await supabase
-    .from("projects")
-    .update({
-      progress: Math.min(
-        100,
-        Math.max(0, Number(progress))
-        ),
-    })
-    .eq("id", id);
-
-  await loadDashboardData();
-};
-
   const totalInvoiceValue = invoices.reduce(
     (sum, invoice) => sum + Number(invoice.amount || 0),
     0
@@ -248,7 +244,10 @@ const updateProjectProgress = async (
     })
   );
 
-  const maxStatusCount = Math.max(...statusCounts.map((item) => item.count), 1);
+  const maxStatusCount = Math.max(
+    ...statusCounts.map((item) => item.count),
+    1
+  );
 
   const stats = [
     {
@@ -273,6 +272,12 @@ const updateProjectProgress = async (
       title: "Invoice Value",
       value: `R${totalInvoiceValue.toLocaleString()}`,
       icon: Wallet,
+      color: "text-orange-500",
+    },
+    {
+      title: "Support Tickets",
+      value: tickets.length,
+      icon: Activity,
       color: "text-orange-500",
     },
   ];
@@ -345,7 +350,7 @@ const updateProjectProgress = async (
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
@@ -442,318 +447,393 @@ const updateProjectProgress = async (
         </div>
       </section>
 
-<section className="mx-auto max-w-7xl px-4 pb-10">
-  <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-          Invoice System
-        </p>
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+                Invoice System
+              </p>
 
-        <h2 className="mt-3 text-3xl font-black">
-          Create Invoice
-        </h2>
-      </div>
-    </div>
+              <h2 className="mt-3 text-3xl font-black">
+                Create Invoice
+              </h2>
+            </div>
+          </div>
 
-    <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-      <input
-        type="email"
-        placeholder="Client Email"
-        value={invoiceEmail}
-        onChange={(e) => setInvoiceEmail(e.target.value)}
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+            <input
+              type="email"
+              placeholder="Client Email"
+              value={invoiceEmail}
+              onChange={(e) => setInvoiceEmail(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-      <input
-        type="text"
-        placeholder="Invoice Number"
-        value={invoiceNumber}
-        onChange={(e) => setInvoiceNumber(e.target.value)}
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+            <input
+              type="text"
+              placeholder="Invoice Number"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-      <input
-        type="text"
-        placeholder="Service"
-        value={invoiceService}
-        onChange={(e) => setInvoiceService(e.target.value)}
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+            <input
+              type="text"
+              placeholder="Service"
+              value={invoiceService}
+              onChange={(e) => setInvoiceService(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-      <input
-        type="number"
-        placeholder="Amount"
-        value={invoiceAmount}
-        onChange={(e) => setInvoiceAmount(e.target.value)}
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+            <input
+              type="number"
+              placeholder="Amount"
+              value={invoiceAmount}
+              onChange={(e) => setInvoiceAmount(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-      <button
-        onClick={createInvoice}
-        className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
-      >
-        Create Invoice
-      </button>
-    </div>
-
-    <div className="mt-10 overflow-x-auto">
-      <table className="min-w-full">
-        <thead>
-          <tr className="border-b border-slate-200 dark:border-white/10">
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Invoice
-            </th>
-
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Client
-            </th>
-
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Service
-            </th>
-
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Amount
-            </th>
-
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Status
-            </th>
-
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Actions
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {invoices.map((invoice) => (
-            <tr
-              key={invoice.id}
-              className="border-b border-slate-100 dark:border-white/5"
+            <button
+              onClick={createInvoice}
+              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
             >
-              <td className="px-4 py-5 font-bold">
-                {invoice.invoice_number}
-              </td>
+              Create Invoice
+            </button>
+          </div>
 
-              <td className="px-4 py-5">
-                {invoice.client_email}
-              </td>
+          <div className="mt-10 overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-white/10">
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Invoice
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Client
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Service
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Amount
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
 
-              <td className="px-4 py-5">
-                {invoice.service}
-              </td>
-
-              <td className="px-4 py-5 font-black text-sky-500">
-                R{Number(invoice.amount || 0).toLocaleString()}
-              </td>
-
-              <td className="px-4 py-5">
-                <span
-                  className={`rounded-full px-4 py-2 text-xs font-black ${
-                    invoice.status === "Paid"
-                      ? "bg-green-500/10 text-green-500"
-                      : "bg-orange-500/10 text-orange-500"
-                  }`}
-                >
-                  {invoice.status}
-                </span>
-              </td>
-
-              <td className="px-4 py-5">
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() =>
-                      markInvoicePaid(invoice.id, invoice.status)
-                    }
-                    className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"
+              <tbody>
+                {invoices.map((invoice) => (
+                  <tr
+                    key={invoice.id}
+                    className="border-b border-slate-100 dark:border-white/5"
                   >
-                    Toggle Status
-                  </button>
+                    <td className="px-4 py-5 font-bold">
+                      {invoice.invoice_number}
+                    </td>
 
-                  <button
-                    onClick={() => exportInvoicePDF(invoice)}
-                    className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
-                  >
-                    PDF
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+                    <td className="px-4 py-5">
+                      {invoice.client_email}
+                    </td>
 
-<section className="mx-auto max-w-7xl px-4 pb-10">
-  <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-          Project Tracking
-        </p>
+                    <td className="px-4 py-5">
+                      {invoice.service}
+                    </td>
 
-        <h2 className="mt-3 text-3xl font-black">
-          Project Boards
-        </h2>
-      </div>
-    </div>
+                    <td className="px-4 py-5 font-black text-sky-500">
+                      R{Number(invoice.amount || 0).toLocaleString()}
+                    </td>
 
-    {/* CREATE PROJECT */}
-    <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-      <input
-        type="text"
-        placeholder="Project Name"
-        value={projectName}
-        onChange={(e) =>
-          setProjectName(e.target.value)
-        }
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+                    <td className="px-4 py-5">
+                      <span
+                        className={`rounded-full px-4 py-2 text-xs font-black ${
+                          invoice.status === "Paid"
+                            ? "bg-green-500/10 text-green-500"
+                            : "bg-orange-500/10 text-orange-500"
+                        }`}
+                      >
+                        {invoice.status || "Unpaid"}
+                      </span>
+                    </td>
 
-      <input
-        type="email"
-        placeholder="Client Email"
-        value={projectClient}
-        onChange={(e) =>
-          setProjectClient(e.target.value)
-        }
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+                    <td className="px-4 py-5">
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={() => markInvoicePaid(invoice.id, invoice.status)}
+                          className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"
+                        >
+                          Toggle Status
+                        </button>
 
-      <select
-        value={projectStatus}
-        onChange={(e) =>
-          setProjectStatus(e.target.value)
-        }
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      >
-        <option>Planning</option>
-        <option>In Progress</option>
-        <option>Testing</option>
-        <option>Completed</option>
-      </select>
+                        <button
+                          onClick={() => exportInvoicePDF(invoice)}
+                          className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
+                        >
+                          PDF
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
 
-      <input
-        type="number"
-        placeholder="Progress %"
-        value={projectProgress}
-        onChange={(e) =>
-          setProjectProgress(e.target.value)
-        }
-        className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-      />
+                {!invoices.length && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-16 text-center">
+                      <p className="text-lg font-bold app-muted">
+                        No invoices found.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-      <button
-        onClick={createProject}
-        className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
-      >
-        Create Project
-      </button>
-    </div>
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+                Project Tracking
+              </p>
 
-    {/* PROJECT TABLE */}
-    <div className="mt-10 overflow-x-auto">
-      <table className="min-w-full">
-        <thead>
-          <tr className="border-b border-slate-200 dark:border-white/10">
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Project
-            </th>
+              <h2 className="mt-3 text-3xl font-black">
+                Project Boards
+              </h2>
+            </div>
+          </div>
 
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Client
-            </th>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+            <input
+              type="text"
+              placeholder="Project Name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Status
-            </th>
+            <input
+              type="email"
+              placeholder="Client Email"
+              value={projectClient}
+              onChange={(e) => setProjectClient(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-            <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-              Progress
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {projects.map((project) => (
-            <tr
-              key={project.id}
-              className="border-b border-slate-100 dark:border-white/5"
+            <select
+              value={projectStatus}
+              onChange={(e) => setProjectStatus(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
             >
-              <td className="px-4 py-5 font-bold">
-                {project.project_name}
-              </td>
+              <option>Planning</option>
+              <option>In Progress</option>
+              <option>Testing</option>
+              <option>Completed</option>
+            </select>
 
-              <td className="px-4 py-5">
-                {project.client_email}
-              </td>
+            <input
+              type="number"
+              placeholder="Progress %"
+              value={projectProgress}
+              onChange={(e) => setProjectProgress(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
 
-              <td className="px-4 py-5">
-                <select
-                  value={project.status}
-                  onChange={(e) =>
-                    updateProjectStatus(
-                      project.id,
-                      e.target.value
-                    )
-                  }
-                  className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
-                >
-                  <option>Planning</option>
-                  <option>In Progress</option>
-                  <option>Testing</option>
-                  <option>Completed</option>
-                </select>
-              </td>
+            <button
+              onClick={createProject}
+              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
+            >
+              Create Project
+            </button>
+          </div>
 
+          <div className="mt-10 overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-white/10">
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Project
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Client
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Progress
+                  </th>
+                </tr>
+              </thead>
 
-              <td className="px-4 py-5">
-                <div className="flex items-center gap-4">
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-purple-500"
-                      style={{
-                        width: `${project.progress || 0}%`,
-                      }}
-                    />
-                  </div>
+              <tbody>
+                {projects.map((project) => (
+                  <tr
+                    key={project.id}
+                    className="border-b border-slate-100 dark:border-white/5"
+                  >
+                    <td className="px-4 py-5 font-bold">
+                      {project.project_name}
+                    </td>
 
-                  <input
-                    type="number"
-                    value={project.progress || 0}
-                    onChange={(e) =>
-                      updateProjectProgress(
-                        project.id,
-                        e.target.value
-                      )
-                    }
-                    className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black outline-none dark:border-white/10 dark:bg-white/5"
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
-          {!projects.length && (
-  <tr>
-    <td
-      colSpan={4}
-      className="px-4 py-16 text-center"
-    >
-      <p className="text-lg font-bold app-muted">
-        No projects found.
-      </p>
-    </td>
-  </tr>
-)}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+                    <td className="px-4 py-5">
+                      {project.client_email}
+                    </td>
+
+                    <td className="px-4 py-5">
+                      <select
+                        value={project.status || "Planning"}
+                        onChange={(e) =>
+                          updateProjectStatus(project.id, e.target.value)
+                        }
+                        className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
+                      >
+                        <option>Planning</option>
+                        <option>In Progress</option>
+                        <option>Testing</option>
+                        <option>Completed</option>
+                      </select>
+                    </td>
+
+                    <td className="px-4 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                          <div
+                            className="h-full rounded-full bg-purple-500"
+                            style={{
+                              width: `${project.progress || 0}%`,
+                            }}
+                          />
+                        </div>
+
+                        <input
+                          type="number"
+                          value={project.progress || 0}
+                          onChange={(e) =>
+                            updateProjectProgress(project.id, e.target.value)
+                          }
+                          className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black outline-none dark:border-white/10 dark:bg-white/5"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {!projects.length && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-16 text-center">
+                      <p className="text-lg font-bold app-muted">
+                        No projects found.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+                Support System
+              </p>
+
+              <h2 className="mt-3 text-3xl font-black">
+                Ticket Management
+              </h2>
+            </div>
+          </div>
+
+          <div className="mt-10 overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-white/10">
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Client
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Subject
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Message
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {tickets.map((ticket) => (
+                  <tr
+                    key={ticket.id}
+                    className="border-b border-slate-100 dark:border-white/5"
+                  >
+                    <td className="px-4 py-5 font-bold">
+                      {ticket.client_email}
+                    </td>
+
+                    <td className="px-4 py-5">
+                      {ticket.subject}
+                    </td>
+
+                    <td className="px-4 py-5 max-w-[350px]">
+                      <p className="line-clamp-2">
+                        {ticket.message}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-5">
+                      <select
+                        value={ticket.status || "Open"}
+                        onChange={(e) =>
+                          updateTicketStatus(ticket.id, e.target.value)
+                        }
+                        className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
+                      >
+                        <option>Open</option>
+                        <option>In Progress</option>
+                        <option>Resolved</option>
+                        <option>Closed</option>
+                      </select>
+                    </td>
+
+                    <td className="px-4 py-5 text-sm app-subtle">
+                      {ticket.created_at
+                        ? new Date(ticket.created_at).toLocaleDateString("en-ZA")
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+
+                {!tickets.length && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-16 text-center">
+                      <p className="text-lg font-bold app-muted">
+                        No support tickets found.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
@@ -806,12 +886,24 @@ const updateProjectProgress = async (
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Client</th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Service</th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Budget</th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Date</th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Status</th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">Actions</th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Client
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Service
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Budget
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Date
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
