@@ -14,6 +14,7 @@ import ClientRegister from "./pages/ClientRegister";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientPortal from "./pages/ClientPortal";
+import ProposalApproval from "./pages/ProposalApproval";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -169,6 +170,10 @@ function App() {
 
   if (path === "/client-portal") {
     return <ClientPortal />;
+  }
+
+  if (path === "/proposal-approval") {
+    return <ProposalApproval />;
   }
 
   if (path === "/admin") {
