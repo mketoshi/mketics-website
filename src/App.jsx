@@ -3,6 +3,8 @@ import "./App.css";
 import { useEffect, useState } from "react";
 import { supabase } from "./lib/supabaseClient";
 
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Home from "./pages/Home";
 import Services from "./pages/Services";
 import Portfolio from "./pages/Portfolio";
@@ -152,8 +154,12 @@ function App() {
     return <MketicsDigitalHub />;
   }
 
-  if (path === "/client-login") {
-    return <ClientLogin />;
+  if (path === "/client-portal") {
+    return (
+      <ProtectedRoute>
+        <ClientPortal />
+      </ProtectedRoute>
+    );
   }
 
   if (path === "/client-register") {
@@ -211,7 +217,11 @@ function App() {
       );
     }
 
-    return <AdminDashboard />;
+    return (
+  <ProtectedRoute requiredRole="admin">
+    <AdminDashboard />
+  </ProtectedRoute>
+);
   }
 
   return <Home />;
