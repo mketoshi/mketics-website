@@ -23,6 +23,8 @@ import {
 export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [workspaceId, setWorkspaceId] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
   const [projectUpdates, setProjectUpdates] = useState([]);
@@ -68,10 +70,27 @@ export default function ClientPortal() {
 
       const email = data.session.user.email;
 
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.session.user.id)
+        .single();
+
+      if (profileError || !profileData) {
+        toast.error("Workspace profile not found. Please contact MKETICS support.");
+        setLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+      setWorkspaceId(profileData.workspace_id);
+
+      const workspace = profileData.workspace_id;
+
       const { data: invoiceData } = await supabase
         .from("invoices")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", {
           ascending: false,
         });
@@ -81,7 +100,7 @@ export default function ClientPortal() {
       const { data: projectData } = await supabase
         .from("projects")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", {
           ascending: false,
         });
@@ -101,7 +120,7 @@ export default function ClientPortal() {
       const { data: ticketData } = await supabase
         .from("support_tickets")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", {
           ascending: false,
         });
@@ -111,7 +130,7 @@ export default function ClientPortal() {
       const { data: projectFilesData } = await supabase
         .from("project_files")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", {
           ascending: false,
         });
@@ -121,7 +140,7 @@ export default function ClientPortal() {
       const { data: supportFilesData } = await supabase
         .from("support_files")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", {
           ascending: false,
         });
@@ -165,7 +184,7 @@ export default function ClientPortal() {
       const { data: subscriptionData } = await supabase
         .from("subscription_records")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", { ascending: false });
 
       setSubscriptionRecords(subscriptionData || []);
@@ -181,7 +200,7 @@ export default function ClientPortal() {
       const { data: proposalsData } = await supabase
         .from("generated_proposals")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", { ascending: false });
 
       setGeneratedProposals(proposalsData || []);
@@ -189,7 +208,7 @@ export default function ClientPortal() {
       const { data: paymentData } = await supabase
         .from("payment_transactions")
         .select("*")
-        .eq("client_email", email)
+        .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
         .order("created_at", { ascending: false });
 
       setPaymentTransactions(paymentData || []);
@@ -239,7 +258,7 @@ useEffect(() => {
 
 
 useEffect(() => {
-  if (!session?.user?.email) return;
+  if (!session?.user?.email || !workspaceId) return;
 
   const supportChannel = supabase
     .channel("client-support-live")
@@ -254,7 +273,7 @@ useEffect(() => {
         const { data: refreshedTickets } = await supabase
           .from("support_tickets")
           .select("*")
-          .eq("client_email", session.user.email)
+          .eq("workspace_id", workspaceId)
           .order("created_at", {
             ascending: false,
           });
@@ -267,7 +286,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(supportChannel);
   };
-}, [session]);
+}, [session, workspaceId]);
 
 useEffect(() => {
   if (!session?.user?.email) return;
@@ -299,7 +318,7 @@ useEffect(() => {
 }, [session]);
 
 useEffect(() => {
-  if (!session?.user?.email) return;
+  if (!session?.user?.email || !workspaceId) return;
 
   const paymentChannel = supabase
     .channel("client-payment-transactions-live")
@@ -314,7 +333,7 @@ useEffect(() => {
         const { data: paymentData } = await supabase
           .from("payment_transactions")
           .select("*")
-          .eq("client_email", session.user.email)
+          .eq("workspace_id", workspaceId)
           .order("created_at", { ascending: false });
 
         setPaymentTransactions(paymentData || []);
@@ -325,7 +344,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(paymentChannel);
   };
-}, [session]);
+}, [session, workspaceId]);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -334,11 +353,12 @@ useEffect(() => {
 
   const refreshFiles = async () => {
     const email = session.user.email;
+    const workspace = workspaceId;
 
     const { data: projectFilesData } = await supabase
       .from("project_files")
       .select("*")
-      .eq("client_email", email)
+      .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
       .order("created_at", {
         ascending: false,
       });
@@ -348,7 +368,7 @@ useEffect(() => {
     const { data: supportFilesData } = await supabase
       .from("support_files")
       .select("*")
-      .eq("client_email", email)
+      .or(`workspace_id.eq.${workspace},client_email.eq.${email}`)
       .order("created_at", {
         ascending: false,
       });
@@ -406,6 +426,7 @@ useEffect(() => {
     await supabase.from("project_files").insert([
       {
         project_id: selectedProjectFileId,
+        workspace_id: workspaceId,
         client_email: email,
         file_name: clientProjectFile.name,
         file_url: filePath,
@@ -467,6 +488,7 @@ useEffect(() => {
     await supabase.from("support_files").insert([
       {
         ticket_id: selectedSupportTicketId,
+        workspace_id: workspaceId,
         client_email: email,
         file_name: clientSupportFile.name,
         file_url: filePath,
@@ -571,6 +593,7 @@ const createTicket = async () => {
 
     await supabase.from("support_tickets").insert([
       {
+        workspace_id: workspaceId,
         client_email: email,
         subject: ticketSubject,
         message: ticketMessage,
@@ -591,7 +614,7 @@ const createTicket = async () => {
     const { data: refreshedTickets } = await supabase
       .from("support_tickets")
       .select("*")
-      .eq("client_email", email)
+      .or(`workspace_id.eq.${workspaceId},client_email.eq.${email}`)
       .order("created_at", {
         ascending: false,
       });
@@ -634,6 +657,10 @@ const createTicket = async () => {
               <h1 className="mt-6 text-4xl font-black md:text-6xl">
                 Welcome Back
               </h1>
+
+              <p className="mt-4 text-lg font-bold text-sky-500">
+                Workspace: {profile?.company_name || "MKETICS Workspace"}
+              </p>
 
               <p className="mt-5 max-w-2xl text-lg leading-8 app-muted">
                 Access your MKETICS projects, invoices,
@@ -784,6 +811,9 @@ const createTicket = async () => {
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
           <p className="font-bold uppercase tracking-[0.2em] text-purple-500">My Workspace</p>
           <h2 className="mt-3 text-3xl font-black">Company Workspace Access</h2>
+          <p className="mt-4 text-sm app-muted">
+            Active workspace ID: {workspaceId || "Not assigned"}
+          </p>
 
           <div className="mt-8 grid gap-4">
             {clientWorkspaces.map((workspace) => (
