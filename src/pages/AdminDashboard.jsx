@@ -160,6 +160,12 @@ export default function AdminDashboard() {
   const [saasUsageTracking, setSaasUsageTracking] = useState([]);
   const [paymentTransactions, setPaymentTransactions] = useState([]);
   const [aiProposalTemplates, setAiProposalTemplates] = useState([]);
+  const [workspaceInvitations, setWorkspaceInvitations] = useState([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState([]);
+  const [workspaceAnalytics, setWorkspaceAnalytics] = useState([]);
+  const [workspaceUsageMetering, setWorkspaceUsageMetering] = useState([]);
+  const [saasPlans, setSaasPlans] = useState([]);
+  const [workspacePlanAssignments, setWorkspacePlanAssignments] = useState([]);
 
   const [usageClientEmail, setUsageClientEmail] = useState("");
   const [usageType, setUsageType] = useState("Projects");
@@ -174,6 +180,24 @@ export default function AdminDashboard() {
   const [templateName, setTemplateName] = useState("");
   const [templateServiceType, setTemplateServiceType] = useState("");
   const [templateContent, setTemplateContent] = useState("");
+
+  const [inviteWorkspaceId, setInviteWorkspaceId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("client");
+
+  const [analyticsWorkspaceId, setAnalyticsWorkspaceId] = useState("");
+  const [analyticsMetricName, setAnalyticsMetricName] = useState("Projects");
+  const [analyticsMetricValue, setAnalyticsMetricValue] = useState("");
+  const [analyticsMetricType, setAnalyticsMetricType] = useState("usage");
+  const [meterWorkspaceId, setMeterWorkspaceId] = useState("");
+  const [meterCategory, setMeterCategory] = useState("AI Quotes");
+  const [meterAmount, setMeterAmount] = useState("");
+  const [meterBillingCycle, setMeterBillingCycle] = useState("monthly");
+
+  const [planWorkspaceId, setPlanWorkspaceId] = useState("");
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [planBillingCycle, setPlanBillingCycle] = useState("monthly");
+  const [planRenewalDate, setPlanRenewalDate] = useState("");
 
 const generateProposalApprovalLink = async (proposal) => {
   try {
@@ -354,6 +378,12 @@ const generateProposalApprovalLink = async (proposal) => {
       usageTrackingRes,
       paymentTransactionsRes,
       proposalTemplatesRes,
+      workspaceInvitationsRes,
+      workspaceMembersRes,
+      workspaceAnalyticsRes,
+      workspaceUsageMeteringRes,
+      saasPlansRes,
+      workspacePlanAssignmentsRes,
     ] = await Promise.all([
       supabase.from("leads").select("*").order("created_at", { ascending: false }),
       supabase.from("projects").select("*").order("created_at", { ascending: false }),
@@ -432,6 +462,12 @@ const generateProposalApprovalLink = async (proposal) => {
       supabase.from("saas_usage_tracking").select("*").order("created_at", { ascending: false }),
       supabase.from("payment_transactions").select("*").order("created_at", { ascending: false }),
       supabase.from("ai_proposal_templates").select("*").order("created_at", { ascending: false }),
+      supabase.from("workspace_invitations").select("*").order("created_at", { ascending: false }),
+      supabase.from("workspace_members").select("*").order("created_at", { ascending: false }),
+      supabase.from("workspace_analytics").select("*").order("recorded_at", { ascending: false }),
+      supabase.from("workspace_usage_metering").select("*").order("created_at", { ascending: false }),
+      supabase.from("saas_plans").select("*").order("monthly_price", { ascending: true }),
+      supabase.from("workspace_plan_assignments").select("*, saas_plans(*)").order("created_at", { ascending: false }),
     ]);
 
     setLeads(leadsRes.data || []);
@@ -460,6 +496,12 @@ const generateProposalApprovalLink = async (proposal) => {
     setSaasUsageTracking(usageTrackingRes.data || []);
     setPaymentTransactions(paymentTransactionsRes.data || []);
     setAiProposalTemplates(proposalTemplatesRes.data || []);
+    setWorkspaceInvitations(workspaceInvitationsRes.data || []);
+    setWorkspaceMembers(workspaceMembersRes.data || []);
+    setWorkspaceAnalytics(workspaceAnalyticsRes.data || []);
+    setWorkspaceUsageMetering(workspaceUsageMeteringRes.data || []);
+    setSaasPlans(saasPlansRes.data || []);
+    setWorkspacePlanAssignments(workspacePlanAssignmentsRes.data || []);
   };
 
   const refreshDashboard = async () => {
@@ -1065,6 +1107,383 @@ const generateProposalApprovalLink = async (proposal) => {
   );
   const currentRole = currentStaffRecord?.role || "admin";
   const canManageFinance = ["admin", "manager", "finance"].includes(currentRole);
+
+
+
+
+  const assignWorkspacePlan = async () => {
+    if (!planWorkspaceId || !selectedPlanId) {
+      alert("Select workspace and SaaS plan.");
+      return;
+    }
+
+    const renewsAt = planRenewalDate
+      ? new Date(planRenewalDate)
+      : new Date();
+
+    if (!planRenewalDate) {
+      if (planBillingCycle === "annual") {
+        renewsAt.setFullYear(renewsAt.getFullYear() + 1);
+      } else {
+        renewsAt.setMonth(renewsAt.getMonth() + 1);
+      }
+    }
+
+    const { error } = await supabase.from("workspace_plan_assignments").insert([
+      {
+        workspace_id: planWorkspaceId,
+        plan_id: selectedPlanId,
+        billing_cycle: planBillingCycle,
+        status: "Active",
+        renews_at: renewsAt.toISOString(),
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not assign SaaS plan.");
+      return;
+    }
+
+    const selectedPlan = saasPlans.find((plan) => plan.id === selectedPlanId);
+    const selectedWorkspace = companyWorkspaces.find(
+      (workspace) => workspace.id === planWorkspaceId
+    );
+
+    await supabase.from("workspace_analytics").insert([
+      {
+        workspace_id: planWorkspaceId,
+        metric_name: "Active Plan",
+        metric_value: Number(selectedPlan?.monthly_price || 0),
+        metric_type: "subscription",
+      },
+    ]);
+
+    await logStaffAudit(
+      "Assigned SaaS plan",
+      "SaaS Billing",
+      `${selectedWorkspace?.company_name || planWorkspaceId} → ${selectedPlan?.plan_name || selectedPlanId}`
+    );
+
+    await supabase.from("admin_notifications").insert([
+      {
+        title: "SaaS Plan Assigned",
+        message: `${selectedWorkspace?.company_name || "Workspace"} was assigned to ${selectedPlan?.plan_name || "a plan"}.`,
+        type: "billing",
+        is_read: false,
+      },
+    ]);
+
+    toast.success("Workspace SaaS plan assigned");
+
+    setPlanWorkspaceId("");
+    setSelectedPlanId("");
+    setPlanBillingCycle("monthly");
+    setPlanRenewalDate("");
+
+    await loadDashboardData();
+  };
+
+  const updateWorkspacePlanStatus = async (assignmentId, status) => {
+    await supabase
+      .from("workspace_plan_assignments")
+      .update({ status })
+      .eq("id", assignmentId);
+
+    await logStaffAudit("Updated workspace plan status", "SaaS Billing", status);
+    toast.success("Plan status updated");
+    await loadDashboardData();
+  };
+
+  const createSubscriptionFromPlan = async (assignment) => {
+    const workspace = companyWorkspaces.find(
+      (item) => String(item.id) === String(assignment.workspace_id)
+    );
+
+    const plan = assignment.saas_plans;
+
+    if (!workspace || !plan) {
+      alert("Workspace or plan data missing.");
+      return;
+    }
+
+    const amount =
+      assignment.billing_cycle === "annual"
+        ? Number(plan.annual_price || 0)
+        : Number(plan.monthly_price || 0);
+
+    await supabase.from("subscription_records").insert([
+      {
+        workspace_id: assignment.workspace_id,
+        client_email: workspace.owner_email,
+        subscription_plan: plan.plan_name,
+        billing_cycle: assignment.billing_cycle,
+        amount,
+        payment_status: "Pending",
+        next_billing_date: assignment.renews_at || null,
+      },
+    ]);
+
+    await logStaffAudit(
+      "Created subscription from SaaS plan",
+      "Subscriptions",
+      `${workspace.owner_email} • ${plan.plan_name}`
+    );
+
+    toast.success("Subscription record created from plan");
+    await loadDashboardData();
+  };
+
+  const recordWorkspaceAnalytics = async () => {
+    if (!analyticsWorkspaceId || !analyticsMetricName || !analyticsMetricValue) {
+      alert("Complete analytics workspace, metric name, and value.");
+      return;
+    }
+
+    const { error } = await supabase.from("workspace_analytics").insert([
+      {
+        workspace_id: analyticsWorkspaceId,
+        metric_name: analyticsMetricName,
+        metric_value: Number(analyticsMetricValue || 0),
+        metric_type: analyticsMetricType,
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not record workspace analytics.");
+      return;
+    }
+
+    await logStaffAudit(
+      "Recorded workspace analytics",
+      "SaaS Analytics",
+      analyticsMetricName
+    );
+
+    toast.success("Workspace analytics recorded");
+
+    setAnalyticsWorkspaceId("");
+    setAnalyticsMetricName("Projects");
+    setAnalyticsMetricValue("");
+    setAnalyticsMetricType("usage");
+
+    await loadDashboardData();
+  };
+
+  const recordWorkspaceUsageMeter = async () => {
+    if (!meterWorkspaceId || !meterCategory || !meterAmount) {
+      alert("Complete usage workspace, category, and amount.");
+      return;
+    }
+
+    const { error } = await supabase.from("workspace_usage_metering").insert([
+      {
+        workspace_id: meterWorkspaceId,
+        usage_category: meterCategory,
+        usage_amount: Number(meterAmount || 0),
+        billing_cycle: meterBillingCycle,
+        recorded_by: session?.user?.email,
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not record usage meter.");
+      return;
+    }
+
+    await logStaffAudit(
+      "Recorded workspace usage meter",
+      "Usage Metering",
+      meterCategory
+    );
+
+    toast.success("Usage meter recorded");
+
+    setMeterWorkspaceId("");
+    setMeterCategory("AI Quotes");
+    setMeterAmount("");
+    setMeterBillingCycle("monthly");
+
+    await loadDashboardData();
+  };
+
+  const autoCalculateWorkspaceMetrics = async (workspace) => {
+    if (!workspace?.id) return;
+
+    const [
+      workspaceProjects,
+      workspaceInvoices,
+      workspacePayments,
+      workspaceTickets,
+      workspaceMembersData,
+    ] = await Promise.all([
+      supabase.from("projects").select("*").eq("workspace_id", workspace.id),
+      supabase.from("invoices").select("*").eq("workspace_id", workspace.id),
+      supabase.from("payment_transactions").select("*").eq("workspace_id", workspace.id),
+      supabase.from("support_tickets").select("*").eq("workspace_id", workspace.id),
+      supabase.from("workspace_members").select("*").eq("workspace_id", workspace.id),
+    ]);
+
+    const revenue = (workspaceInvoices.data || []).reduce(
+      (sum, invoice) =>
+        sum + Number(invoice.total_amount || invoice.amount || 0),
+      0
+    );
+
+    const paidPayments = (workspacePayments.data || []).filter(
+      (payment) => payment.payment_status === "Paid"
+    ).length;
+
+    const metrics = [
+      {
+        workspace_id: workspace.id,
+        metric_name: "Projects",
+        metric_value: workspaceProjects.data?.length || 0,
+        metric_type: "usage",
+      },
+      {
+        workspace_id: workspace.id,
+        metric_name: "Invoices",
+        metric_value: workspaceInvoices.data?.length || 0,
+        metric_type: "billing",
+      },
+      {
+        workspace_id: workspace.id,
+        metric_name: "Revenue",
+        metric_value: revenue,
+        metric_type: "revenue",
+      },
+      {
+        workspace_id: workspace.id,
+        metric_name: "Paid Payments",
+        metric_value: paidPayments,
+        metric_type: "payments",
+      },
+      {
+        workspace_id: workspace.id,
+        metric_name: "Support Tickets",
+        metric_value: workspaceTickets.data?.length || 0,
+        metric_type: "support",
+      },
+      {
+        workspace_id: workspace.id,
+        metric_name: "Members",
+        metric_value: workspaceMembersData.data?.length || 0,
+        metric_type: "team",
+      },
+    ];
+
+    const { error } = await supabase.from("workspace_analytics").insert(metrics);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not auto-calculate workspace metrics.");
+      return;
+    }
+
+    await logStaffAudit(
+      "Auto-calculated workspace metrics",
+      "SaaS Analytics",
+      workspace.company_name || workspace.id
+    );
+
+    toast.success("Workspace metrics calculated");
+    await loadDashboardData();
+  };
+
+  const createWorkspaceInvitation = async () => {
+    if (!inviteWorkspaceId || !inviteEmail) {
+      alert("Select workspace and enter invited email.");
+      return;
+    }
+
+    const token =
+      crypto.randomUUID() + "-" + Date.now().toString(36);
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 14);
+
+    const { error } = await supabase.from("workspace_invitations").insert([
+      {
+        workspace_id: inviteWorkspaceId,
+        invited_email: inviteEmail,
+        invited_role: inviteRole,
+        invited_by: session?.user?.email,
+        invitation_token: token,
+        status: "Pending",
+        expires_at: expiresAt.toISOString(),
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      toast.error("Could not create workspace invitation.");
+      return;
+    }
+
+    const inviteUrl = `${window.location.origin}/client-register?invite=${token}`;
+
+    await navigator.clipboard.writeText(inviteUrl);
+
+    await supabase.from("admin_notifications").insert([
+      {
+        title: "Workspace Invitation Created",
+        message: `${inviteEmail} was invited as ${inviteRole}.`,
+        type: "workspace",
+        is_read: false,
+      },
+    ]);
+
+    await logStaffAudit("Created workspace invitation", "Workspace", inviteEmail);
+
+    toast.success("Invitation link copied");
+    alert(`Invitation Link:\n\n${inviteUrl}`);
+
+    setInviteWorkspaceId("");
+    setInviteEmail("");
+    setInviteRole("client");
+
+    await loadDashboardData();
+  };
+
+  const cancelWorkspaceInvitation = async (invitationId) => {
+    await supabase
+      .from("workspace_invitations")
+      .update({ status: "Cancelled" })
+      .eq("id", invitationId);
+
+    toast.success("Invitation cancelled");
+    await loadDashboardData();
+  };
+
+  const addWorkspaceMemberManually = async (invitation) => {
+    if (!invitation?.workspace_id || !invitation?.invited_email) return;
+
+    await supabase.from("workspace_members").insert([
+      {
+        workspace_id: invitation.workspace_id,
+        email: invitation.invited_email,
+        role: invitation.invited_role || "client",
+        status: "Active",
+      },
+    ]);
+
+    await supabase
+      .from("workspace_invitations")
+      .update({ status: "Accepted" })
+      .eq("id", invitation.id);
+
+    await logStaffAudit(
+      "Added workspace member from invitation",
+      "Workspace Members",
+      invitation.invited_email
+    );
+
+    toast.success("Workspace member added");
+    await loadDashboardData();
+  };
 
   const createCompanyWorkspace = async () => {
     if (!workspaceCompanyName || !workspaceOwnerEmail) {
@@ -1841,6 +2260,42 @@ const updateLeadStatus = async (id, status) => {
       color: "text-sky-500",
     },
     {
+      title: "Invitations",
+      value: workspaceInvitations.length,
+      icon: UserPlus,
+      color: "text-green-500",
+    },
+    {
+      title: "Members",
+      value: workspaceMembers.length,
+      icon: Users,
+      color: "text-sky-500",
+    },
+    {
+      title: "SaaS Plans",
+      value: saasPlans.length,
+      icon: Wallet,
+      color: "text-green-500",
+    },
+    {
+      title: "Plan Assignments",
+      value: workspacePlanAssignments.length,
+      icon: CreditCard,
+      color: "text-sky-500",
+    },
+    {
+      title: "Analytics",
+      value: workspaceAnalytics.length,
+      icon: Activity,
+      color: "text-purple-500",
+    },
+    {
+      title: "Usage Metering",
+      value: workspaceUsageMetering.length,
+      icon: BarChart,
+      color: "text-green-500",
+    },
+    {
       title: "Audit Trails",
       value: staffAuditTrails.length,
       icon: ShieldCheck,
@@ -2222,6 +2677,557 @@ const updateLeadStatus = async (id, status) => {
             >
               Send Transactional EmailJS Message
             </button>
+          </div>
+        </div>
+      </section>
+
+
+
+
+      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
+            Commercial SaaS Plans
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Subscription Plan Catalog
+          </h2>
+
+          <p className="mt-4 leading-8 app-muted">
+            Manage Starter, Business, and Enterprise pricing packages for MKETICS SaaS workspaces.
+          </p>
+
+          <div className="mt-8 grid gap-4">
+            {saasPlans.map((plan) => (
+              <div key={plan.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-2xl font-black">{plan.plan_name}</p>
+                    <p className="mt-1 text-sm app-muted">
+                      {plan.plan_code} • {plan.support_level} Support
+                    </p>
+
+                    <div className="mt-4 grid gap-2 text-sm app-subtle sm:grid-cols-2">
+                      <p>Users: {plan.max_users}</p>
+                      <p>Projects: {plan.max_projects}</p>
+                      <p>AI Quotes: {plan.max_ai_quotes}</p>
+                      <p>Storage: {plan.max_storage_gb}GB</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-green-500/10 p-5 text-center">
+                    <p className="text-sm font-black uppercase tracking-[0.2em] text-green-500">
+                      Pricing
+                    </p>
+                    <p className="mt-2 text-2xl font-black">
+                      R{Number(plan.monthly_price || 0).toLocaleString()}/mo
+                    </p>
+                    <p className="mt-1 text-sm app-muted">
+                      R{Number(plan.annual_price || 0).toLocaleString()}/year
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {!saasPlans.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No SaaS plans found.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Workspace Plan Assignment
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Upgrade / Downgrade Workspaces
+          </h2>
+
+          <p className="mt-4 leading-8 app-muted">
+            Assign a commercial SaaS plan to a workspace and create billing records.
+          </p>
+
+          <div className="mt-8 grid gap-4">
+            <select
+              value={planWorkspaceId}
+              onChange={(e) => setPlanWorkspaceId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="">Select Workspace</option>
+              {companyWorkspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.company_name} • {workspace.owner_email}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedPlanId}
+              onChange={(e) => setSelectedPlanId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="">Select SaaS Plan</option>
+              {saasPlans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.plan_name} • R{Number(plan.monthly_price || 0).toLocaleString()}/mo
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={planBillingCycle}
+              onChange={(e) => setPlanBillingCycle(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="monthly">Monthly</option>
+              <option value="annual">Annual</option>
+            </select>
+
+            <input
+              type="date"
+              value={planRenewalDate}
+              onChange={(e) => setPlanRenewalDate(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <button
+              onClick={assignWorkspacePlan}
+              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
+            >
+              Assign SaaS Plan
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-4">
+            {workspacePlanAssignments.map((assignment) => {
+              const workspace = companyWorkspaces.find(
+                (item) => String(item.id) === String(assignment.workspace_id)
+              );
+
+              return (
+                <div key={assignment.id} className="rounded-2xl app-surface p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="font-black">
+                        {workspace?.company_name || "Workspace"} • {assignment.saas_plans?.plan_name || "Plan"}
+                      </p>
+                      <p className="mt-1 text-sm app-muted">
+                        {assignment.billing_cycle} • {assignment.status}
+                      </p>
+                      <p className="mt-1 text-xs app-subtle">
+                        Renews: {assignment.renews_at ? new Date(assignment.renews_at).toLocaleDateString("en-ZA") : "Not set"}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => createSubscriptionFromPlan(assignment)}
+                        className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
+                      >
+                        Create Billing
+                      </button>
+
+                      <button
+                        onClick={() => updateWorkspacePlanStatus(
+                          assignment.id,
+                          assignment.status === "Active" ? "Paused" : "Active"
+                        )}
+                        className="rounded-full bg-orange-500 px-5 py-3 text-sm font-black text-white"
+                      >
+                        {assignment.status === "Active" ? "Pause" : "Activate"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {!workspacePlanAssignments.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No workspace plan assignments yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-purple-500">
+            SaaS Analytics
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Workspace Metrics
+          </h2>
+
+          <p className="mt-4 leading-8 app-muted">
+            Track workspace usage, revenue, billing, projects, support, and team growth.
+          </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <select
+              value={analyticsWorkspaceId}
+              onChange={(e) => setAnalyticsWorkspaceId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
+            >
+              <option value="">Select Workspace</option>
+              {companyWorkspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.company_name} • {workspace.owner_email}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={analyticsMetricName}
+              onChange={(e) => setAnalyticsMetricName(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option>Projects</option>
+              <option>Invoices</option>
+              <option>Revenue</option>
+              <option>Support Tickets</option>
+              <option>AI Quotes</option>
+              <option>Storage</option>
+              <option>Members</option>
+              <option>Payments</option>
+            </select>
+
+            <select
+              value={analyticsMetricType}
+              onChange={(e) => setAnalyticsMetricType(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="usage">Usage</option>
+              <option value="revenue">Revenue</option>
+              <option value="billing">Billing</option>
+              <option value="support">Support</option>
+              <option value="team">Team</option>
+              <option value="automation">Automation</option>
+            </select>
+
+            <input
+              type="number"
+              placeholder="Metric Value"
+              value={analyticsMetricValue}
+              onChange={(e) => setAnalyticsMetricValue(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
+            />
+
+            <button
+              onClick={recordWorkspaceAnalytics}
+              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
+            >
+              Save Metric
+            </button>
+
+            <button
+              onClick={() => {
+                const selected = companyWorkspaces.find(
+                  (workspace) => String(workspace.id) === String(analyticsWorkspaceId)
+                );
+
+                if (!selected) {
+                  alert("Select a workspace first.");
+                  return;
+                }
+
+                autoCalculateWorkspaceMetrics(selected);
+              }}
+              className="rounded-2xl bg-black px-5 py-4 font-black text-white"
+            >
+              Auto Calculate
+            </button>
+          </div>
+
+          <div className="mt-8 h-[320px] rounded-[2rem] app-surface p-5">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={workspaceAnalytics.slice(0, 10).reverse()}>
+                <XAxis dataKey="metric_name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="metric_value" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-8 grid gap-4">
+            {workspaceAnalytics.slice(0, 12).map((metric) => (
+              <div key={metric.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-black">{metric.metric_name}</p>
+                    <p className="mt-1 text-sm app-muted">
+                      {metric.metric_type} • {metric.workspace_id}
+                    </p>
+                  </div>
+
+                  <p className="text-2xl font-black text-purple-500">
+                    {Number(metric.metric_value || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!workspaceAnalytics.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No workspace analytics yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
+            Usage Metering
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            SaaS Consumption Tracking
+          </h2>
+
+          <p className="mt-4 leading-8 app-muted">
+            Track billable usage such as AI quotes, tickets, storage, staff seats, invoices, and API calls.
+          </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <select
+              value={meterWorkspaceId}
+              onChange={(e) => setMeterWorkspaceId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
+            >
+              <option value="">Select Workspace</option>
+              {companyWorkspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.company_name} • {workspace.owner_email}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={meterCategory}
+              onChange={(e) => setMeterCategory(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option>AI Quotes</option>
+              <option>Invoices</option>
+              <option>Storage</option>
+              <option>Support Tickets</option>
+              <option>Staff Seats</option>
+              <option>Projects</option>
+              <option>Payment Links</option>
+              <option>API Calls</option>
+            </select>
+
+            <select
+              value={meterBillingCycle}
+              onChange={(e) => setMeterBillingCycle(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="annual">Annual</option>
+            </select>
+
+            <input
+              type="number"
+              placeholder="Usage Amount"
+              value={meterAmount}
+              onChange={(e) => setMeterAmount(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
+            />
+
+            <button
+              onClick={recordWorkspaceUsageMeter}
+              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white md:col-span-2"
+            >
+              Record Usage
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-4">
+            {workspaceUsageMetering.slice(0, 14).map((usage) => (
+              <div key={usage.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-black">{usage.usage_category}</p>
+                    <p className="mt-1 text-sm app-muted">
+                      {usage.billing_cycle} • {usage.workspace_id}
+                    </p>
+                    <p className="mt-1 text-xs app-subtle">
+                      Recorded by {usage.recorded_by || "system"}
+                    </p>
+                  </div>
+
+                  <p className="text-2xl font-black text-green-500">
+                    {Number(usage.usage_amount || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!workspaceUsageMetering.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No usage metering yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
+            Workspace Team Access
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Team Invitations
+          </h2>
+
+          <p className="mt-4 leading-8 app-muted">
+            Invite clients, staff, managers, and workspace users into isolated company workspaces.
+          </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <select
+              value={inviteWorkspaceId}
+              onChange={(e) => setInviteWorkspaceId(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
+            >
+              <option value="">Select Workspace</option>
+              {companyWorkspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.company_name} • {workspace.owner_email}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="email"
+              placeholder="Invited Email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            />
+
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
+            >
+              <option value="client">Client</option>
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+              <option value="finance">Finance</option>
+              <option value="admin">Admin</option>
+            </select>
+
+            <button
+              onClick={createWorkspaceInvitation}
+              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white md:col-span-2"
+            >
+              Create Invitation Link
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-4">
+            {workspaceInvitations.map((invite) => (
+              <div key={invite.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-black">{invite.invited_email}</p>
+                    <p className="mt-1 text-sm app-muted">
+                      Role: {invite.invited_role} • Status: {invite.status}
+                    </p>
+                    <p className="mt-1 text-xs app-subtle">
+                      Expires: {invite.expires_at ? new Date(invite.expires_at).toLocaleDateString("en-ZA") : "No expiry"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => {
+                        const inviteUrl = `${window.location.origin}/client-register?invite=${invite.invitation_token}`;
+                        navigator.clipboard.writeText(inviteUrl);
+                        toast.success("Invitation link copied");
+                      }}
+                      className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
+                    >
+                      Copy Link
+                    </button>
+
+                    {invite.status !== "Accepted" && (
+                      <button
+                        onClick={() => addWorkspaceMemberManually(invite)}
+                        className="rounded-full bg-purple-500 px-5 py-3 text-sm font-black text-white"
+                      >
+                        Add Member
+                      </button>
+                    )}
+
+                    {invite.status === "Pending" && (
+                      <button
+                        onClick={() => cancelWorkspaceInvitation(invite.id)}
+                        className="rounded-full bg-red-500 px-5 py-3 text-sm font-black text-white"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {!workspaceInvitations.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No workspace invitations yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
+            Workspace Members
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black">
+            Active Members
+          </h2>
+
+          <div className="mt-8 grid gap-4">
+            {workspaceMembers.map((member) => (
+              <div key={member.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="font-black">{member.email}</p>
+                    <p className="mt-1 text-sm app-muted">
+                      Role: {member.role} • Status: {member.status}
+                    </p>
+                    <p className="mt-1 text-xs app-subtle">
+                      Workspace: {member.workspace_id}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-green-500/10 px-4 py-2 text-xs font-black text-green-500">
+                    {member.status || "Active"}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {!workspaceMembers.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">No workspace members yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

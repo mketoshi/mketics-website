@@ -56,6 +56,7 @@ export default function ClientPortal() {
 
   const [paymentTransactions, setPaymentTransactions] = useState([]);
   const [saasUsageTracking, setSaasUsageTracking] = useState([]);
+  const [workspaceActivityFeed, setWorkspaceActivityFeed] = useState([]);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -86,6 +87,8 @@ export default function ClientPortal() {
       setWorkspaceId(profileData.workspace_id);
 
       const workspace = profileData.workspace_id;
+
+      await loadWorkspaceActivityFeed(workspace);
 
       const { data: invoiceData } = await supabase
         .from("invoices")
@@ -346,6 +349,71 @@ useEffect(() => {
   };
 }, [session, workspaceId]);
 
+
+
+useEffect(() => {
+  if (!session?.user?.email || !workspaceId) return;
+
+  const activityChannel = supabase
+    .channel("client-workspace-activity-live")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "workspace_activity_feed",
+        filter: `workspace_id=eq.${workspaceId}`,
+      },
+      async () => {
+        await loadWorkspaceActivityFeed(workspaceId);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(activityChannel);
+  };
+}, [session, workspaceId]);
+
+  const loadWorkspaceActivityFeed = async (workspace) => {
+    if (!workspace) return;
+
+    const { data } = await supabase
+      .from("workspace_activity_feed")
+      .select("*")
+      .eq("workspace_id", workspace)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    setWorkspaceActivityFeed(data || []);
+  };
+
+  const createWorkspaceActivity = async ({
+    activityType = "update",
+    activityTitle,
+    activityMessage = "",
+    relatedTable = "",
+    relatedRecordId = null,
+    visibility = "client",
+  }) => {
+    if (!workspaceId || !session?.user?.email || !activityTitle) return;
+
+    await supabase.from("workspace_activity_feed").insert([
+      {
+        workspace_id: workspaceId,
+        actor_email: session.user.email,
+        activity_type: activityType,
+        activity_title: activityTitle,
+        activity_message: activityMessage,
+        related_table: relatedTable,
+        related_record_id: relatedRecordId,
+        visibility,
+      },
+    ]);
+
+    await loadWorkspaceActivityFeed(workspaceId);
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/client-login";
@@ -444,6 +512,14 @@ useEffect(() => {
       },
     ]);
 
+    await createWorkspaceActivity({
+      activityType: "file_upload",
+      activityTitle: "Project file uploaded",
+      activityMessage: `${clientProjectFile.name} was uploaded to the workspace.`,
+      relatedTable: "project_files",
+      relatedRecordId: selectedProjectFileId,
+    });
+
     setSelectedProjectFileId("");
     setClientProjectFile(null);
     setUploadingFile(false);
@@ -505,6 +581,14 @@ useEffect(() => {
       },
     ]);
 
+    await createWorkspaceActivity({
+      activityType: "support_file",
+      activityTitle: "Support attachment uploaded",
+      activityMessage: `${clientSupportFile.name} was uploaded for a support ticket.`,
+      relatedTable: "support_files",
+      relatedRecordId: selectedSupportTicketId,
+    });
+
     setSelectedSupportTicketId("");
     setClientSupportFile(null);
     setUploadingFile(false);
@@ -523,6 +607,7 @@ useEffect(() => {
 
     await supabase.from("live_support_messages").insert([
       {
+        workspace_id: workspaceId,
         client_email: email,
         sender_email: email,
         sender_type: "client",
@@ -530,6 +615,13 @@ useEffect(() => {
         status: "Sent",
       },
     ]);
+
+    await createWorkspaceActivity({
+      activityType: "support_message",
+      activityTitle: "Live support message sent",
+      activityMessage: liveSupportMessage,
+      relatedTable: "live_support_messages",
+    });
 
     setLiveSupportMessage("");
     toast.success("Message sent");
@@ -607,6 +699,13 @@ const createTicket = async () => {
         module: "Support",
       },
     ]);
+
+    await createWorkspaceActivity({
+      activityType: "support_ticket",
+      activityTitle: "Support ticket created",
+      activityMessage: ticketSubject,
+      relatedTable: "support_tickets",
+    });
 
     setTicketSubject("");
     setTicketMessage("");
@@ -696,6 +795,79 @@ const createTicket = async () => {
       
       
       
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-[0.2em] text-green-500">
+                Live Workspace Activity
+              </p>
+
+              <h2 className="mt-3 text-3xl font-black">
+                Activity Feed
+              </h2>
+
+              <p className="mt-4 max-w-3xl leading-8 app-muted">
+                View realtime workspace updates, project activity, support events,
+                uploaded files, proposal actions, and billing activity.
+              </p>
+            </div>
+
+            <button
+              onClick={() => loadWorkspaceActivityFeed(workspaceId)}
+              className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
+            >
+              Refresh Feed
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-4">
+            {workspaceActivityFeed.map((activity) => (
+              <div key={activity.id} className="rounded-2xl app-surface p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs font-black uppercase text-green-500">
+                        {activity.activity_type || "update"}
+                      </span>
+
+                      <p className="font-black">
+                        {activity.activity_title}
+                      </p>
+                    </div>
+
+                    {activity.activity_message && (
+                      <p className="mt-3 leading-7 app-muted">
+                        {activity.activity_message}
+                      </p>
+                    )}
+
+                    <p className="mt-3 text-xs app-subtle">
+                      By {activity.actor_email || "MKETICS"} • {activity.related_table || "workspace"}
+                    </p>
+                  </div>
+
+                  <p className="shrink-0 text-sm app-subtle">
+                    {activity.created_at
+                      ? new Date(activity.created_at).toLocaleString("en-ZA")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {!workspaceActivityFeed.length && (
+              <div className="rounded-2xl app-surface p-8 text-center">
+                <p className="font-bold app-muted">
+                  No workspace activity yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
           <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
