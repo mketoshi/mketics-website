@@ -28,6 +28,10 @@ export default function Navbar() {
       href: "/portfolio",
     },
     {
+      label: "Pricing",
+      href: "/pricing",
+    },
+    {
       label: "Digital Hub",
       href: "/mketics-digital-hub",
     },
