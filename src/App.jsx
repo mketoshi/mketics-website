@@ -23,8 +23,8 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 
 const ADMIN_EMAILS = [
-"[smsane0505@gmail.com](mailto:smsane0505@gmail.com)",
-"[admin@mketics.co.za](mailto:admin@mketics.co.za)",
+  "smsane0505@gmail.com",
+  "admin@mketics.co.za",
 ];
 
 function App() {
@@ -39,16 +39,17 @@ setSession(data.session);
 setChecking(false);
 });
 
-```
-const { data: listener } =
-  supabase.auth.onAuthStateChange((_event, session) => {
-    setSession(session);
-  });
+
+const {
+  data: { subscription },
+} = supabase.auth.onAuthStateChange((_event, session) => {
+  setSession(session);
+});
 
 return () => {
-  listener.subscription.unsubscribe();
+  subscription?.unsubscribe();
 };
-```
+
 
 }, []);
 
@@ -116,7 +117,7 @@ description:
 },
 };
 
-```
+
 const current = seo[path] || seo["/"];
 
 document.title = current.title;
@@ -128,7 +129,7 @@ const meta = document.querySelector(
 if (meta) {
   meta.setAttribute("content", current.description);
 }
-```
+
 
 }, [path]);
 
@@ -139,14 +140,14 @@ return ( <main className="grid min-h-screen place-items-center app-bg"> <div cla
          className="mx-auto h-16 w-16 animate-pulse object-contain"
        />
 
-```
+
       <p className="mt-5 text-lg font-bold app-muted">
         Loading MKETICS...
       </p>
     </div>
   </main>
 );
-```
+
 
 }
 
@@ -200,7 +201,7 @@ if (!session) {
 return <AdminLogin />;
 }
 
-```
+
 if (!ADMIN_EMAILS.includes(session.user?.email)) {
   return (
     <main className="flex min-h-screen items-center justify-center app-bg px-4">
