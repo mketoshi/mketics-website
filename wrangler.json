@@ -2,12 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mketics-website",
   "compatibility_date": "2026-04-30",
+
+  "pages_build_output_dir": "dist",
+
   "observability": {
     "enabled": true
   },
+
   "assets": {
     "directory": "."
   },
+
   "compatibility_flags": [
     "nodejs_compat"
   ]
