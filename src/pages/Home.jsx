@@ -2,6 +2,7 @@ import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import QuoteForm from "../components/QuoteForm";
+import SaasConversionSection from "../components/SaasConversionSection";
 
 import emailjs from "@emailjs/browser";
 import { supabase } from "../lib/supabaseClient";
@@ -726,6 +727,7 @@ const generatePDF = async () => {
           notice={notice}
         />
       </section>
+      <SaasConversionSection />
 
       <Footer />
     </main>

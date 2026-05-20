@@ -11,6 +11,7 @@ import Portfolio from "./pages/Portfolio";
 import Contact from "./pages/Contact";
 import MketicsDigitalHub from "./pages/MketicsDigitalHub";
 import PublicSaasSignup from "./pages/PublicSaasSignup";
+import Pricing from "./pages/Pricing";
 
 import ClientLogin from "./pages/ClientLogin";
 import ClientRegister from "./pages/ClientRegister";
@@ -69,6 +70,11 @@ description:
 title: "Portfolio | MKETICS",
 description:
 "View MKETICS technology projects, infrastructure deployments, software systems, and digital business solutions.",
+},
+"/pricing": {
+  title: "Pricing | MKETICS SaaS",
+  description:
+    "Compare MKETICS Starter, Business and Enterprise SaaS plans for AI proposals, client portals, invoices, CRM and workspace automation.",
 },
 "/contact": {
 title: "Contact MKETICS",
@@ -200,7 +206,9 @@ if (path === "/admin") {
 if (!session) {
 return <AdminLogin />;
 }
-
+if (path === "/pricing") {
+  return <Pricing />;
+}
 
 if (!ADMIN_EMAILS.includes(session.user?.email)) {
   return (
