@@ -307,7 +307,7 @@ export default function SaasConversionSection() {
         </div>
       </div>
 
-      <div className="fixed bottom-5 right-5 z-50">
+      <div className="fixed bottom-5 right-5 z-50 hidden sm:block">
         <a
           href="/start-trial"
           className="rounded-full bg-sky-500 px-6 py-4 font-black text-white shadow-2xl transition hover:scale-105"

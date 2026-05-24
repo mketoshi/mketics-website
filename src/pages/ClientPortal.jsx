@@ -744,8 +744,13 @@ const createTicket = async () => {
       <Toaster position="top-right" />
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-32">
-        <div className="glass-card rounded-[2rem] p-8 md:p-12">
+      <section className="relative overflow-hidden px-4 pb-12 pt-28">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute left-10 top-10 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
+          <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-purple-500 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-7xl">
+        <div className="glass-card rounded-[2.5rem] p-8 shadow-2xl md:p-12">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-4 py-2 text-sm font-bold text-sky-600 dark:text-sky-300">
@@ -790,11 +795,61 @@ const createTicket = async () => {
             </div>
           </div>
         </div>
+        </div>
       </section>
 
-      
-      
-      
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              label: "Projects",
+              value: projects.length,
+              icon: FolderKanban,
+              color: "text-sky-500",
+            },
+            {
+              label: "Invoices",
+              value: invoices.length,
+              icon: FileText,
+              color: "text-green-500",
+            },
+            {
+              label: "Support Tickets",
+              value: tickets.length,
+              icon: MessageSquare,
+              color: "text-purple-500",
+            },
+            {
+              label: "Notifications",
+              value: clientNotifications.length,
+              icon: Bell,
+              color: "text-orange-500",
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <div
+                key={item.label}
+                className="glass-card rounded-[2rem] p-6 shadow-xl transition hover:-translate-y-1 hover:border-sky-400/30"
+              >
+                <div className={`inline-flex rounded-2xl bg-white/5 p-4 ${item.color}`}>
+                  <Icon className="h-8 w-8" />
+                </div>
+
+                <p className="mt-5 text-sm font-black uppercase tracking-[0.2em] app-subtle">
+                  {item.label}
+                </p>
+
+                <h2 className="mt-3 text-4xl font-black">
+                  {item.value}
+                </h2>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-10">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">

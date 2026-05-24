@@ -9,6 +9,9 @@ import {
   Search,
   LayoutDashboard,
   CheckCircle2,
+  Rocket,
+  ShieldCheck,
+  BarChart3,
 } from "lucide-react";
 
 const services = [
@@ -16,28 +19,50 @@ const services = [
     icon: Globe2,
     title: "Website Management",
     description:
-      "Professional websites, landing pages, hosting management, updates, and business web platforms.",
+      "Professional websites, landing pages, hosting management, updates and scalable business web platforms.",
   },
-
   {
     icon: Palette,
     title: "Brand Identity",
     description:
-      "Logo systems, brand visuals, digital assets, social media graphics, and business presentation design.",
+      "Logo systems, brand visuals, digital assets, social media graphics and presentation design.",
   },
-
   {
     icon: Search,
     title: "SEO & Digital Presence",
     description:
-      "Search optimization, Google visibility, online business profiles, and digital positioning strategies.",
+      "Search optimization, Google visibility, online business profiles and digital positioning strategies.",
   },
-
   {
     icon: LayoutDashboard,
     title: "Content & Digital Systems",
     description:
-      "Content systems, digital workflows, online customer experiences, and business engagement tools.",
+      "Content systems, digital workflows, online customer experiences and engagement tools.",
+  },
+];
+
+const benefits = [
+  "Premium digital branding",
+  "Modern website systems",
+  "SEO-focused structure",
+  "Business growth positioning",
+];
+
+const metrics = [
+  {
+    value: "100%",
+    label: "Custom Branding",
+    icon: Sparkles,
+  },
+  {
+    value: "24/7",
+    label: "Digital Presence",
+    icon: Globe2,
+  },
+  {
+    value: "SEO",
+    label: "Growth Focused",
+    icon: BarChart3,
   },
 ];
 
@@ -46,56 +71,94 @@ export default function MketicsDigitalHub() {
     <main className="min-h-screen app-bg">
       <Navbar />
 
-      {/* HERO */}
-      <section className="mx-auto max-w-7xl px-4 pb-24 pt-32 text-center">
-        <img
-          src="/images/logo-icon.webp"
-          alt="MKETICS"
-          loading="lazy"
-          className="mx-auto h-16 w-16 object-contain drop-shadow-[0_0_25px_rgba(56,189,248,0.35)] sm:h-20 sm:w-20 md:h-24 md:w-24"
-        />
+      <section className="relative overflow-hidden px-4 pb-24 pt-32">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute left-10 top-10 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
+          <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-purple-500 blur-3xl" />
+        </div>
 
-        <p className="mt-8 font-bold uppercase tracking-[0.3em] text-sky-500">
-          Digital Hub
-        </p>
+        <div className="relative mx-auto max-w-7xl text-center">
+          <img
+            src="/images/logo-icon.webp"
+            alt="MKETICS"
+            loading="lazy"
+            className="mx-auto h-16 w-16 object-contain drop-shadow-[0_0_25px_rgba(56,189,248,0.35)] sm:h-20 sm:w-20 md:h-24 md:w-24"
+          />
 
-        <h1 className="mt-6 text-5xl font-black leading-tight md:text-7xl">
-          Digital Presence & Business Growth
-        </h1>
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-5 py-2 text-sm font-black text-sky-500">
+            <ShieldCheck className="h-4 w-4" />
+            MKETICS Digital Hub
+          </div>
 
-        <p className="mx-auto mt-8 max-w-4xl text-lg leading-8 app-muted">
-          MKETICS Digital Hub helps businesses
-          establish, manage, and scale their digital
-          presence through branding, websites, SEO,
-          content systems, and customer experiences.
-        </p>
+          <h1 className="mt-8 text-5xl font-black leading-tight md:text-7xl">
+            Digital Presence &
+            <span className="block bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">
+              Business Growth
+            </span>
+          </h1>
 
-        <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-          <a
-            href="/contact"
-            className="brand-gradient inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 font-black text-white"
-          >
-            Start Your Project
+          <p className="mx-auto mt-8 max-w-4xl text-lg leading-8 app-muted">
+            MKETICS Digital Hub helps businesses establish, manage and scale
+            their digital presence through branding, websites, SEO, content
+            systems and customer experiences.
+          </p>
 
-            <ArrowRight className="h-5 w-5" />
-          </a>
+          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+            <a
+              href="/contact"
+              className="brand-gradient inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 font-black text-white shadow-xl"
+            >
+              Start Your Project
+              <ArrowRight className="h-5 w-5" />
+            </a>
 
-          <a
-            href="/portfolio"
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-8 py-4 font-black text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-          >
-            View Portfolio
-          </a>
+            <a
+              href="/portfolio"
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-8 py-4 font-black text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+            >
+              View Portfolio
+            </a>
+
+            <a
+              href="/start-trial"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-400/20 bg-sky-500/10 px-8 py-4 font-black text-sky-600 dark:text-sky-300"
+            >
+              <Rocket className="h-5 w-5" />
+              Start Trial
+            </a>
+          </div>
+
+          <div className="mt-14 grid gap-5 sm:grid-cols-3">
+            {metrics.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.label}
+                  className="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-xl"
+                >
+                  <Icon className="mx-auto h-8 w-8 text-sky-500" />
+
+                  <p className="mt-4 text-4xl font-black text-sky-500">
+                    {item.value}
+                  </p>
+
+                  <p className="mt-2 font-bold app-muted">
+                    {item.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* SERVICES */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="grid gap-6 md:grid-cols-2">
           {services.map((service) => (
             <div
               key={service.title}
-              className="glass-card rounded-[2rem] p-8"
+              className="glass-card rounded-[2rem] p-8 transition hover:-translate-y-1 hover:border-sky-400/30"
             >
               <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500">
                 <service.icon className="h-8 w-8" />
@@ -113,50 +176,40 @@ export default function MketicsDigitalHub() {
         </div>
       </section>
 
-      {/* WHY DIGITAL HUB */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
-        <div className="glass-card rounded-[2rem] p-10">
+        <div className="glass-card rounded-[2.5rem] p-10">
           <div className="max-w-3xl">
-            <p className="font-bold uppercase tracking-[0.3em] text-sky-500">
+            <p className="font-black uppercase tracking-[0.3em] text-sky-500">
               Why Digital Hub
             </p>
 
             <h2 className="mt-4 text-4xl font-black md:text-5xl">
-              Modern digital experiences for modern
-              businesses.
+              Modern digital experiences for modern businesses.
             </h2>
 
             <p className="mt-6 leading-8 app-muted">
-              MKETICS Digital Hub combines design,
-              branding, strategy, and digital systems
-              to help businesses strengthen their online
-              presence and customer engagement.
+              MKETICS Digital Hub combines design, branding, strategy and digital
+              systems to help businesses strengthen their online presence and
+              customer engagement.
             </p>
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2">
-            {[
-              "Premium digital branding",
-              "Modern website systems",
-              "SEO-focused structure",
-              "Business growth positioning",
-            ].map((item) => (
+            {benefits.map((item) => (
               <div
                 key={item}
                 className="flex items-center gap-3 rounded-2xl app-surface p-5"
               >
                 <CheckCircle2 className="h-5 w-5 text-sky-500" />
-
-                <span>{item}</span>
+                <span className="font-bold">{item}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
-        <div className="brand-gradient rounded-[2rem] p-10 text-center text-white">
+        <div className="brand-gradient rounded-[2.5rem] p-10 text-center text-white shadow-2xl">
           <Sparkles className="mx-auto h-12 w-12" />
 
           <h2 className="mt-6 text-4xl font-black">
@@ -164,17 +217,25 @@ export default function MketicsDigitalHub() {
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-            Let MKETICS help build your business
-            presence, brand identity, and modern
-            digital experience.
+            Let MKETICS help build your business presence, brand identity and
+            modern digital experience.
           </p>
 
-          <a
-            href="/contact"
-            className="mt-8 inline-flex rounded-full bg-white px-8 py-4 font-black text-slate-950"
-          >
-            Contact MKETICS
-          </a>
+          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <a
+              href="/contact"
+              className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 font-black text-slate-950"
+            >
+              Contact MKETICS
+            </a>
+
+            <a
+              href="/portfolio"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-8 py-4 font-black text-white"
+            >
+              View Portfolio
+            </a>
+          </div>
         </div>
       </section>
 

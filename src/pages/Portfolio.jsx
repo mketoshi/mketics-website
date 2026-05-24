@@ -9,6 +9,8 @@ import {
   Network,
   ShieldCheck,
   Sparkles,
+  BarChart3,
+  Rocket,
 } from "lucide-react";
 
 const projects = [
@@ -17,83 +19,48 @@ const projects = [
     category: "System Design & Development",
     icon: Code2,
     description:
-      "Client portal, admin dashboard, invoice system, payment integration, project tracking, and workflow automation.",
-    technologies: [
-      "React",
-      "Supabase",
-      "Automation",
-      "Cloud",
-    ],
+      "Client portal, admin dashboard, invoice system, payment integration, project tracking and workflow automation.",
+    technologies: ["React", "Supabase", "Automation", "Cloud"],
   },
-
   {
     title: "Cloud Invoice & Payment System",
     category: "System Design & Development",
     icon: Code2,
     description:
-      "Automated invoices, client access systems, secure workflows, PDF generation, and digital payment integration.",
-    technologies: [
-      "PDF",
-      "Payments",
-      "Client Portal",
-      "Automation",
-    ],
+      "Automated invoices, client access systems, secure workflows, PDF generation and digital payment integration.",
+    technologies: ["PDF", "Payments", "Client Portal", "Automation"],
   },
-
   {
     title: "Business Network Deployment",
     category: "IT & Network Infrastructure",
     icon: Network,
     description:
-      "WiFi deployment, structured cabling, CCTV integration, and enterprise infrastructure planning.",
-    technologies: [
-      "Networking",
-      "WiFi",
-      "CCTV",
-      "Infrastructure",
-    ],
+      "WiFi deployment, structured cabling, CCTV integration and enterprise infrastructure planning.",
+    technologies: ["Networking", "WiFi", "CCTV", "Infrastructure"],
   },
-
   {
     title: "CCTV Cloud Infrastructure",
     category: "IT & Network Infrastructure",
     icon: Network,
     description:
-      "Cloud retention planning, centralized monitoring, and enterprise CCTV infrastructure systems.",
-    technologies: [
-      "Cloud",
-      "Monitoring",
-      "Storage",
-      "Security",
-    ],
+      "Cloud retention planning, centralized monitoring and enterprise CCTV infrastructure systems.",
+    technologies: ["Cloud", "Monitoring", "Storage", "Security"],
   },
-
   {
     title: "MKETICS Brand System",
     category: "Digital Hub",
     icon: Sparkles,
     description:
-      "Brand identity, website systems, quote flow design, and customer digital experiences.",
-    technologies: [
-      "Branding",
-      "UX/UI",
-      "SEO",
-      "Web",
-    ],
+      "Brand identity, website systems, quote flow design and customer digital experiences.",
+    technologies: ["Branding", "UX/UI", "SEO", "Web"],
   },
-
   {
     title: "Digital Business Setup",
     category: "Digital Hub",
     icon: Sparkles,
     description:
-      "Online presence, business positioning, SEO structure, and digital platform development.",
-    technologies: [
-      "Digital",
-      "SEO",
-      "Growth",
-      "Platforms",
-    ],
+      "Online presence, business positioning, SEO structure and digital platform development.",
+    technologies: ["Digital", "SEO", "Growth", "Platforms"],
   },
 ];
 
@@ -104,42 +71,59 @@ const proof = [
   "Professional digital infrastructure",
 ];
 
+const metrics = [
+  {
+    value: "6+",
+    label: "Capability Areas",
+    icon: BarChart3,
+  },
+  {
+    value: "3",
+    label: "Core Divisions",
+    icon: Rocket,
+  },
+  {
+    value: "100%",
+    label: "Custom Delivery",
+    icon: ShieldCheck,
+  },
+];
+
 export default function Portfolio() {
   return (
     <main className="min-h-screen app-bg">
       <Navbar />
 
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.12),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_55%)]" />
+      <section className="relative overflow-hidden px-4 pb-20 pt-32">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute left-10 top-10 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
+          <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-purple-500 blur-3xl" />
+        </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-28 text-center sm:pt-32">
+        <div className="relative mx-auto max-w-7xl text-center">
           <img
             src="/images/logo-icon.webp?v=2"
             alt="MKETICS"
             loading="lazy"
-            className="mx-auto h-16 w-16 object-contain drop-shadow-[0_0_25px_rgba(56,189,248,0.35)] sm:h-20 sm:w-20 md:h-24 md:w-24"
+            className="mx-auto h-20 w-20 object-contain drop-shadow-[0_0_25px_rgba(56,189,248,0.35)]"
           />
 
-          <p className="mt-8 font-bold uppercase tracking-[0.3em] text-sky-500">
+          <p className="mt-8 font-black uppercase tracking-[0.3em] text-sky-500">
             Portfolio
           </p>
 
           <h1 className="mt-6 text-5xl font-black leading-tight md:text-7xl">
-            Technology
-            <span className="bg-gradient-to-r from-sky-500 to-blue-700 bg-clip-text text-transparent dark:from-sky-400 dark:to-blue-500">
-              {" "}
-              Capabilities
+            Technology Capabilities
+            <span className="block bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">
+              Built By MKETICS
             </span>
           </h1>
 
           <p className="mx-auto mt-8 max-w-3xl text-lg leading-8 app-muted">
-            A showcase of MKETICS business systems,
-            infrastructure deployments, digital platforms,
-            and enterprise technology solutions.
+            A showcase of MKETICS business systems, infrastructure deployments,
+            digital platforms and enterprise technology solutions.
           </p>
 
-          {/* TRUST */}
           <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
             {proof.map((item) => (
               <div
@@ -147,17 +131,27 @@ export default function Portfolio() {
                 className="flex items-center gap-3 rounded-2xl app-surface px-5 py-4"
               >
                 <ShieldCheck className="h-5 w-5 shrink-0 text-sky-500" />
-
-                <span className="text-sm font-bold app-muted">
-                  {item}
-                </span>
+                <span className="text-sm font-bold app-muted">{item}</span>
               </div>
             ))}
+          </div>
+
+          <div className="mt-12 grid gap-5 sm:grid-cols-3">
+            {metrics.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div key={item.label} className="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-xl">
+                  <Icon className="mx-auto h-8 w-8 text-sky-500" />
+                  <p className="mt-4 text-4xl font-black text-sky-500">{item.value}</p>
+                  <p className="mt-2 font-bold app-muted">{item.label}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* PROJECTS */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((project) => {
@@ -168,7 +162,6 @@ export default function Portfolio() {
                 key={project.title}
                 className="group glass-card flex min-h-full flex-col rounded-[2rem] p-7 transition duration-300 hover:-translate-y-2 hover:border-sky-400/40"
               >
-                {/* TOP */}
                 <div className="flex items-start justify-between gap-5">
                   <div className="rounded-2xl bg-sky-500/10 p-4 text-sky-500 transition group-hover:scale-110">
                     <Icon className="h-8 w-8" />
@@ -182,22 +175,18 @@ export default function Portfolio() {
                   />
                 </div>
 
-                {/* CATEGORY */}
-                <p className="mt-8 text-sm font-bold uppercase tracking-[0.2em] text-sky-500">
+                <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-sky-500">
                   {project.category}
                 </p>
 
-                {/* TITLE */}
                 <h2 className="mt-3 text-2xl font-black">
                   {project.title}
                 </h2>
 
-                {/* DESCRIPTION */}
                 <p className="mt-4 flex-1 leading-8 app-muted">
                   {project.description}
                 </p>
 
-                {/* TECHNOLOGIES */}
                 <div className="mt-6 flex flex-wrap gap-3">
                   {project.technologies.map((tech) => (
                     <div
@@ -209,7 +198,6 @@ export default function Portfolio() {
                   ))}
                 </div>
 
-                {/* FOOTER */}
                 <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-5 dark:border-white/10">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] app-subtle">
@@ -235,9 +223,8 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 pb-24">
-        <div className="brand-gradient overflow-hidden rounded-[2rem] p-8 text-center text-white sm:p-10 lg:p-14">
+        <div className="brand-gradient overflow-hidden rounded-[2.5rem] p-8 text-center text-white shadow-2xl sm:p-10 lg:p-14">
           <Sparkles className="mx-auto h-12 w-12" />
 
           <h2 className="mt-6 text-4xl font-black md:text-5xl">
@@ -245,10 +232,9 @@ export default function Portfolio() {
           </h2>
 
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/90">
-            MKETICS helps businesses design, deploy,
-            and modernize software systems, digital
-            platforms, networking infrastructure,
-            and cloud-ready business solutions.
+            MKETICS helps businesses design, deploy and modernize software
+            systems, digital platforms, networking infrastructure and cloud-ready
+            business solutions.
           </p>
 
           <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
@@ -257,7 +243,6 @@ export default function Portfolio() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 font-black text-slate-950"
             >
               Request Quote
-
               <ArrowRight className="h-5 w-5" />
             </a>
 
