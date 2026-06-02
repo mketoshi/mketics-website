@@ -228,6 +228,17 @@ export default function Contact() {
         </div>
       </section>
 
+      
+      <section className="mx-auto max-w-7xl px-4 pb-14">
+        <div className="rounded-[2rem] border border-sky-400/20 bg-sky-500/5 p-6 sm:p-8">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-500">Company Trust</p>
+          <h2 className="mt-3 text-2xl font-black">MKETICS (PTY) LTD</h2>
+          <p className="mt-4 app-muted">
+            Registration No. 2026/290708/07 • Enterprise No. K2026290708 • B-BBEE Level 1 Contributor • 135% procurement recognition.
+          </p>
+        </div>
+      </section>
+
       <Footer />
     </main>
   );

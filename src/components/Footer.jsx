@@ -154,6 +154,17 @@ export default function Footer() {
           </div>
         </div>
       </div>
+    
+      <div className="mt-8 rounded-3xl border border-sky-400/20 bg-sky-500/5 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-400">Trust & Compliance</p>
+        <div className="mt-4 grid gap-3 text-sm app-muted sm:grid-cols-2 lg:grid-cols-4">
+          <p><span className="font-black text-white">Registered:</span> MKETICS (PTY) LTD</p>
+          <p><span className="font-black text-white">Reg No:</span> 2026/290708/07</p>
+          <p><span className="font-black text-white">B-BBEE:</span> Level 1 Contributor</p>
+          <p><span className="font-black text-white">Recognition:</span> 135% Procurement</p>
+        </div>
+      </div>
+
     </footer>
   );
 }

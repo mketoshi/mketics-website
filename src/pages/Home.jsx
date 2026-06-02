@@ -706,6 +706,30 @@ const generatePDF = async () => {
           </div>
         </div>
       </section>
+      
+      <section className="mx-auto max-w-7xl px-4 pb-14">
+        <div className="brand-panel rounded-[2rem] p-6 sm:p-8">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-500">Trust & Compliance</p>
+          <h2 className="mt-3 text-3xl font-black">A registered South African technology company</h2>
+          <p className="mt-4 max-w-3xl leading-8 app-muted">
+            MKETICS (PTY) LTD is registered in South Africa and holds B-BBEE Level 1 Contributor status with 135% procurement recognition.
+          </p>
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Registration No.", "2026/290708/07"],
+              ["Enterprise No.", "K2026290708"],
+              ["B-BBEE Status", "Level 1 Contributor"],
+              ["Procurement", "135% Recognition"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl app-surface p-5">
+                <p className="text-xs font-black uppercase tracking-[0.18em] app-subtle">{label}</p>
+                <p className="mt-2 font-black text-sky-500">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </main>
   );
