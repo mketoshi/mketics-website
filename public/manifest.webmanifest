@@ -1,0 +1,9 @@
+{
+  "name": "MKETICS",
+  "short_name": "MKETICS",
+  "description": "Software, IT infrastructure, cloud, CCTV and digital business solutions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617"
+}
