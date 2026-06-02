@@ -3,7 +3,7 @@ import {
   X,
   UserCircle,
   LogOut,
-  Rocket,
+  Download,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -17,8 +17,8 @@ export default function Navbar() {
   const links = [
     { label: "Home", href: "/" },
     { label: "Services", href: "/services" },
+    { label: "Solutions", href: "/solutions" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Portfolio", href: "/portfolio" },
     { label: "Digital Hub", href: "/mketics-digital-hub" },
     { label: "Contact", href: "/contact" },
   ];
@@ -45,22 +45,24 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-2xl dark:border-white/10 dark:bg-[#020617]/90">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <a href="/" className="flex items-center gap-3">
-          <img
-            src="/images/logo-icon.webp?v=2"
-            alt="MKETICS"
-            className="h-12 w-12 object-contain drop-shadow-[0_0_20px_rgba(14,165,233,0.35)]"
-          />
+    <header className="sticky top-0 z-50 mketics-nav-shell border-b border-slate-200/70 bg-white/95 backdrop-blur-2xl dark:border-white/10 dark:bg-[#020617]/95">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <a href="/" className="flex min-w-0 items-center gap-3">
+          <span className="mketics-logo-frame h-12 w-12 shrink-0 sm:h-14 sm:w-14">
+            <img
+              src="/images/logo-icon.webp?v=2"
+              alt="MKETICS"
+              className="h-9 w-9 object-contain drop-shadow-[0_0_20px_rgba(14,165,233,0.35)] sm:h-10 sm:w-10"
+            />
+          </span>
 
-          <div>
-            <h1 className="text-xl font-black tracking-wide text-slate-950 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-black tracking-wide text-slate-950 dark:text-white sm:text-xl">
               MKETICS
             </h1>
 
             <p className="hidden text-[10px] font-bold tracking-[0.22em] text-sky-600 dark:text-sky-300 sm:block">
-              SYSTEMS • INFRASTRUCTURE • DIGITAL
+              BUILD • CONNECT • PROTECT
             </p>
           </div>
         </a>
@@ -70,24 +72,25 @@ export default function Navbar() {
             <a
               key={link.label}
               href={link.href}
-              className="text-sm font-bold text-slate-600 transition hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-300"
+              className="rounded-full px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-sky-500/10 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-300"
             >
               {link.label}
             </a>
           ))}
 
           <a
-            href="/start-trial"
-            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:bg-sky-400"
+            href="/docs/MKETICS_Service_Catalogue.pdf"
+            download
+            className="mketics-button-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-black transition"
           >
-            <Rocket className="h-4 w-4" />
-            Start Trial
+            <Download className="h-4 w-4" />
+            Catalogue
           </a>
 
           {!session ? (
             <a
               href="/client-login"
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-sky-300 hover:text-sky-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-sky-300"
+              className="mketics-button-ghost rounded-full px-5 py-3 text-sm font-black transition"
             >
               Client Login
             </a>
@@ -129,7 +132,8 @@ export default function Navbar() {
 
         <button
           onClick={() => setOpen(!open)}
-          className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-3 text-slate-900 lg:hidden dark:border-white/10 dark:bg-white/5 dark:text-white"
+          className="inline-flex shrink-0 rounded-xl border border-slate-200 bg-slate-100 p-3 text-slate-900 lg:hidden dark:border-white/10 dark:bg-white/5 dark:text-white"
+          aria-expanded={open}
           aria-label="Toggle navigation menu"
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -137,61 +141,78 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white lg:hidden dark:border-white/10 dark:bg-[#020617]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5">
+        <div className="mobile-menu-panel border-t border-slate-200 bg-white shadow-2xl lg:hidden dark:border-white/10 dark:bg-[#020617]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 sm:px-6">
+            <p className="mb-1 text-xs font-black uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
+              Navigation
+            </p>
+
             {links.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200"
+                className="mketics-mobile-link flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-black text-slate-800 shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-white"
               >
-                {link.label}
+                <span>{link.label}</span>
+                <span className="text-sky-500">→</span>
               </a>
             ))}
 
-            <a
-              href="/start-trial"
-              onClick={() => setOpen(false)}
-              className="rounded-2xl bg-sky-500 px-5 py-4 text-center text-sm font-black text-white"
-            >
-              Start Free Trial
-            </a>
-
-            <a
-              href="/#quote"
-              onClick={() => setOpen(false)}
-              className="rounded-2xl border border-sky-400/20 bg-sky-500/10 px-5 py-4 text-center text-sm font-black text-sky-600 dark:text-sky-200"
-            >
-              Request Quote
-            </a>
-
-            {!session ? (
+            <div className="mt-2 grid gap-3">
               <a
-                href="/client-login"
+                href="/docs/MKETICS_Service_Catalogue.pdf"
+                download
                 onClick={() => setOpen(false)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-center text-sm font-bold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
+                className="rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 text-center text-base font-black text-sky-700 dark:text-sky-200"
               >
-                Client Login
+                Download Catalogue
               </a>
-            ) : (
-              <>
-                <a
-                  href="/client-portal"
-                  onClick={() => setOpen(false)}
-                  className="rounded-2xl border border-sky-400/20 bg-sky-500/10 px-5 py-4 text-center text-sm font-bold text-sky-700 dark:text-sky-200"
-                >
-                  Client Portal
-                </a>
 
-                <button
-                  onClick={logout}
-                  className="rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-500"
+              <a
+                href="/quote"
+                onClick={() => setOpen(false)}
+                className="mketics-button-primary rounded-2xl px-5 py-4 text-center text-base font-black transition"
+              >
+                Request Quote
+              </a>
+
+              <a
+            href="/docs/MKETICS_Service_Catalogue.pdf"
+            download
+            className="mketics-button-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-black transition"
+          >
+            <Download className="h-4 w-4" />
+            Catalogue
+          </a>
+
+          {!session ? (
+                <a
+                  href="/client-login"
+                  onClick={() => setOpen(false)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-center text-base font-black text-slate-700 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
                 >
-                  Logout
-                </button>
-              </>
-            )}
+                  Client Login
+                </a>
+              ) : (
+                <>
+                  <a
+                    href="/client-portal"
+                    onClick={() => setOpen(false)}
+                    className="rounded-2xl border border-sky-400/30 bg-sky-500/10 px-5 py-4 text-center text-base font-black text-sky-700 dark:text-sky-200"
+                  >
+                    Client Portal
+                  </a>
+
+                  <button
+                    onClick={logout}
+                    className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-base font-black text-red-500"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

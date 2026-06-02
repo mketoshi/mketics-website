@@ -239,7 +239,7 @@ export default function Portfolio() {
 
           <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
             <a
-              href="/#quote"
+              href="/quote"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 font-black text-slate-950"
             >
               Request Quote

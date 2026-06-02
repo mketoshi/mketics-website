@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import generateInvoicePdf from "../utils/generateInvoicePdf";
 
-const STATUS_OPTIONS = ["Unpaid", "Pending", "Paid", "Overdue", "Cancelled"];
+const STATUS_OPTIONS = ["Unpaid", "Paid"];
 
 export default function AdminInvoiceTable() {
   const [invoices, setInvoices] = useState([]);

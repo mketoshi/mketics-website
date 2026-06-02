@@ -7,12 +7,11 @@ import {
 import generateInvoicePdf from "../utils/generateInvoicePdf";
 
 export default function InvoiceCard({ invoice }) {
+  const normalizedStatus = invoice.status === "Paid" ? "Paid" : "Unpaid";
+
   const statusStyles = {
     Paid: "bg-green-500/10 text-green-300",
     Unpaid: "bg-red-500/10 text-red-300",
-    Pending: "bg-yellow-500/10 text-yellow-300",
-    Overdue: "bg-orange-500/10 text-orange-300",
-    Cancelled: "bg-slate-500/10 text-slate-300",
   };
 
   return (
@@ -81,7 +80,7 @@ export default function InvoiceCard({ invoice }) {
             "bg-sky-500/10 text-sky-300"
           }`}
         >
-          {invoice.status || "Unpaid"}
+          {normalizedStatus}
         </span>
       </div>
     </div>

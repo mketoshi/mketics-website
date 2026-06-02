@@ -188,7 +188,7 @@ export default function ClientRegister() {
 
             <div>
               <p className="font-black">
-                Secure SaaS Workspace
+                Secure Client Workspace
               </p>
 
               <p className="text-sm app-subtle">

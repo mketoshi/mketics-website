@@ -2,7 +2,6 @@ import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import QuoteForm from "../components/QuoteForm";
-import SaasConversionSection from "../components/SaasConversionSection";
 
 import emailjs from "@emailjs/browser";
 import { supabase } from "../lib/supabaseClient";
@@ -20,48 +19,48 @@ import {
 } from "lucide-react";
 
 const trustPoints = [
-  "Enterprise IT and infrastructure experience",
-  "Modern software and cloud solutions",
-  "Professional support and system delivery",
-  "Registered South African business",
+  "Hands-on IT and infrastructure experience",
+  "Software, cloud and CCTV planning",
+  "Clear communication and documentation",
+  "Founder-led South African business",
 ];
 
 const serviceCards = [
   {
-    title: "System Design & Development",
+    title: "Software Systems",
     icon: Code2,
     description:
-      "Custom software systems, dashboards, automation platforms, portals, APIs, and enterprise web applications.",
-    features: ["Business systems", "Client portals", "Automation", "Dashboards"],
+      "Client portals, dashboards, quote tools, invoice systems and custom online workflows built around real business needs.",
+    features: ["Client portals", "Invoices", "Automation", "Dashboards"],
   },
   {
-    title: "IT & Network Infrastructure",
+    title: "IT, Network & CCTV",
     icon: Network,
     description:
-      "Enterprise networking, WiFi deployment, CCTV integration, cloud infrastructure, support, and systems management.",
-    features: ["Networking", "WiFi", "CCTV", "Cloud systems"],
+      "Networking, Wi-Fi, CCTV, cloud support and technical documentation for offices, schools and business sites.",
+    features: ["Networking", "Wi-Fi", "CCTV", "Cloud support"],
   },
   {
     title: "Digital Hub",
     icon: Sparkles,
     description:
-      "Branding, websites, SEO, online business systems, and modern digital experiences.",
-    features: ["Websites", "Branding", "SEO", "Digital presence"],
+      "Websites, branding, company profiles, digital documents and practical support for growing businesses.",
+    features: ["Websites", "Branding", "Documents", "Digital presence"],
   },
 ];
 
 const proofStats = [
   {
-    value: "3",
-    label: "Core Service Divisions",
+    value: "Level 1",
+    label: "B-BBEE Contributor",
   },
   {
-    value: "24/7",
-    label: "Digital Access & Support",
+    value: "135%",
+    label: "Procurement Recognition",
   },
   {
     value: "ZA",
-    label: "South African Registered Business",
+    label: "Registered South African Business",
   },
   {
     value: "Cloud",
@@ -81,14 +80,14 @@ export default function Home() {
     name: "",
     phone: "",
     email: "",
-    service: "System Design & Development",
+    service: "Software Systems",
     size: "Business",
     message: "",
   });
 
   useEffect(() => {
     document.title =
-      "MKETICS | Enterprise Technology Solutions";
+      "MKETICS | Technology services with a real MKETICS process";
 
     if (notice.message) {
       const timer = setTimeout(() => {
@@ -105,8 +104,8 @@ export default function Home() {
   const estimatedPrice = useMemo(() => {
     const base =
       {
-        "System Design & Development": 4500,
-        "IT & Network Infrastructure": 3500,
+        "Software Systems": 4500,
+        "IT, Network & CCTV": 3500,
         "Digital Hub": 2500,
       }[form.service] || 2500;
 
@@ -201,7 +200,7 @@ Please assist me.
         name: "",
         phone: "",
         email: "",
-        service: "System Design & Development",
+        service: "Software Systems",
         size: "Business",
         message: "",
       });
@@ -524,7 +523,7 @@ const generatePDF = async () => {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden app-bg">
+    <main className="min-h-screen overflow-x-hidden app-bg brand-grid-bg">
       <Navbar />
 
       <Hero />
@@ -535,7 +534,7 @@ const generatePDF = async () => {
           {proofStats.map((stat) => (
             <div
               key={stat.label}
-              className="glass-card rounded-[2rem] p-6 text-center"
+              className="mketics-proof-badge rounded-[2rem] p-6 text-center"
             >
               <p className="text-3xl font-black text-sky-500">
                 {stat.value}
@@ -560,13 +559,11 @@ const generatePDF = async () => {
           </p>
 
           <h2 className="mt-4 text-4xl font-black md:text-5xl">
-            Enterprise Technology Solutions
+            Technology services with a real MKETICS process
           </h2>
 
           <p className="mx-auto mt-5 max-w-3xl app-muted">
-            MKETICS delivers modern software systems, enterprise
-            infrastructure, and digital innovation solutions for businesses and
-            organizations.
+            MKETICS helps businesses, schools and individuals build practical systems, reliable infrastructure, CCTV planning and digital presence that can be supported after delivery.
           </p>
         </div>
 
@@ -577,9 +574,9 @@ const generatePDF = async () => {
             return (
               <div
                 key={service.title}
-                className="group glass-card rounded-[2rem] p-8 transition duration-300 hover:-translate-y-2 hover:border-sky-400/40"
+                className="group mketics-card-pro rounded-[2rem] p-8 transition duration-300 hover:-translate-y-2 hover:border-sky-400/40"
               >
-                <div className="mb-6 inline-flex rounded-2xl bg-sky-500/10 p-4 text-sky-500 transition group-hover:scale-110">
+                <div className="mketics-icon-box mb-6 h-16 w-16 transition group-hover:scale-110">
                   <Icon className="h-8 w-8" />
                 </div>
 
@@ -628,13 +625,11 @@ const generatePDF = async () => {
             </p>
 
             <h2 className="mt-4 text-4xl font-black md:text-5xl">
-              Technology solutions built for modern business.
+              A technology partner, not just another website template.
             </h2>
 
             <p className="mt-6 leading-8 app-muted">
-              MKETICS combines enterprise IT experience, infrastructure
-              expertise, and modern development to deliver scalable digital
-              solutions.
+              MKETICS combines hands-on IT support, software development, cloud knowledge, technical documentation and real client service experience. The focus is practical delivery and long-term support.
             </p>
           </div>
 
@@ -657,25 +652,33 @@ const generatePDF = async () => {
 
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:py-20 lg:py-24">
-        <div className="brand-gradient rounded-[2rem] p-8 text-center text-white sm:p-10 lg:p-14">
+        <div className="mketics-section-panel rounded-[2rem] p-8 text-center text-white shadow-2xl sm:p-10 lg:p-14">
           <Sparkles className="mx-auto h-12 w-12" />
 
           <h2 className="mt-6 text-4xl font-black md:text-5xl">
-            Ready to modernize your business systems?
+            Ready to build technology that works in the real world?
           </h2>
 
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/90">
-            From software systems to IT infrastructure and digital presence,
-            MKETICS helps businesses build smarter technology foundations.
+            From websites and business systems to networks, cloud support and CCTV planning, MKETICS helps clients build reliable technology foundations.
           </p>
 
           <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
             <a
-              href="/#quote"
+              href="/quote"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 font-black text-slate-950"
             >
               Request Quote
               <ArrowRight className="h-5 w-5" />
+            </a>
+
+            <a
+              href="/docs/MKETICS_Service_Catalogue.pdf"
+              download
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-8 py-4 font-black text-white"
+            >
+              Download Catalogue
+              <Download className="h-5 w-5" />
             </a>
 
             <a
@@ -691,44 +694,18 @@ const generatePDF = async () => {
         </div>
       </section>
 
-      {/* QUOTE */}
-      <section
-        id="quote"
-        className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:py-20 lg:grid-cols-2 lg:py-24"
-      >
-        <div>
-          <img
-            loading="lazy"
-            src="/images/logo-clean.webp?v=2"
-            alt="MKETICS"
-            className="logo-glow mb-6 h-24 object-contain"
-          />
-
-          <p className="font-bold uppercase tracking-[0.3em] text-sky-500">
-            Request Quote
-          </p>
-
-          <h2 className="mt-4 text-4xl font-black md:text-5xl">
-            Start your next technology project.
-          </h2>
-
-          <p className="mt-6 leading-8 app-muted">
-            Request a professional consultation for software systems,
-            infrastructure deployment, networking, or digital transformation.
-          </p>
+      {/* QUOTE CTA moved to dedicated /quote page */}
+      <section className="mx-auto max-w-7xl px-4 py-12">
+        <div className="rounded-[2rem] app-card p-8 text-center shadow-xl sm:p-10">
+          <p className="font-bold uppercase tracking-[0.3em] text-sky-500">Request Quote</p>
+          <h2 className="mt-4 text-3xl font-black md:text-5xl">Need a price for a specific MKETICS service?</h2>
+          <p className="mx-auto mt-4 max-w-2xl app-muted">Use the dedicated quote page to search services, choose from dropdowns, and submit a cleaner request.</p>
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+            <a href="/quote" className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-8 py-4 font-black text-white">Open Quote Page <ArrowRight className="h-5 w-5" /></a>
+            <a href="/docs/MKETICS_Service_Catalogue.pdf" download className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/10 px-8 py-4 font-black text-sky-700 dark:text-sky-200">Download Catalogue <Download className="h-5 w-5" /></a>
+          </div>
         </div>
-
-        <QuoteForm
-          form={form}
-          handleChange={handleChange}
-          handleSubmit={handleSubmit}
-          estimatedPrice={estimatedPrice}
-          submitting={submitting}
-          notice={notice}
-        />
       </section>
-      <SaasConversionSection />
-
       <Footer />
     </main>
   );

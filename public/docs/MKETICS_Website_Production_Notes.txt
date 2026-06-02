@@ -1,0 +1,16 @@
+MKETICS Website Production Notes
+
+Latest production flow:
+1. Client requests quote at /quote
+2. Admin manages quote request at /admin
+3. Admin prepares project and invoice
+4. Client logs in at /client-login
+5. Client views project, invoice, support and documents in /client-portal
+
+Official invoice banking details:
+Standard Bank
+Account holder: MKETICS (PTY) LTD
+Account number: 10274150083
+Branch: BALLITO
+Branch code: 051001
+SWIFT: SBZA ZA JJ

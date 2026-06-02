@@ -11,7 +11,8 @@ import Services from "./pages/Services";
 import Portfolio from "./pages/Portfolio";
 import Contact from "./pages/Contact";
 import MketicsDigitalHub from "./pages/MketicsDigitalHub";
-import PublicSaasSignup from "./pages/PublicSaasSignup";
+import Solutions from "./pages/Solutions";
+import Quote from "./pages/Quote";
 
 import ClientLogin from "./pages/ClientLogin";
 import ClientRegister from "./pages/ClientRegister";
@@ -25,7 +26,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 const ADMIN_EMAILS = [
   "smsane0505@gmail.com",
+  "msanesphesihle968@gmail.com",
   "admin@mketics.co.za",
+  "info@mketics.co.za",
 ];
 
 function App() {
@@ -72,9 +75,9 @@ description:
 "View MKETICS technology projects, infrastructure deployments, software systems, and digital business solutions.",
 },
 "/pricing": {
-  title: "Pricing | MKETICS SaaS",
+  title: "Pricing | MKETICS",
   description:
-    "Compare MKETICS Starter, Business and Enterprise SaaS plans for AI proposals, client portals, invoices, CRM and workspace automation.",
+    "View MKETICS service pricing for websites, business systems, IT support, networking, CCTV, cloud setup and digital business support.",
 },
 "/contact": {
 title: "Contact MKETICS",
@@ -86,10 +89,15 @@ title: "MKETICS Digital Hub",
 description:
 "Digital branding, websites, SEO, online business systems, and modern digital experiences.",
 },
-"/start-trial": {
-title: "Start SaaS Trial | MKETICS",
+"/solutions": {
+title: "Solutions | MKETICS",
 description:
-"Start a MKETICS SaaS workspace trial with AI proposals, client portal, invoices, support and workspace automation.",
+"Explore MKETICS business systems including client portals, invoice systems, project tracking, helpdesk systems, websites and cloud solutions.",
+},
+"/quote": {
+title: "Request Quote | MKETICS",
+description:
+"Search MKETICS services and request a professional quote for software systems, websites, IT infrastructure, networking, CCTV, cloud and digital solutions.",
 },
 "/client-login": {
 title: "Client Login | MKETICS",
@@ -173,8 +181,12 @@ if (path === "/mketics-digital-hub") {
 return <MketicsDigitalHub />;
 }
 
-if (path === "/start-trial") {
-return <PublicSaasSignup />;
+if (path === "/solutions") {
+return <Solutions />;
+}
+
+if (path === "/quote" || path === "/start-trial") {
+return <Quote />;
 }
 
 if (path === "/client-login") {
@@ -242,7 +254,7 @@ if (!ADMIN_EMAILS.includes(session.user?.email)) {
 }
 
 return (
-  <ProtectedRoute requiredRole="admin">
+  <ProtectedRoute>
     <AdminDashboard />
   </ProtectedRoute>
 );

@@ -23,6 +23,7 @@ html,
 body,
 #root {
   width: 100%;
+  max-width: 100%;
   min-height: 100%;
   margin: 0;
   padding: 0;
@@ -45,6 +46,11 @@ body {
 }
 
 * {
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -91,6 +97,34 @@ img {
 
 #root {
   isolation: isolate;
+}
+
+section,
+main,
+header,
+footer {
+  max-width: 100vw;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.mobile-menu-panel {
+  max-height: calc(100svh - 76px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 1023px) {
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+  }
 }
 
 @layer components {
@@ -241,9 +275,350 @@ img {
     font-size: 15px;
   }
 
+  h1,
+  h2,
+  h3,
+  p,
+  a,
+  button,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  section {
+    overflow: hidden;
+  }
+
   .glass-card,
   .app-card,
   .app-surface {
     border-radius: 1.5rem;
+  }
+
+  .section-shell {
+    padding-inline: 1rem;
+  }
+
+  .mobile-full-button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .mobile-card-padding {
+    padding: 1.25rem;
+  }
+}
+
+
+/* ================================
+   MKETICS PASS 4: MOBILE HOME POLISH
+================================ */
+@media (max-width: 640px) {
+  .app-bg > section:first-child {
+    min-height: auto;
+  }
+
+  .app-bg h1 {
+    letter-spacing: -0.045em;
+  }
+
+  .app-bg .rounded-full {
+    max-width: 100%;
+  }
+
+  .app-bg [class*="grid"] {
+    min-width: 0;
+  }
+
+  .app-bg a,
+  .app-bg button {
+    min-height: 52px;
+  }
+
+  .app-bg p {
+    max-width: 100%;
+  }
+
+  .app-bg .mobile-card-padding {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-bg h1 {
+    font-size: 2rem;
+  }
+}
+
+/* ================================
+   MKETICS PASS 5: BRAND IDENTITY
+================================ */
+.brand-grid-bg {
+  background-image:
+    linear-gradient(rgba(14, 165, 233, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.10), transparent 28rem);
+  background-size: 44px 44px, 44px 44px, auto;
+}
+
+.dark .brand-grid-bg {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 28rem);
+}
+
+.brand-outline-card,
+.brand-service-tile,
+.brand-dashboard-card {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(14, 165, 233, 0.16);
+  box-shadow: 0 20px 70px rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dark .brand-outline-card,
+.dark .brand-service-tile,
+.dark .brand-dashboard-card {
+  background: rgba(2, 6, 23, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.34);
+}
+
+.brand-service-tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-service-tile::after {
+  content: "";
+  position: absolute;
+  inset: auto 1.25rem 0 1.25rem;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.85), transparent);
+}
+
+.brand-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 165, 233, 0.22);
+  background: rgba(14, 165, 233, 0.10);
+  padding: 0.55rem 1rem;
+  color: #0284c7;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dark .brand-kicker {
+  color: #7dd3fc;
+}
+
+.brand-section-title {
+  color: #0f172a;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.dark .brand-section-title {
+  color: #ffffff;
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, #020617 0%, #075985 52%, #0ea5e9 100%);
+}
+
+@media (max-width: 640px) {
+  .brand-section-title {
+    font-size: clamp(2rem, 10vw, 2.8rem);
+  }
+
+  .brand-kicker {
+    max-width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* ================================
+   MKETICS PASS 6: VISUAL BRANDING POLISH
+================================ */
+:root {
+  --mketics-navy: #020617;
+  --mketics-ink: #07111f;
+  --mketics-cyan: #38bdf8;
+  --mketics-blue: #0ea5e9;
+  --mketics-silver: #cbd5e1;
+}
+
+.mketics-brand-bar {
+  background:
+    linear-gradient(90deg, rgba(56, 189, 248, 0.85), rgba(14, 165, 233, 0.25), rgba(56, 189, 248, 0.85));
+  height: 2px;
+}
+
+.mketics-nav-shell {
+  position: relative;
+}
+
+.mketics-nav-shell::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.45), transparent);
+}
+
+.mketics-logo-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(145deg, rgba(56, 189, 248, 0.18), rgba(2, 6, 23, 0.04));
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 18px 45px rgba(14,165,233,0.12);
+}
+
+.dark .mketics-logo-frame {
+  background:
+    linear-gradient(145deg, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.75));
+}
+
+.mketics-card-pro {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.86));
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+}
+
+.dark .mketics-card-pro {
+  border-color: rgba(56, 189, 248, 0.18);
+  background:
+    linear-gradient(180deg, rgba(15,23,42,0.88), rgba(2,6,23,0.74));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+}
+
+.mketics-card-pro::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #38bdf8, rgba(14,165,233,0.2), #38bdf8);
+  opacity: 0.78;
+}
+
+.mketics-card-pro::after {
+  content: "MK";
+  position: absolute;
+  right: 1.25rem;
+  bottom: 0.75rem;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.12em;
+  color: rgba(14, 165, 233, 0.055);
+  pointer-events: none;
+}
+
+.dark .mketics-card-pro::after {
+  color: rgba(56, 189, 248, 0.06);
+}
+
+.mketics-icon-box {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.34), transparent 30%),
+    linear-gradient(145deg, rgba(14,165,233,0.95), rgba(2,132,199,0.9));
+  color: white;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  box-shadow: 0 16px 36px rgba(14, 165, 233, 0.22);
+}
+
+.mketics-button-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 55%, #38bdf8 100%);
+  color: white;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  box-shadow: 0 20px 45px rgba(14, 165, 233, 0.22);
+}
+
+.mketics-button-primary:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.mketics-button-ghost {
+  border: 1px solid rgba(56, 189, 248, 0.26);
+  background: rgba(14, 165, 233, 0.08);
+  color: #0369a1;
+}
+
+.dark .mketics-button-ghost {
+  color: #bae6fd;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.mketics-section-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  background:
+    linear-gradient(135deg, rgba(2, 6, 23, 0.98), rgba(7, 89, 133, 0.86)),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.2), transparent 28rem);
+}
+
+.mketics-section-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,0.08) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+  pointer-events: none;
+}
+
+.mketics-proof-badge {
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: linear-gradient(135deg, rgba(14,165,233,0.12), rgba(255,255,255,0.72));
+}
+
+.dark .mketics-proof-badge {
+  background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(15,23,42,0.72));
+}
+
+.mketics-mobile-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.mketics-mobile-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+}
+
+@media (max-width: 640px) {
+  .mketics-card-pro::after {
+    font-size: 2.4rem;
+  }
+
+  .mketics-section-panel {
+    border-radius: 1.6rem !important;
   }
 }

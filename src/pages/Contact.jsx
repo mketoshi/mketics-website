@@ -10,7 +10,6 @@ import {
   Building2,
   Clock,
   ShieldCheck,
-  Rocket,
 } from "lucide-react";
 
 const contactCards = [
@@ -47,12 +46,12 @@ const contactCards = [
 const projectTypes = [
   "Business website",
   "Client portal",
-  "AI proposal system",
-  "Invoice automation",
+  "Invoice / quote system",
+  "Project tracking system",
   "Network infrastructure",
   "CCTV / cloud storage",
   "Digital branding",
-  "Custom SaaS platform",
+  "Custom business system",
 ];
 
 export default function Contact() {
@@ -61,7 +60,7 @@ export default function Contact() {
   );
 
   return (
-    <main className="min-h-screen app-bg">
+    <main className="min-h-screen app-bg brand-grid-bg">
       <Navbar />
 
       <section className="relative overflow-hidden px-4 pb-20 pt-32">
@@ -78,16 +77,14 @@ export default function Contact() {
             </div>
 
             <h1 className="mt-8 text-5xl font-black leading-tight md:text-7xl">
-              Let’s Build Something
+              Tell us what you need fixed, built or improved
               <span className="block bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">
-                Powerful
+                with technology
               </span>
             </h1>
 
             <p className="mx-auto mt-8 max-w-3xl text-lg leading-8 app-muted">
-              Contact MKETICS for software systems, SaaS platforms, IT
-              infrastructure, networking, cloud solutions, CCTV projects and
-              digital transformation services.
+              Contact MKETICS for websites, software systems, IT infrastructure, networking, cloud support, CCTV projects and practical digital business services.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -102,20 +99,13 @@ export default function Contact() {
               </a>
 
               <a
-                href="/#quote"
+                href="/quote"
                 className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-8 py-4 font-black text-white shadow-xl"
               >
                 Request Quote
                 <ArrowRight className="h-5 w-5" />
               </a>
 
-              <a
-                href="/start-trial"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 font-black backdrop-blur-xl"
-              >
-                <Rocket className="h-5 w-5" />
-                Start Trial
-              </a>
             </div>
           </div>
         </div>
@@ -192,7 +182,7 @@ export default function Contact() {
           </p>
 
           <h2 className="mt-4 text-4xl font-black">
-            What can we help you build?
+            What can MKETICS help you with?
           </h2>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -214,9 +204,7 @@ export default function Contact() {
           </h2>
 
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/90">
-            Speak directly with MKETICS regarding software systems,
-            infrastructure projects, networking solutions, digital services or
-            business technology consulting.
+            Speak directly with MKETICS about your website, system, network, CCTV, cloud or digital support project.
           </p>
 
           <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">

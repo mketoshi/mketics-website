@@ -11,7 +11,7 @@ export default function CTASection() {
       </p>
 
       <a
-        href="#quote"
+        href="/quote"
         className="mt-8 inline-flex rounded-full bg-sky-500 px-8 py-4 text-sm font-black text-white transition hover:bg-sky-400"
       >
         Request Quote

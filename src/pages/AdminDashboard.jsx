@@ -45,6 +45,37 @@ const statusStyles = {
   Archived: "bg-slate-500/10 text-slate-500",
 };
 
+
+const parseLeadDetails = (message = "") => {
+  const lines = String(message || "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const details = {
+    projectNotes: [],
+    location: "",
+    timeline: "",
+    budgetRange: "",
+    contactMethod: "",
+  };
+
+  lines.forEach((line) => {
+    if (line.startsWith("Location/Site:")) details.location = line.replace("Location/Site:", "").trim();
+    else if (line.startsWith("Timeline:")) details.timeline = line.replace("Timeline:", "").trim();
+    else if (line.startsWith("Budget Range:")) details.budgetRange = line.replace("Budget Range:", "").trim();
+    else if (line.startsWith("Preferred Contact:")) details.contactMethod = line.replace("Preferred Contact:", "").trim();
+    else details.projectNotes.push(line);
+  });
+
+  return details;
+};
+
+const cleanPhoneForWhatsApp = (phone = "") => {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("27")) return digits;
+  if (digits.startsWith("0")) return `27${digits.slice(1)}`;
+  return digits;
+};
+
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
@@ -1113,7 +1144,7 @@ const generateProposalApprovalLink = async (proposal) => {
 
   const assignWorkspacePlan = async () => {
     if (!planWorkspaceId || !selectedPlanId) {
-      alert("Select workspace and SaaS plan.");
+      alert("Select workspace and workspace plan.");
       return;
     }
 
@@ -1141,7 +1172,7 @@ const generateProposalApprovalLink = async (proposal) => {
 
     if (error) {
       console.error(error);
-      toast.error("Could not assign SaaS plan.");
+      toast.error("Could not assign workspace plan.");
       return;
     }
 
@@ -1160,21 +1191,21 @@ const generateProposalApprovalLink = async (proposal) => {
     ]);
 
     await logStaffAudit(
-      "Assigned SaaS plan",
-      "SaaS Billing",
+      "Assigned workspace plan",
+      "Workspace Billing",
       `${selectedWorkspace?.company_name || planWorkspaceId} → ${selectedPlan?.plan_name || selectedPlanId}`
     );
 
     await supabase.from("admin_notifications").insert([
       {
-        title: "SaaS Plan Assigned",
+        title: "Workspace Plan Assigned",
         message: `${selectedWorkspace?.company_name || "Workspace"} was assigned to ${selectedPlan?.plan_name || "a plan"}.`,
         type: "billing",
         is_read: false,
       },
     ]);
 
-    toast.success("Workspace SaaS plan assigned");
+    toast.success("Workspace workspace plan assigned");
 
     setPlanWorkspaceId("");
     setSelectedPlanId("");
@@ -1190,7 +1221,7 @@ const generateProposalApprovalLink = async (proposal) => {
       .update({ status })
       .eq("id", assignmentId);
 
-    await logStaffAudit("Updated workspace plan status", "SaaS Billing", status);
+    await logStaffAudit("Updated workspace plan status", "Workspace Billing", status);
     toast.success("Plan status updated");
     await loadDashboardData();
   };
@@ -1225,7 +1256,7 @@ const generateProposalApprovalLink = async (proposal) => {
     ]);
 
     await logStaffAudit(
-      "Created subscription from SaaS plan",
+      "Created subscription from workspace plan",
       "Subscriptions",
       `${workspace.owner_email} • ${plan.plan_name}`
     );
@@ -1257,7 +1288,7 @@ const generateProposalApprovalLink = async (proposal) => {
 
     await logStaffAudit(
       "Recorded workspace analytics",
-      "SaaS Analytics",
+      "Workspace Analytics",
       analyticsMetricName
     );
 
@@ -1385,7 +1416,7 @@ const generateProposalApprovalLink = async (proposal) => {
 
     await logStaffAudit(
       "Auto-calculated workspace metrics",
-      "SaaS Analytics",
+      "Workspace Analytics",
       workspace.company_name || workspace.id
     );
 
@@ -1658,7 +1689,7 @@ const generateProposalApprovalLink = async (proposal) => {
       },
     ]);
 
-    await logStaffAudit("Created SaaS usage record", "Usage Tracking", usageClientEmail);
+    await logStaffAudit("Created workspace usage record", "Usage Tracking", usageClientEmail);
     toast.success("Usage tracking record created");
 
     setUsageClientEmail("");
@@ -1810,6 +1841,34 @@ const updateLeadStatus = async (id, status) => {
 
   const archiveLead = async (id) => {
     await updateLeadStatus(id, "Archived");
+  };
+
+  const prepareProjectFromLead = (lead) => {
+    const projectTitle = `${lead.service || "MKETICS Project"} - ${lead.name || "Client"}`;
+
+    setProjectName(projectTitle);
+    setProjectClient(lead.email || "");
+    setProjectStatus("Planning");
+    setProjectProgress(0);
+    setSelectedLead(null);
+
+    setTimeout(() => {
+      document.getElementById("quick-project")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
+  const prepareInvoiceFromLead = (lead) => {
+    const nextNumber = `INV-${String((invoices?.length || 0) + 1).padStart(4, "0")}`;
+
+    setInvoiceEmail(lead.email || "");
+    setInvoiceNumber(nextNumber);
+    setInvoiceService(lead.service || "");
+    setInvoiceAmount(lead.estimated_price || "");
+    setSelectedLead(null);
+
+    setTimeout(() => {
+      document.getElementById("quick-invoice")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const createInvoice = async () => {
@@ -2272,7 +2331,7 @@ const updateLeadStatus = async (id, status) => {
       color: "text-sky-500",
     },
     {
-      title: "SaaS Plans",
+      title: "Workspace Plans",
       value: saasPlans.length,
       icon: Wallet,
       color: "text-green-500",
@@ -2321,2965 +2380,245 @@ const updateLeadStatus = async (id, status) => {
     );
   }
 
+  const adminSummary = [
+    {
+      label: "New Leads",
+      value: leads.filter((lead) => (lead.status || "New") === "New").length,
+      icon: Users,
+      tone: "text-sky-500",
+      note: "Quote requests to action",
+    },
+    {
+      label: "Active Projects",
+      value: projects.filter((project) => project.status !== "Completed").length,
+      icon: FolderKanban,
+      tone: "text-purple-500",
+      note: "Work currently in progress",
+    },
+    {
+      label: "Unpaid Invoices",
+      value: invoices.filter((invoice) => invoice.status !== "Paid").length,
+      icon: Wallet,
+      tone: "text-orange-500",
+      note: "Follow up on payments",
+    },
+    {
+      label: "Open Tickets",
+      value: tickets.filter((ticket) => ticket.status !== "Closed").length,
+      icon: Activity,
+      tone: "text-green-500",
+      note: "Client support items",
+    },
+  ];
+
+  const adminFlow = [
+    {
+      title: "Requests",
+      text: "Capture quote requests and convert serious enquiries into projects.",
+      icon: Users,
+      href: "#leads",
+    },
+    {
+      title: "Delivery",
+      text: "Track real MKETICS work: websites, systems, networks, cloud and CCTV.",
+      icon: FolderKanban,
+      href: "#projects",
+    },
+    {
+      title: "Billing",
+      text: "Create invoices, confirm payments and keep client records clean.",
+      icon: FileText,
+      href: "#invoices",
+    },
+    {
+      title: "Support",
+      text: "View support tickets and keep communication professional.",
+      icon: ShieldCheck,
+      href: "#tickets",
+    },
+  ];
+
   return (
     <main className="min-h-screen app-bg">
       <Toaster position="top-right" />
       <Navbar />
 
-      <section className="relative overflow-hidden px-4 pb-12 pt-28">
+      <section className="relative overflow-hidden px-4 pb-8 pt-28 sm:pb-12">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute left-10 top-10 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
-          <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-red-500 blur-3xl" />
+          <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-cyan-400 blur-3xl" />
         </div>
+
         <div className="relative mx-auto max-w-7xl">
-        <div className="glass-card rounded-[2.5rem] p-8 shadow-2xl md:p-12">
-          <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-sm font-bold text-red-500">
-                <ShieldCheck className="h-4 w-4" />
-                Internal Operations
-              </div>
-
-              <h1 className="mt-6 text-5xl font-black md:text-6xl">
-                MKETICS <span className="text-sky-500">Admin System</span>
-              </h1>
-
-              <p className="mt-5 max-w-3xl text-lg leading-8 app-muted">
-                Live business operations dashboard for leads, invoices,
-                projects, quotes, client workflow, and support actions.
-              </p>
-            </div>
-
-            <div className="rounded-[2rem] app-surface p-6">
-              <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 place-items-center rounded-2xl bg-red-500/10 text-red-500">
-                  <UserCog className="h-8 w-8" />
+          <div className="glass-card rounded-[2rem] p-6 shadow-2xl sm:rounded-[2.5rem] sm:p-10">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-sky-400">
+                  <ShieldCheck className="h-4 w-4" />
+                  Founder Admin Control
                 </div>
 
-                <div>
-                  <p className="text-sm app-subtle">Administrator</p>
-                  <p className="max-w-[220px] break-words font-bold">
-                    {session?.user?.email}
-                  </p>
+                <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                  MKETICS <span className="text-sky-500">Business Control</span>
+                </h1>
+
+                <p className="mt-5 max-w-3xl text-base leading-8 app-muted sm:text-lg">
+                  A cleaner internal dashboard for managing quote requests, client projects,
+                  invoices and support activity without mixing in advanced platform tools.
+                </p>
+
+                <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap">
+                  {[
+                    ["Quote Requests", "#leads"],
+                    ["Projects", "#projects"],
+                    ["Invoices", "#invoices"],
+                    ["Support", "#tickets"],
+                  ].map(([label, href]) => (
+                    <a
+                      key={label}
+                      href={href}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm font-black transition hover:border-sky-400/40 hover:bg-sky-500/10"
+                    >
+                      {label}
+                    </a>
+                  ))}
                 </div>
               </div>
 
-              <button
-                onClick={logout}
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-red-500 px-5 py-3 text-sm font-black text-white hover:bg-red-400"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+              <div className="rounded-[2rem] border border-white/10 bg-slate-950/40 p-5 sm:p-6">
+                <div className="flex items-center gap-4">
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500/10 text-sky-400">
+                    <UserCog className="h-7 w-7" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] app-subtle">
+                      Administrator
+                    </p>
+                    <p className="mt-1 max-w-[240px] break-words text-sm font-bold sm:text-base">
+                      {session?.user?.email}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={logout}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 px-5 py-4 text-sm font-black text-white hover:bg-red-400"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        </div>
       </section>
 
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              label: "Leads",
-              value: leads.length,
-              icon: Users,
-              color: "text-sky-500",
-            },
-            {
-              label: "Projects",
-              value: projects.length,
-              icon: FolderKanban,
-              color: "text-purple-500",
-            },
-            {
-              label: "Invoices",
-              value: invoices.length,
-              icon: FileText,
-              color: "text-green-500",
-            },
-            {
-              label: "Workspaces",
-              value: companyWorkspaces.length,
-              icon: ShieldCheck,
-              color: "text-orange-500",
-            },
-          ].map((item) => {
+      <section className="mx-auto max-w-7xl px-4 pb-8">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {adminSummary.map((item) => {
             const Icon = item.icon;
-
             return (
-              <div
-                key={item.label}
-                className="glass-card rounded-[2rem] p-6 shadow-xl transition hover:-translate-y-1 hover:border-sky-400/30"
-              >
-                <div className={`inline-flex rounded-2xl bg-white/5 p-4 ${item.color}`}>
-                  <Icon className="h-8 w-8" />
+              <div key={item.label} className="glass-card rounded-[1.75rem] p-5 shadow-xl">
+                <div className={`inline-flex rounded-2xl bg-white/5 p-3 ${item.tone}`}>
+                  <Icon className="h-7 w-7" />
                 </div>
-
-                <p className="mt-5 text-sm font-black uppercase tracking-[0.2em] app-subtle">
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] app-subtle">
                   {item.label}
                 </p>
-
-                <h2 className="mt-3 text-4xl font-black">
-                  {item.value}
-                </h2>
+                <h2 className="mt-2 text-4xl font-black">{item.value}</h2>
+                <p className="mt-2 text-sm app-muted">{item.note}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Payment Gateway Architecture
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            PayFast / Yoco Transaction Center
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Create payment records linked to invoices. Real gateway redirects
-            and webhook verification should be handled through Supabase Edge
-            Functions, not directly in React.
-          </p>
-
-          <div className="mt-8 grid gap-4">
-            <select
-              value={paymentInvoiceId}
-              onChange={(e) => setPaymentInvoiceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="">Select Invoice</option>
-              {invoices.map((invoice) => (
-                <option key={invoice.id} value={invoice.id}>
-                  {invoice.invoice_number} — {invoice.client_email} — R{Number(invoice.amount || 0).toLocaleString()}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={paymentProvider}
-              onChange={(e) => setPaymentProvider(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>PayFast</option>
-              <option>Yoco</option>
-            </select>
-
-            <input
-              type="url"
-              placeholder="Checkout URL from secure backend / Edge Function"
-              value={paymentCheckoutUrl}
-              onChange={(e) => setPaymentCheckoutUrl(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createPaymentTransaction}
-              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
-            >
-              Create Payment Transaction
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {paymentTransactions.map((transaction) => (
-              <div key={transaction.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">
-                      {transaction.provider} • R{Number(transaction.amount || 0).toLocaleString()}
-                    </p>
-
-                    <p className="mt-1 text-sm app-subtle">
-                      {transaction.client_email}
-                    </p>
-
-                    <p className="mt-1 text-xs app-muted">
-                      {transaction.provider_reference || "No reference"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    {transaction.checkout_url && (
-                      <button
-                        onClick={() => window.open(transaction.checkout_url, "_blank")}
-                        className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Open Checkout
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => markPaymentPaid(transaction)}
-                      className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-                    >
-                      {transaction.payment_status === "Paid" ? "Paid" : "Mark Paid"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {!paymentTransactions.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No payment transactions yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-purple-500">
-            SaaS Usage Tracking
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Usage & Limits
-          </h2>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={usageClientEmail}
-              onChange={(e) => setUsageClientEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={usageType}
-              onChange={(e) => setUsageType(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>Projects</option>
-              <option>Storage</option>
-              <option>Users</option>
-              <option>Tickets</option>
-              <option>Invoices</option>
-              <option>AI Quotes</option>
-            </select>
-
-            <input
-              type="number"
-              placeholder="Usage Count"
-              value={usageCount}
-              onChange={(e) => setUsageCount(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="number"
-              placeholder="Usage Limit"
-              value={usageLimit}
-              onChange={(e) => setUsageLimit(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={usageBillingPeriod}
-              onChange={(e) => setUsageBillingPeriod(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            >
-              <option>Monthly</option>
-              <option>Quarterly</option>
-              <option>Annually</option>
-            </select>
-
-            <button
-              onClick={createSaasUsageRecord}
-              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white md:col-span-2"
-            >
-              Save Usage Record
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {saasUsageTracking.map((usage) => {
-              const percent = usage.usage_limit
-                ? Math.min(100, (Number(usage.usage_count || 0) / Number(usage.usage_limit || 1)) * 100)
-                : 0;
-
-              return (
-                <div key={usage.id} className="rounded-2xl app-surface p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-black">{usage.usage_type}</p>
-                      <p className="mt-1 text-sm app-subtle">{usage.client_email}</p>
-                    </div>
-
-                    <p className="text-sm font-black text-purple-500">
-                      {usage.usage_count || 0}/{usage.usage_limit || 0}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-purple-500"
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-orange-500">
-            AI Proposal Templates
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Template Library
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            <input
-              type="text"
-              placeholder="Template Name"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Service Type"
-              value={templateServiceType}
-              onChange={(e) => setTemplateServiceType(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <textarea
-              placeholder="Template Content"
-              value={templateContent}
-              onChange={(e) => setTemplateContent(e.target.value)}
-              rows={5}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createProposalTemplate}
-              className="rounded-2xl bg-orange-500 px-5 py-4 font-black text-white"
-            >
-              Save Template
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {aiProposalTemplates.map((template) => (
-              <div key={template.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{template.template_name}</p>
-                    <p className="mt-1 text-sm app-subtle">{template.service_type}</p>
-                  </div>
-
-                  <button
-                    onClick={() => useTemplateForProposal(template)}
-                    className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                  >
-                    Use Template
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-red-500">
-            Staff Audit Trails
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Security Activity Log
-          </h2>
-
-          <div className="mt-8 max-h-[520px] overflow-y-auto rounded-[2rem] app-surface p-5">
-            {staffAuditTrails.map((audit) => (
-              <div key={audit.id} className="mb-4 rounded-2xl bg-white/5 p-4">
-                <p className="font-black">{audit.action}</p>
-                <p className="mt-1 text-sm app-subtle">
-                  {audit.staff_email} • {audit.module}
-                </p>
-                <p className="mt-1 text-xs app-muted">
-                  {audit.target_record || "No target"} •{" "}
-                  {audit.created_at
-                    ? new Date(audit.created_at).toLocaleString("en-ZA")
-                    : "—"}
-                </p>
-              </div>
-            ))}
-
-            {!staffAuditTrails.length && (
-              <p className="text-center font-bold app-muted">
-                No staff audit trails yet.
-              </p>
-            )}
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            <button
-              onClick={sendTransactionalEmail}
-              className="rounded-2xl bg-red-500 px-5 py-4 font-black text-white"
-            >
-              Send Transactional EmailJS Message
-            </button>
-          </div>
-        </div>
-      </section>
-
-
-
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
-            Commercial SaaS Plans
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Subscription Plan Catalog
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Manage Starter, Business, and Enterprise pricing packages for MKETICS SaaS workspaces.
-          </p>
-
-          <div className="mt-8 grid gap-4">
-            {saasPlans.map((plan) => (
-              <div key={plan.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-2xl font-black">{plan.plan_name}</p>
-                    <p className="mt-1 text-sm app-muted">
-                      {plan.plan_code} • {plan.support_level} Support
-                    </p>
-
-                    <div className="mt-4 grid gap-2 text-sm app-subtle sm:grid-cols-2">
-                      <p>Users: {plan.max_users}</p>
-                      <p>Projects: {plan.max_projects}</p>
-                      <p>AI Quotes: {plan.max_ai_quotes}</p>
-                      <p>Storage: {plan.max_storage_gb}GB</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl bg-green-500/10 p-5 text-center">
-                    <p className="text-sm font-black uppercase tracking-[0.2em] text-green-500">
-                      Pricing
-                    </p>
-                    <p className="mt-2 text-2xl font-black">
-                      R{Number(plan.monthly_price || 0).toLocaleString()}/mo
-                    </p>
-                    <p className="mt-1 text-sm app-muted">
-                      R{Number(plan.annual_price || 0).toLocaleString()}/year
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {!saasPlans.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No SaaS plans found.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Workspace Plan Assignment
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Upgrade / Downgrade Workspaces
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Assign a commercial SaaS plan to a workspace and create billing records.
-          </p>
-
-          <div className="mt-8 grid gap-4">
-            <select
-              value={planWorkspaceId}
-              onChange={(e) => setPlanWorkspaceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="">Select Workspace</option>
-              {companyWorkspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.company_name} • {workspace.owner_email}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedPlanId}
-              onChange={(e) => setSelectedPlanId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="">Select SaaS Plan</option>
-              {saasPlans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.plan_name} • R{Number(plan.monthly_price || 0).toLocaleString()}/mo
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={planBillingCycle}
-              onChange={(e) => setPlanBillingCycle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="monthly">Monthly</option>
-              <option value="annual">Annual</option>
-            </select>
-
-            <input
-              type="date"
-              value={planRenewalDate}
-              onChange={(e) => setPlanRenewalDate(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={assignWorkspacePlan}
-              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
-            >
-              Assign SaaS Plan
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {workspacePlanAssignments.map((assignment) => {
-              const workspace = companyWorkspaces.find(
-                (item) => String(item.id) === String(assignment.workspace_id)
-              );
-
-              return (
-                <div key={assignment.id} className="rounded-2xl app-surface p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="font-black">
-                        {workspace?.company_name || "Workspace"} • {assignment.saas_plans?.plan_name || "Plan"}
-                      </p>
-                      <p className="mt-1 text-sm app-muted">
-                        {assignment.billing_cycle} • {assignment.status}
-                      </p>
-                      <p className="mt-1 text-xs app-subtle">
-                        Renews: {assignment.renews_at ? new Date(assignment.renews_at).toLocaleDateString("en-ZA") : "Not set"}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => createSubscriptionFromPlan(assignment)}
-                        className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Create Billing
-                      </button>
-
-                      <button
-                        onClick={() => updateWorkspacePlanStatus(
-                          assignment.id,
-                          assignment.status === "Active" ? "Paused" : "Active"
-                        )}
-                        className="rounded-full bg-orange-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        {assignment.status === "Active" ? "Pause" : "Activate"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {!workspacePlanAssignments.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No workspace plan assignments yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-purple-500">
-            SaaS Analytics
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Workspace Metrics
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Track workspace usage, revenue, billing, projects, support, and team growth.
-          </p>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <select
-              value={analyticsWorkspaceId}
-              onChange={(e) => setAnalyticsWorkspaceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            >
-              <option value="">Select Workspace</option>
-              {companyWorkspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.company_name} • {workspace.owner_email}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={analyticsMetricName}
-              onChange={(e) => setAnalyticsMetricName(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>Projects</option>
-              <option>Invoices</option>
-              <option>Revenue</option>
-              <option>Support Tickets</option>
-              <option>AI Quotes</option>
-              <option>Storage</option>
-              <option>Members</option>
-              <option>Payments</option>
-            </select>
-
-            <select
-              value={analyticsMetricType}
-              onChange={(e) => setAnalyticsMetricType(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="usage">Usage</option>
-              <option value="revenue">Revenue</option>
-              <option value="billing">Billing</option>
-              <option value="support">Support</option>
-              <option value="team">Team</option>
-              <option value="automation">Automation</option>
-            </select>
-
-            <input
-              type="number"
-              placeholder="Metric Value"
-              value={analyticsMetricValue}
-              onChange={(e) => setAnalyticsMetricValue(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            />
-
-            <button
-              onClick={recordWorkspaceAnalytics}
-              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
-            >
-              Save Metric
-            </button>
-
-            <button
-              onClick={() => {
-                const selected = companyWorkspaces.find(
-                  (workspace) => String(workspace.id) === String(analyticsWorkspaceId)
-                );
-
-                if (!selected) {
-                  alert("Select a workspace first.");
-                  return;
-                }
-
-                autoCalculateWorkspaceMetrics(selected);
-              }}
-              className="rounded-2xl bg-black px-5 py-4 font-black text-white"
-            >
-              Auto Calculate
-            </button>
-          </div>
-
-          <div className="mt-8 h-[320px] rounded-[2rem] app-surface p-5">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={workspaceAnalytics.slice(0, 10).reverse()}>
-                <XAxis dataKey="metric_name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="metric_value" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {workspaceAnalytics.slice(0, 12).map((metric) => (
-              <div key={metric.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{metric.metric_name}</p>
-                    <p className="mt-1 text-sm app-muted">
-                      {metric.metric_type} • {metric.workspace_id}
-                    </p>
-                  </div>
-
-                  <p className="text-2xl font-black text-purple-500">
-                    {Number(metric.metric_value || 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {!workspaceAnalytics.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No workspace analytics yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
-            Usage Metering
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            SaaS Consumption Tracking
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Track billable usage such as AI quotes, tickets, storage, staff seats, invoices, and API calls.
-          </p>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <select
-              value={meterWorkspaceId}
-              onChange={(e) => setMeterWorkspaceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            >
-              <option value="">Select Workspace</option>
-              {companyWorkspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.company_name} • {workspace.owner_email}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={meterCategory}
-              onChange={(e) => setMeterCategory(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>AI Quotes</option>
-              <option>Invoices</option>
-              <option>Storage</option>
-              <option>Support Tickets</option>
-              <option>Staff Seats</option>
-              <option>Projects</option>
-              <option>Payment Links</option>
-              <option>API Calls</option>
-            </select>
-
-            <select
-              value={meterBillingCycle}
-              onChange={(e) => setMeterBillingCycle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="annual">Annual</option>
-            </select>
-
-            <input
-              type="number"
-              placeholder="Usage Amount"
-              value={meterAmount}
-              onChange={(e) => setMeterAmount(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            />
-
-            <button
-              onClick={recordWorkspaceUsageMeter}
-              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white md:col-span-2"
-            >
-              Record Usage
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {workspaceUsageMetering.slice(0, 14).map((usage) => (
-              <div key={usage.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{usage.usage_category}</p>
-                    <p className="mt-1 text-sm app-muted">
-                      {usage.billing_cycle} • {usage.workspace_id}
-                    </p>
-                    <p className="mt-1 text-xs app-subtle">
-                      Recorded by {usage.recorded_by || "system"}
-                    </p>
-                  </div>
-
-                  <p className="text-2xl font-black text-green-500">
-                    {Number(usage.usage_amount || 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {!workspaceUsageMetering.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No usage metering yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
-            Workspace Team Access
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Team Invitations
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Invite clients, staff, managers, and workspace users into isolated company workspaces.
-          </p>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <select
-              value={inviteWorkspaceId}
-              onChange={(e) => setInviteWorkspaceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            >
-              <option value="">Select Workspace</option>
-              {companyWorkspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.company_name} • {workspace.owner_email}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="email"
-              placeholder="Invited Email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="client">Client</option>
-              <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
-              <option value="finance">Finance</option>
-              <option value="admin">Admin</option>
-            </select>
-
-            <button
-              onClick={createWorkspaceInvitation}
-              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white md:col-span-2"
-            >
-              Create Invitation Link
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {workspaceInvitations.map((invite) => (
-              <div key={invite.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{invite.invited_email}</p>
-                    <p className="mt-1 text-sm app-muted">
-                      Role: {invite.invited_role} • Status: {invite.status}
-                    </p>
-                    <p className="mt-1 text-xs app-subtle">
-                      Expires: {invite.expires_at ? new Date(invite.expires_at).toLocaleDateString("en-ZA") : "No expiry"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => {
-                        const inviteUrl = `${window.location.origin}/client-register?invite=${invite.invitation_token}`;
-                        navigator.clipboard.writeText(inviteUrl);
-                        toast.success("Invitation link copied");
-                      }}
-                      className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                    >
-                      Copy Link
-                    </button>
-
-                    {invite.status !== "Accepted" && (
-                      <button
-                        onClick={() => addWorkspaceMemberManually(invite)}
-                        className="rounded-full bg-purple-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Add Member
-                      </button>
-                    )}
-
-                    {invite.status === "Pending" && (
-                      <button
-                        onClick={() => cancelWorkspaceInvitation(invite.id)}
-                        className="rounded-full bg-red-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {!workspaceInvitations.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No workspace invitations yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Workspace Members
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Active Members
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            {workspaceMembers.map((member) => (
-              <div key={member.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{member.email}</p>
-                    <p className="mt-1 text-sm app-muted">
-                      Role: {member.role} • Status: {member.status}
-                    </p>
-                    <p className="mt-1 text-xs app-subtle">
-                      Workspace: {member.workspace_id}
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-green-500/10 px-4 py-2 text-xs font-black text-green-500">
-                    {member.status || "Active"}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {!workspaceMembers.length && (
-              <div className="rounded-2xl app-surface p-8 text-center">
-                <p className="font-bold app-muted">No workspace members yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-<section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">Workspace Isolation</p>
-          <h2 className="mt-3 text-3xl font-black">Company Workspaces</h2>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input type="text" placeholder="Company Name" value={workspaceCompanyName} onChange={(e) => setWorkspaceCompanyName(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <input type="text" placeholder="Company Slug" value={workspaceSlug} onChange={(e) => setWorkspaceSlug(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <input type="email" placeholder="Owner Email" value={workspaceOwnerEmail} onChange={(e) => setWorkspaceOwnerEmail(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <select value={workspacePlanType} onChange={(e) => setWorkspacePlanType(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5">
-              <option>Starter</option>
-              <option>Business</option>
-              <option>Enterprise</option>
-            </select>
-            <button onClick={createCompanyWorkspace} className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white md:col-span-2">Create Workspace</button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {companyWorkspaces.map((workspace) => (
-              <div key={workspace.id} className="rounded-2xl app-surface p-5">
-                <p className="font-black">{workspace.company_name}</p>
-                <p className="mt-1 text-sm app-subtle">{workspace.owner_email}</p>
-                <p className="mt-1 text-sm app-muted">{workspace.company_slug} • {workspace.plan_type}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-green-500">Subscription Billing</p>
-          <h2 className="mt-3 text-3xl font-black">Recurring Billing Manager</h2>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input type="email" placeholder="Client Email" value={subscriptionClientEmail} onChange={(e) => setSubscriptionClientEmail(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <select value={subscriptionPlan} onChange={(e) => setSubscriptionPlan(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5">
-              <option>Starter</option>
-              <option>Business</option>
-              <option>Enterprise</option>
-              <option>Support Retainer</option>
-            </select>
-            <select value={subscriptionBillingCycle} onChange={(e) => setSubscriptionBillingCycle(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5">
-              <option>Monthly</option>
-              <option>Quarterly</option>
-              <option>Annually</option>
-            </select>
-            <input type="number" placeholder="Amount" value={subscriptionAmount} onChange={(e) => setSubscriptionAmount(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <input type="date" value={subscriptionNextBilling} onChange={(e) => setSubscriptionNextBilling(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2" />
-            <button onClick={createSubscriptionRecord} className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white md:col-span-2">Create Subscription</button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {subscriptionRecords.map((record) => (
-              <div key={record.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{record.client_email}</p>
-                    <p className="mt-1 text-sm app-muted">{record.subscription_plan} • {record.billing_cycle} • R{Number(record.amount || 0).toLocaleString()}</p>
-                  </div>
-                  <select value={record.payment_status || "Pending"} onChange={(e) => updateSubscriptionStatus(record.id, e.target.value)} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10">
-                    <option>Pending</option>
-                    <option>Paid</option>
-                    <option>Overdue</option>
-                    <option>Cancelled</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-purple-500">AI Proposal Builder</p>
-          <h2 className="mt-3 text-3xl font-black">AI-Generated PDF Quotations</h2>
-
-          <div className="mt-8 grid gap-4">
-            <input type="email" placeholder="Client Email" value={proposalClientEmail} onChange={(e) => setProposalClientEmail(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <input type="text" placeholder="Proposal Title" value={proposalTitle} onChange={(e) => setProposalTitle(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <textarea placeholder="Client requirements" value={proposalRequirements} onChange={(e) => setProposalRequirements(e.target.value)} rows={6} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <div className="grid gap-4 md:grid-cols-2">
-              <button onClick={generateProposalDraft} className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white">Generate Basic Proposal</button>
-              <button onClick={() => exportPremiumProposalPDF()} className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white">Export Premium PDF</button>
-                <button
-    onClick={testAIQuote}
-    className="rounded-2xl bg-black px-5 py-4 font-black text-white md:col-span-2"
-  >
-    Test AI Quote
-  </button>
-            </div>
-          </div>
-
-          {proposalContent && (
-            <pre className="mt-8 max-h-[420px] overflow-y-auto whitespace-pre-wrap rounded-[2rem] app-surface p-6 text-sm leading-7">{proposalContent}</pre>
-          )}
-
-
-          <div className="mt-8 rounded-[2rem] app-surface p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-bold uppercase tracking-[0.2em] text-purple-500">
-                  Premium Proposal History
-                </p>
-                <h3 className="mt-2 text-2xl font-black">
-                  Saved AI Proposals
-                </h3>
-              </div>
-
-              <span className="rounded-full bg-purple-500/10 px-4 py-2 text-sm font-black text-purple-500">
-                {premiumProposals.length} Saved
-              </span>
-            </div>
-
-            <div className="mt-6 grid gap-4">
-              {premiumProposals.map((proposal) => (
-                <div key={proposal.id} className="rounded-2xl bg-white/5 p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="font-black">{proposal.proposal_title}</p>
-                      <p className="mt-1 text-sm app-subtle">
-                        {proposal.client_email} • {proposal.proposal_status || "Draft"}
-                      </p>
-                      <p className="mt-1 text-xs app-muted">
-                        {proposal.created_at
-                          ? new Date(proposal.created_at).toLocaleString("en-ZA")
-                          : "No date"}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => {
-                          setProposalTitle(proposal.proposal_title || "");
-                          setProposalClientEmail(proposal.client_email || "");
-                          setProposalRequirements(proposal.requirements || "");
-                          setProposalContent(proposal.proposal_content || "");
-                          toast.success("Premium proposal loaded");
-                        }}
-                        className="rounded-full bg-purple-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Load
-                      </button>
-
-                      <button
-                        onClick={() => exportPremiumProposalPDF(proposal)}
-                        className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Premium PDF
-                      </button>
-                      <button
-                        onClick={() => generateProposalApprovalLink(proposal)}
-                        className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        Approval Link
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {!premiumProposals.length && (
-                <p className="rounded-2xl bg-white/5 p-6 text-center font-bold app-muted">
-                  No premium AI proposals saved yet.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {generatedProposals.map((proposal) => (
-              <div key={proposal.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{proposal.proposal_title}</p>
-                    <p className="mt-1 text-sm app-subtle">{proposal.client_email}</p>
-                  </div>
-                  <button onClick={() => exportProposalPDF(proposal)} className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">PDF</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-orange-500">Advanced Analytics</p>
-          <h2 className="mt-3 text-3xl font-black">Business Intelligence</h2>
-          <p className="mt-4 leading-8 app-muted">Subscription value: R{subscriptionValue.toLocaleString()}</p>
-
-          <div className="mt-8 h-[300px] rounded-[2rem] app-surface p-5">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsChartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            <input type="text" placeholder="Email Subject" value={emailAutomationSubject} onChange={(e) => setEmailAutomationSubject(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <textarea placeholder="Transactional email message" value={emailAutomationMessage} onChange={(e) => setEmailAutomationMessage(e.target.value)} rows={4} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
-            <button onClick={prepareEmailAutomation} className="rounded-2xl bg-orange-500 px-5 py-4 font-black text-white">Prepare Email Automation Hook</button>
-          </div>
-        </div>
-      </section>
-
-<section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Invoice Automation
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Automated Invoice Reminders
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            <select
-              value={reminderInvoiceId}
-              onChange={(e) => setReminderInvoiceId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="">Select unpaid invoice</option>
-              {invoices
-                .filter((invoice) => invoice.status !== "Paid")
-                .map((invoice) => (
-                  <option key={invoice.id} value={invoice.id}>
-                    {invoice.invoice_number} — {invoice.client_email}
-                  </option>
-                ))}
-            </select>
-
-            <textarea
-              placeholder="Reminder message"
-              value={reminderMessage}
-              onChange={(e) => setReminderMessage(e.target.value)}
-              rows={4}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createInvoiceReminder}
-              className="rounded-2xl bg-orange-500 px-5 py-4 font-black text-white"
-            >
-              Create Reminder
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {invoiceReminders.map((reminder) => (
-              <div key={reminder.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{reminder.invoice_number}</p>
-                    <p className="mt-1 text-sm app-subtle">{reminder.client_email}</p>
-                    <p className="mt-2 text-sm app-muted">{reminder.reminder_message}</p>
-                  </div>
-
-                  <button
-                    onClick={() => markReminderSent(reminder.id)}
-                    className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-                  >
-                    {reminder.status === "Sent" ? "Sent" : "Mark Sent"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-purple-500">
-            SaaS Onboarding
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Client Onboarding Manager
-          </h2>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input
-              type="text"
-              placeholder="Client Name"
-              value={onboardingName}
-              onChange={(e) => setOnboardingName(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={onboardingEmail}
-              onChange={(e) => setOnboardingEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Business Name"
-              value={onboardingBusiness}
-              onChange={(e) => setOnboardingBusiness(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Service Type"
-              value={onboardingService}
-              onChange={(e) => setOnboardingService(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={onboardingStage}
-              onChange={(e) => setOnboardingStage(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            >
-              <option>Account Created</option>
-              <option>Requirements Received</option>
-              <option>Invoice Sent</option>
-              <option>Payment Pending</option>
-              <option>Project Started</option>
-              <option>Active Client</option>
-            </select>
-
-            <textarea
-              placeholder="Internal onboarding notes"
-              value={onboardingNotes}
-              onChange={(e) => setOnboardingNotes(e.target.value)}
-              rows={3}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            />
-
-            <button
-              onClick={createOnboardingRecord}
-              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white md:col-span-2"
-            >
-              Add Onboarding Client
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {clientOnboarding.map((client) => (
-              <div key={client.id} className="rounded-2xl app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="font-black">{client.client_name}</p>
-                    <p className="mt-1 text-sm app-subtle">{client.client_email}</p>
-                    <p className="mt-1 text-sm app-muted">{client.business_name}</p>
-                  </div>
-
-                  <select
-                    value={client.onboarding_stage || "Account Created"}
-                    onChange={(e) => updateOnboardingStage(client.id, e.target.value)}
-                    className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
-                  >
-                    <option>Account Created</option>
-                    <option>Requirements Received</option>
-                    <option>Invoice Sent</option>
-                    <option>Payment Pending</option>
-                    <option>Project Started</option>
-                    <option>Active Client</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-green-500">
-            Live Support
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Operator Chat Center
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={liveSupportClientEmail}
-              onChange={(e) => setLiveSupportClientEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <textarea
-              placeholder="Type support reply"
-              value={liveSupportMessage}
-              onChange={(e) => setLiveSupportMessage(e.target.value)}
-              rows={4}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={sendAdminLiveSupportMessage}
-              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
-            >
-              Send Live Support Message
-            </button>
-          </div>
-
-          <div className="mt-8 max-h-[420px] overflow-y-auto rounded-[2rem] app-surface p-5">
-            {liveSupportMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`mb-4 rounded-2xl p-4 ${
-                  msg.sender_type === "admin"
-                    ? "bg-green-500/10"
-                    : "bg-sky-500/10"
-                }`}
-              >
-                <p className="text-xs font-black uppercase app-subtle">
-                  {msg.sender_type} • {msg.sender_email}
-                </p>
-                <p className="mt-2 text-sm">{msg.message}</p>
-              </div>
-            ))}
-
-            {!liveSupportMessages.length && (
-              <p className="text-center font-bold app-muted">
-                No live support messages yet.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            AI Quotation Engine
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            AI-Assisted Quote Builder
-          </h2>
-
-          <p className="mt-4 leading-8 app-muted">
-            Generate an internal quote draft from client requirements. Review
-            pricing before sending to a client.
-          </p>
-
-          <div className="mt-8 grid gap-4">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={aiQuoteClientEmail}
-              onChange={(e) => setAiQuoteClientEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <textarea
-              placeholder="Describe requirements: website, CCTV, cloud storage, network setup, portal, support..."
-              value={aiQuoteRequirements}
-              onChange={(e) => setAiQuoteRequirements(e.target.value)}
-              rows={6}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={generateAiQuote}
-              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
-            >
-              Generate AI Quote Draft
-            </button>
-          </div>
-
-          {aiQuoteResult && (
-            <pre className="mt-8 whitespace-pre-wrap rounded-[2rem] app-surface p-6 text-sm leading-7">
-              {aiQuoteResult}
-            </pre>
-          )}
-        </div>
-      </section>
-
-<section className="mx-auto max-w-7xl grid gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            CRM Follow-Ups
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Client Follow-up Automation
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={followupClientEmail}
-              onChange={(e) => setFollowupClientEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            />
-
-            <input
-              type="text"
-              placeholder="Follow-up Title"
-              value={followupTitle}
-              onChange={(e) => setFollowupTitle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            />
-
-            <textarea
-              placeholder="Follow-up Message"
-              value={followupMessage}
-              onChange={(e) => setFollowupMessage(e.target.value)}
-              rows={4}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            />
-
-            <input
-              type="date"
-              value={followupDueDate}
-              onChange={(e) => setFollowupDueDate(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            />
-
-            <button
-              onClick={createCrmFollowup}
-              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
-            >
-              Create Follow-up
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {crmFollowups.map((item) => (
-              <div key={item.id} className="rounded-2xl app-surface p-5">
-                <p className="font-black">{item.followup_title}</p>
-                <p className="mt-2 text-sm app-muted">{item.client_email}</p>
-                <p className="mt-2 text-sm app-muted">{item.followup_message}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <p className="font-bold uppercase tracking-[0.2em] text-red-500">
-            Internal Escalation
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Team Escalation Chat
-          </h2>
-
-          <div className="mt-8 grid gap-4">
-            <select
-              value={chatTicketId}
-              onChange={(e) => setChatTicketId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            >
-              <option value="">Select Ticket</option>
-              {tickets.map((ticket) => (
-                <option key={ticket.id} value={ticket.id}>
-                  {ticket.subject}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={chatEscalationLevel}
-              onChange={(e) => setChatEscalationLevel(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            >
-              <option>Normal</option>
-              <option>Urgent</option>
-              <option>Critical</option>
-            </select>
-
-            <textarea
-              placeholder="Internal escalation message"
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              rows={5}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4"
-            />
-
-            <button
-              onClick={createInternalChat}
-              className="rounded-2xl bg-red-500 px-5 py-4 font-black text-white"
-            >
-              Send Escalation
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            {internalChats.map((chat) => (
-              <div key={chat.id} className="rounded-2xl app-surface p-5">
-                <div className="flex items-center justify-between">
-                  <p className="font-black">{chat.sender_email}</p>
-
-                  <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-black text-red-500">
-                    {chat.escalation_level}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm app-muted">
-                  {chat.message}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-<section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-
+      <section className="mx-auto max-w-7xl px-4 pb-8">
+        <div className="grid gap-4 lg:grid-cols-4">
+          {adminFlow.map((item) => {
+            const Icon = item.icon;
             return (
-              <div key={stat.title} className="glass-card rounded-[2rem] p-7">
-                <div className={`inline-flex rounded-2xl bg-white/5 p-4 ${stat.color}`}>
-                  <Icon className="h-8 w-8" />
+              <a key={item.title} href={item.href} className="group rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 transition hover:border-sky-400/40 hover:bg-sky-500/10">
+                <div className="flex items-start justify-between gap-5">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-sky-500/10 text-sky-400">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-sky-400 transition group-hover:translate-x-1">→</span>
                 </div>
-
-                <p className="mt-6 text-sm font-bold uppercase tracking-[0.2em] app-subtle">
-                  {stat.title}
-                </p>
-
-                <h2 className="mt-3 text-4xl font-black">{stat.value}</h2>
-              </div>
+                <h3 className="mt-5 text-xl font-black">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 app-muted">{item.text}</p>
+              </a>
             );
           })}
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-7">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Analytics
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Business Insights
-          </h2>
-
-          <div className="mt-8 space-y-6">
-            {[
-              ["Lead Conversion", completedLeads, leads.length, "bg-green-500"],
-              ["Paid Invoices", paidInvoices, invoices.length, "bg-sky-500"],
-              [
-                "Completed Projects",
-                completedProjects,
-                projects.length,
-                "bg-purple-500",
-              ],
-            ].map(([label, done, total, color]) => (
-              <div key={label}>
-                <div className="mb-2 flex justify-between text-sm font-bold">
-                  <span>{label}</span>
-                  <span>
-                    {done}/{total}
-                  </span>
-                </div>
-
-                <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                  <div
-                    className={`h-full rounded-full ${color}`}
-                    style={{
-                      width: `${total ? (done / total) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-7">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Activity Logs
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">
-            Recent Actions
-          </h2>
-
-          <div className="mt-8 space-y-4">
-            {activityLogs.map((log) => (
-              <div
-                key={log.id}
-                className="rounded-2xl app-surface p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-black">
-                      {log.action}
-                    </p>
-
-                    <p className="mt-1 text-sm app-subtle">
-                      {log.module}
-                    </p>
-
-                    <p className="mt-2 text-xs app-muted">
-                      {log.user_email}
-                    </p>
-                  </div>
-
-                  <p className="text-xs app-subtle">
-                    {log.created_at
-                      ? new Date(log.created_at).toLocaleString("en-ZA")
-                      : "—"}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {!activityLogs.length && (
-              <div className="rounded-2xl app-surface p-6 text-center">
-                <p className="font-bold app-muted">
-                  No activity logs found.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-7">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Lead Pipeline
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">Status Overview</h2>
-
-          <div className="mt-8 grid gap-5">
-            {statusCounts.map((item) => (
-              <div key={item.status}>
-                <div className="mb-2 flex justify-between text-sm font-bold">
-                  <span>{item.status}</span>
-                  <span>{item.count}</span>
-                </div>
-
-                <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-sky-500"
-                    style={{
-                      width: `${(item.count / maxStatusCount) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-7">
-          <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-            Modules
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black">Business System</h2>
-
-          <div className="mt-8 grid gap-4">
-            <div className="rounded-2xl app-surface p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-black">Invoice Module</p>
-                  <p className="mt-1 text-sm app-subtle">
-                    {invoices.length} invoices • R{totalInvoiceValue.toLocaleString()} total
-                  </p>
-                </div>
-                <FileText className="h-7 w-7 text-green-500" />
-              </div>
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 lg:grid-cols-2">
+        <div id="quick-invoice" className="glass-card scroll-mt-28 rounded-[2rem] p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-sky-500/10 text-sky-400">
+              <FileText className="h-5 w-5" />
             </div>
-
-            <div className="rounded-2xl app-surface p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-black">Project Module</p>
-                  <p className="mt-1 text-sm app-subtle">
-                    {projects.length} active project records
-                  </p>
-                </div>
-                <FolderKanban className="h-7 w-7 text-purple-500" />
-              </div>
-            </div>
-
-            <div className="rounded-2xl app-surface p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-black">Quote Module</p>
-                  <p className="mt-1 text-sm app-subtle">
-                    {quotes.length} quotation records
-                  </p>
-                </div>
-                <Activity className="h-7 w-7 text-sky-500" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 lg:grid-cols-2">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Team Management
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Staff Roles & Internal Accounts
-              </h2>
-
-              <p className="mt-4 max-w-3xl leading-8 app-muted">
-                Create internal team records and prepare MKETICS for role-based
-                access across finance, support, management, and operations.
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-500">Quick Invoice</p>
+              <h2 className="text-2xl font-black">Create client invoice</h2>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={staffFullName}
-              onChange={(e) => setStaffFullName(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="email"
-              placeholder="Staff Email"
-              value={staffEmail}
-              onChange={(e) => setStaffEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={staffRole}
-              onChange={(e) => setStaffRole(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
-              <option value="finance">Finance</option>
-              <option value="support">Support</option>
-              <option value="staff">Staff</option>
-            </select>
-
-            <select
-              value={staffDepartment}
-              onChange={(e) => setStaffDepartment(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>General</option>
-              <option>Operations</option>
-              <option>Finance</option>
-              <option>Support</option>
-              <option>Projects</option>
-              <option>Sales</option>
-              <option>Technical</option>
-            </select>
-
-            <button
-              onClick={createStaffRole}
-              className="md:col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
-            >
-              <UserPlus className="h-4 w-4" />
-              Add Staff Account
-            </button>
-          </div>
-
-          <div className="mt-10 grid gap-4">
-            {staffRoles.map((staff) => (
-              <div key={staff.id} className="rounded-[2rem] app-surface p-5">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-xl font-black">
-                      {staff.full_name || "Unnamed Staff"}
-                    </p>
-
-                    <p className="mt-1 text-sm app-subtle">
-                      {staff.email}
-                    </p>
-
-                    <p className="mt-2 text-xs app-muted">
-                      {staff.department || "General"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    <select
-                      value={staff.role || "staff"}
-                      onChange={(e) => updateStaffRole(staff.id, e.target.value)}
-                      className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="finance">Finance</option>
-                      <option value="support">Support</option>
-                      <option value="staff">Staff</option>
-                    </select>
-
-                    <select
-                      value={staff.status || "Active"}
-                      onChange={(e) => updateStaffStatus(staff.id, e.target.value)}
-                      className={`rounded-full px-4 py-2 text-xs font-black ${
-                        staff.status === "Suspended"
-                          ? "bg-red-500/10 text-red-500"
-                          : "bg-green-500/10 text-green-500"
-                      }`}
-                    >
-                      <option>Active</option>
-                      <option>Suspended</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {!staffRoles.length && (
-              <div className="rounded-[2rem] app-surface p-8 text-center">
-                <p className="font-bold app-muted">
-                  No staff accounts created yet.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div>
-            <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-              Notification Center
-            </p>
-
-            <h2 className="mt-3 text-3xl font-black">
-              Admin Notifications
-            </h2>
-
-            <p className="mt-4 max-w-3xl leading-8 app-muted">
-              Create operational alerts and track internal activity notifications
-              for the MKETICS admin environment.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4">
-            <input
-              type="text"
-              placeholder="Notification Title"
-              value={notificationTitle}
-              onChange={(e) => setNotificationTitle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <textarea
-              placeholder="Notification Message"
-              value={notificationMessage}
-              onChange={(e) => setNotificationMessage(e.target.value)}
-              rows={4}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={notificationType}
-              onChange={(e) => setNotificationType(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="info">Info</option>
-              <option value="team">Team</option>
-              <option value="finance">Finance</option>
-              <option value="support">Support</option>
-              <option value="urgent">Urgent</option>
-            </select>
-
-            <button
-              onClick={createAdminNotification}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-4 font-black text-white"
-            >
-              <Bell className="h-4 w-4" />
-              Create Notification
-            </button>
-          </div>
-
-          <div className="mt-10 grid gap-4">
-            {adminNotifications.map((notification) => (
-              <div key={notification.id} className="rounded-[2rem] app-surface p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <p className="text-xl font-black">
-                        {notification.title || "Notification"}
-                      </p>
-
-                      <span className={`rounded-full px-3 py-1 text-xs font-black ${
-                        notification.is_read
-                          ? "bg-slate-500/10 text-slate-500"
-                          : "bg-orange-500/10 text-orange-500"
-                      }`}>
-                        {notification.is_read ? "Read" : "Unread"}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 leading-7 app-muted">
-                      {notification.message}
-                    </p>
-
-                    <p className="mt-2 text-xs app-subtle">
-                      {notification.type || "info"} • {notification.created_at
-                        ? new Date(notification.created_at).toLocaleString("en-ZA")
-                        : "—"}
-                    </p>
-                  </div>
-
-                  {!notification.is_read && (
-                    <button
-                      onClick={() => markNotificationRead(notification.id)}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Mark Read
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {!adminNotifications.length && (
-              <div className="rounded-[2rem] app-surface p-8 text-center">
-                <p className="font-bold app-muted">
-                  No admin notifications yet.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Approval Requests
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Client Approval Workflow
-              </h2>
-
-              <p className="mt-4 max-w-3xl leading-8 app-muted">
-                Send project, quotation, invoice, or deployment approval
-                requests directly to clients through their MKETICS portal.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={approvalClientEmail}
-              onChange={(e) => setApprovalClientEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={approvalItemType}
-              onChange={(e) => setApprovalItemType(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option>Project</option>
-              <option>Invoice</option>
-              <option>Quotation</option>
-              <option>Deployment</option>
-              <option>Handover</option>
-            </select>
-
-            <input
-              type="text"
-              placeholder="Approval Title"
-              value={approvalItemTitle}
-              onChange={(e) => setApprovalItemTitle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            />
-
-            <textarea
-              placeholder="Approval Description"
-              value={approvalDescription}
-              onChange={(e) => setApprovalDescription(e.target.value)}
-              rows={4}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5 md:col-span-2"
-            />
-
-            <button
-              onClick={createApprovalRequest}
-              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white md:col-span-2"
-            >
-              Send Approval Request
-            </button>
-          </div>
-
-          <div className="mt-10 grid gap-5">
-            {approvalRequests.map((approval) => (
-              <div
-                key={approval.id}
-                className="rounded-[2rem] app-surface p-6"
-              >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-2xl font-black">
-                        {approval.item_title}
-                      </h3>
-
-                      <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-black text-sky-500">
-                        {approval.item_type || "Project"}
-                      </span>
-                    </div>
-
-                    <p className="mt-3 leading-8 app-muted">
-                      {approval.description || "No approval description provided."}
-                    </p>
-
-                    <p className="mt-3 text-sm app-subtle">
-                      {approval.client_email} •{" "}
-                      {approval.created_at
-                        ? new Date(approval.created_at).toLocaleString("en-ZA")
-                        : "—"}
-                    </p>
-
-                    {approval.approved_at && (
-                      <p className="mt-2 text-sm font-bold text-green-500">
-                        Approved: {new Date(approval.approved_at).toLocaleString("en-ZA")}
-                      </p>
-                    )}
-                  </div>
-
-                  <span
-                    className={`rounded-full px-4 py-2 text-xs font-black ${
-                      approval.status === "Approved"
-                        ? "bg-green-500/10 text-green-500"
-                        : approval.status === "Rejected"
-                        ? "bg-red-500/10 text-red-500"
-                        : "bg-orange-500/10 text-orange-500"
-                    }`}
-                  >
-                    {approval.status || "Pending"}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {!approvalRequests.length && (
-              <div className="rounded-[2rem] app-surface p-8 text-center">
-                <p className="font-bold app-muted">
-                  No approval requests found.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Invoice System
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Create Invoice
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={invoiceEmail}
-              onChange={(e) => setInvoiceEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Invoice Number"
-              value={invoiceNumber}
-              onChange={(e) => setInvoiceNumber(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Service"
-              value={invoiceService}
-              onChange={(e) => setInvoiceService(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="number"
-              placeholder="Amount"
-              value={invoiceAmount}
-              onChange={(e) => setInvoiceAmount(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createInvoice}
-              className="rounded-2xl bg-green-500 px-5 py-4 font-black text-white"
-            >
+          <div className="mt-6 grid gap-4">
+            <input value={invoiceEmail} onChange={(e) => setInvoiceEmail(e.target.value)} placeholder="Client email" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Invoice number e.g. INV-0007" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <input value={invoiceService} onChange={(e) => setInvoiceService(e.target.value)} placeholder="Service e.g. Website design" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} placeholder="Amount" type="number" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <button onClick={createInvoice} className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white hover:bg-sky-400">
               Create Invoice
             </button>
           </div>
-
-          <div className="mt-10 overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Invoice
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Client
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Service
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Amount
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Status
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {invoices.map((invoice) => (
-                  <tr
-                    key={invoice.id}
-                    className="border-b border-slate-100 dark:border-white/5"
-                  >
-                    <td className="px-4 py-5 font-bold">
-                      {invoice.invoice_number}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      {invoice.client_email}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      {invoice.service}
-                    </td>
-
-                    <td className="px-4 py-5 font-black text-sky-500">
-                      R{Number(invoice.amount || 0).toLocaleString()}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      <span
-                        className={`rounded-full px-4 py-2 text-xs font-black ${
-                          invoice.status === "Paid"
-                            ? "bg-green-500/10 text-green-500"
-                            : "bg-orange-500/10 text-orange-500"
-                        }`}
-                      >
-                        {invoice.status || "Unpaid"}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-5">
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          onClick={() => markInvoicePaid(invoice.id, invoice.status)}
-                          className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          Toggle Status
-                        </button>
-
-                        <button
-                          onClick={() => exportInvoicePDF(invoice)}
-                          className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          PDF
-                        </button>
-                        <button
-                            onClick={() =>
-                            window.open(invoice.invoice_pdf_url, "_blank")
-                          }
-                          className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                        Pay Link
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {!invoices.length && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-16 text-center">
-                      <p className="text-lg font-bold app-muted">
-                        No invoices found.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
-      </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div id="quick-project" className="glass-card scroll-mt-28 rounded-[2rem] p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-purple-500/10 text-purple-400">
+              <FolderKanban className="h-5 w-5" />
+            </div>
             <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Project Tracking
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Project Boards
-              </h2>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-purple-400">Quick Project</p>
+              <h2 className="text-2xl font-black">Add delivery project</h2>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-            <input
-              type="text"
-              placeholder="Project Name"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="email"
-              placeholder="Client Email"
-              value={projectClient}
-              onChange={(e) => setProjectClient(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <select
-              value={projectStatus}
-              onChange={(e) => setProjectStatus(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
+          <div className="mt-6 grid gap-4">
+            <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Project name" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <input value={projectClient} onChange={(e) => setProjectClient(e.target.value)} placeholder="Client email" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <select value={projectStatus} onChange={(e) => setProjectStatus(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5">
               <option>Planning</option>
               <option>In Progress</option>
               <option>Testing</option>
               <option>Completed</option>
             </select>
-
-            <input
-              type="number"
-              placeholder="Progress %"
-              value={projectProgress}
-              onChange={(e) => setProjectProgress(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createProject}
-              className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white"
-            >
-              Create Project
+            <input value={projectProgress} onChange={(e) => setProjectProgress(e.target.value)} placeholder="Progress %" type="number" min="0" max="100" className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5" />
+            <button onClick={createProject} className="rounded-2xl bg-purple-500 px-5 py-4 font-black text-white hover:bg-purple-400">
+              Add Project
             </button>
           </div>
-
-          <div className="mt-10 overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Project
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Client
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Status
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Progress
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {projects.map((project) => (
-                  <tr
-                    key={project.id}
-                    className="border-b border-slate-100 dark:border-white/5"
-                  >
-                    <td className="px-4 py-5 font-bold">
-                      {project.project_name}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      {project.client_email}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      <select
-                        value={project.status || "Planning"}
-                        onChange={(e) =>
-                          updateProjectStatus(project.id, e.target.value)
-                        }
-                        className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
-                      >
-                        <option>Planning</option>
-                        <option>In Progress</option>
-                        <option>Testing</option>
-                        <option>Completed</option>
-                      </select>
-                    </td>
-
-                    <td className="px-4 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                          <div
-                            className="h-full rounded-full bg-purple-500"
-                            style={{
-                              width: `${project.progress || 0}%`,
-                            }}
-                          />
-                        </div>
-
-                        <input
-                          type="number"
-                          value={project.progress || 0}
-                          onChange={(e) =>
-                            updateProjectProgress(project.id, e.target.value)
-                          }
-                          className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black outline-none dark:border-white/10 dark:bg-white/5"
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {!projects.length && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-16 text-center">
-                      <p className="text-lg font-bold app-muted">
-                        No projects found.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       </section>
 
-
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
+      <section id="leads" className="mx-auto max-w-7xl px-4 pb-8">
         <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Kanban Workflow
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Drag & Drop Project Board
-              </h2>
-
-              <p className="mt-4 max-w-3xl leading-8 app-muted">
-                Move projects between planning, implementation, testing, and
-                completion stages. Updates sync to Supabase and project records
-                automatically.
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-500">Quote Requests</p>
+              <h2 className="mt-2 text-3xl font-black">Incoming client enquiries</h2>
+              <p className="mt-3 max-w-2xl app-muted">Review new requests, contact clients and move serious leads forward.</p>
             </div>
-          </div>
-
-          <DragDropContext onDragEnd={handleKanbanDrag}>
-            <div className="mt-10 grid gap-6 lg:grid-cols-4">
-              {["Planning", "In Progress", "Testing", "Completed"].map((column) => (
-                <Droppable droppableId={column} key={column}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`min-h-[520px] rounded-[2rem] p-5 transition ${
-                        snapshot.isDraggingOver ? "bg-sky-500/10" : "app-surface"
-                      }`}
-                    >
-                      <div className="mb-5 flex items-center justify-between">
-                        <h3 className="text-xl font-black">{column}</h3>
-
-                        <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-black text-sky-500">
-                          {
-                            kanbanProjects.filter(
-                              (project) =>
-                                (project.board_column || project.status || "Planning") === column
-                            ).length
-                          }
-                        </span>
-                      </div>
-
-                      <div className="space-y-4">
-                        {kanbanProjects
-                          .filter(
-                            (project) =>
-                              (project.board_column || project.status || "Planning") === column
-                          )
-                          .map((project, index) => (
-                            <Draggable
-                              key={project.id}
-                              draggableId={String(project.id)}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition dark:border-white/10 dark:bg-white/5 ${
-                                    snapshot.isDragging ? "scale-[1.02] shadow-xl" : "hover:-translate-y-1"
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                      <p className="text-lg font-black">
-                                        {project.project_name}
-                                      </p>
-
-                                      <p className="mt-1 break-words text-sm app-subtle">
-                                        {project.client_email}
-                                      </p>
-                                    </div>
-
-                                    <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-black text-purple-500">
-                                      {project.progress || 0}%
-                                    </span>
-                                  </div>
-
-                                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                                    <div
-                                      className="h-full rounded-full bg-purple-500"
-                                      style={{ width: `${project.progress || 0}%` }}
-                                    />
-                                  </div>
-
-                                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                                    <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-black text-sky-500">
-                                      {project.status || "Planning"}
-                                    </span>
-
-                                    <span
-                                      className={`rounded-full px-3 py-1 text-xs font-black ${
-                                        project.priority === "High"
-                                          ? "bg-red-500/10 text-red-500"
-                                          : project.priority === "Low"
-                                          ? "bg-slate-500/10 text-slate-500"
-                                          : "bg-orange-500/10 text-orange-500"
-                                      }`}
-                                    >
-                                      {project.priority || "Medium"}
-                                    </span>
-                                  </div>
-
-                                  {project.assigned_to && (
-                                    <p className="mt-3 text-xs app-muted">
-                                      Assigned to: {project.assigned_to}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-
-                        {provided.placeholder}
-
-                        {!kanbanProjects.filter(
-                          (project) =>
-                            (project.board_column || project.status || "Planning") === column
-                        ).length && (
-                          <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-white/10">
-                            <p className="text-sm font-bold app-muted">
-                              Drop projects here.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Droppable>
-              ))}
-            </div>
-          </DragDropContext>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Project Timeline
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Project Updates
-              </h2>
-
-              <p className="mt-4 max-w-3xl leading-8 app-muted">
-                Post timeline updates that clients can see inside their
-                secure MKETICS portal.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            >
-              <option value="">Select Project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.project_name} — {project.client_email}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              placeholder="Update Title"
-              value={updateTitle}
-              onChange={(e) => setUpdateTitle(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <input
-              type="text"
-              placeholder="Update Message"
-              value={updateMessage}
-              onChange={(e) => setUpdateMessage(e.target.value)}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-            />
-
-            <button
-              onClick={createProjectUpdate}
-              className="rounded-2xl bg-sky-500 px-5 py-4 font-black text-white"
-            >
-              Add Update
-            </button>
-          </div>
-
-          <div className="mt-10 grid gap-5">
-            {projectUpdates.map((update) => (
-              <div
-                key={update.id}
-                className="rounded-[2rem] app-surface p-6"
-              >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-[0.2em] text-sky-500">
-                      {update.client_email}
-                    </p>
-
-                    <h3 className="mt-2 text-xl font-black">
-                      {update.update_title}
-                    </h3>
-
-                    <p className="mt-3 leading-8 app-muted">
-                      {update.update_message || "No additional details provided."}
-                    </p>
-                  </div>
-
-                  <p className="shrink-0 text-sm app-subtle">
-                    {update.created_at
-                      ? new Date(update.created_at).toLocaleString("en-ZA")
-                      : "—"}
-                  </p>
-                </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 app-subtle" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search leads" className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-11 pr-4 outline-none dark:border-white/10 dark:bg-white/5" />
               </div>
-            ))}
-
-            {!projectUpdates.length && (
-              <div className="rounded-[2rem] app-surface p-8 text-center">
-                <p className="font-bold app-muted">
-                  No project timeline updates found.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                File Management
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Project & Support Files
-              </h2>
-
-              <p className="mt-4 max-w-3xl leading-8 app-muted">
-                Upload client deliverables, project documents, support evidence,
-                screenshots, and handover files securely through Supabase Storage.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[2rem] app-surface p-6">
-              <p className="font-black">Upload Project File</p>
-
-              <div className="mt-5 grid gap-4">
-                <select
-                  value={selectedProjectFileId}
-                  onChange={(e) => setSelectedProjectFileId(e.target.value)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-                >
-                  <option value="">Select Project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.project_name} — {project.client_email}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="file"
-                  onChange={(e) => setAdminProjectFile(e.target.files?.[0] || null)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-                />
-
-                <button
-                  onClick={uploadAdminProjectFile}
-                  disabled={uploadingFile}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-500 px-5 py-4 font-black text-white disabled:opacity-60"
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadingFile ? "Uploading..." : "Upload Project File"}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] app-surface p-6">
-              <p className="font-black">Upload Support File</p>
-
-              <div className="mt-5 grid gap-4">
-                <select
-                  value={selectedSupportTicketId}
-                  onChange={(e) => setSelectedSupportTicketId(e.target.value)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-                >
-                  <option value="">Select Support Ticket</option>
-                  {tickets.map((ticket) => (
-                    <option key={ticket.id} value={ticket.id}>
-                      {ticket.subject} — {ticket.client_email}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="file"
-                  onChange={(e) => setAdminSupportFile(e.target.files?.[0] || null)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5"
-                />
-
-                <button
-                  onClick={uploadAdminSupportFile}
-                  disabled={uploadingFile}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-5 py-4 font-black text-white disabled:opacity-60"
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadingFile ? "Uploading..." : "Upload Support File"}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 grid gap-6 lg:grid-cols-2">
-            <div>
-              <h3 className="text-2xl font-black">Project Files</h3>
-
-              <div className="mt-5 grid gap-4">
-                {projectFiles.map((file) => (
-                  <div key={file.id} className="rounded-2xl app-surface p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        <p className="font-black">{file.file_name}</p>
-                        <p className="mt-1 text-sm app-subtle">{file.client_email}</p>
-                        <p className="mt-1 text-xs app-muted">
-                          {file.created_at
-                            ? new Date(file.created_at).toLocaleString("en-ZA")
-                            : "—"}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => downloadStoredFile(file.file_url)}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {!projectFiles.length && (
-                  <div className="rounded-2xl app-surface p-6 text-center">
-                    <p className="font-bold app-muted">No project files uploaded yet.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-black">Support Files</h3>
-
-              <div className="mt-5 grid gap-4">
-                {supportFiles.map((file) => (
-                  <div key={file.id} className="rounded-2xl app-surface p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        <p className="font-black">{file.file_name}</p>
-                        <p className="mt-1 text-sm app-subtle">{file.client_email}</p>
-                        <p className="mt-1 text-xs app-muted">
-                          {file.created_at
-                            ? new Date(file.created_at).toLocaleString("en-ZA")
-                            : "—"}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => downloadStoredFile(file.file_url)}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {!supportFiles.length && (
-                  <div className="rounded-2xl app-surface p-6 text-center">
-                    <p className="font-bold app-muted">No support files uploaded yet.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-10">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Support System
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">
-                Ticket Management
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-10 overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Client
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Subject
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Message
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Status
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {tickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className="border-b border-slate-100 dark:border-white/5"
-                  >
-                    <td className="px-4 py-5 font-bold">
-                      {ticket.client_email}
-                    </td>
-
-                    <td className="px-4 py-5">
-                      {ticket.subject}
-                    </td>
-
-                    <td className="px-4 py-5 max-w-[350px]">
-                      <p className="line-clamp-2">
-                        {ticket.message}
-                      </p>
-                    </td>
-
-                    <td className="px-4 py-5">
-                      <select
-                        value={ticket.status || "Open"}
-                        onChange={(e) =>
-                          updateTicketStatus(ticket.id, e.target.value)
-                        }
-                        className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black dark:bg-white/10"
-                      >
-                        <option>Open</option>
-                        <option>In Progress</option>
-                        <option>Resolved</option>
-                        <option>Closed</option>
-                      </select>
-                    </td>
-
-                    <td className="px-4 py-5 text-sm app-subtle">
-                      {ticket.created_at
-                        ? new Date(ticket.created_at).toLocaleDateString("en-ZA")
-                        : "—"}
-                    </td>
-                  </tr>
-                ))}
-
-                {!tickets.length && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-16 text-center">
-                      <p className="text-lg font-bold app-muted">
-                        No support tickets found.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-24">
-        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-[0.2em] text-sky-500">
-                Lead Management
-              </p>
-
-              <h2 className="mt-3 text-3xl font-black">Client Requests</h2>
-            </div>
-
-            <div className="flex flex-col gap-4 lg:flex-row">
-              <div className="relative w-full lg:w-[320px]">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-                <input
-                  type="text"
-                  placeholder="Search leads..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 py-4 text-sm font-medium outline-none focus:border-sky-400 dark:border-white/10 dark:bg-white/5"
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold outline-none dark:border-white/10 dark:bg-white/5"
-              >
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 outline-none dark:border-white/10 dark:bg-white/5">
                 <option>All</option>
                 <option>New</option>
                 <option>Contacted</option>
@@ -5287,215 +2626,216 @@ const updateLeadStatus = async (id, status) => {
                 <option>Completed</option>
                 <option>Archived</option>
               </select>
-
-              <button
-                onClick={refreshDashboard}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-5 py-4 text-sm font-black text-white"
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
             </div>
           </div>
 
-          <div className="mt-8 overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10">
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Client
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Service
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Budget
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Date
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Status
-                  </th>
-                  <th className="px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+          <div className="mt-7 grid gap-4 lg:grid-cols-2">
+            {filteredLeads.slice(0, 12).map((lead) => {
+              const details = parseLeadDetails(lead.message);
+              const whatsappNumber = cleanPhoneForWhatsApp(lead.phone);
+              const whatsappMessage = encodeURIComponent(`Hi ${lead.name || "there"}, this is MKETICS. We received your quote request for ${lead.service || "your project"}.`);
+              return (
+                <div key={lead.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-xl font-black">{lead.name || "Unnamed client"}</h3>
+                      <p className="mt-1 break-words text-sm app-subtle">{lead.email}</p>
+                      <p className="mt-1 break-words text-sm app-subtle">{lead.phone || "No phone number"}</p>
+                      <p className="mt-3 font-bold text-sky-400">{lead.service || "Service not specified"}</p>
+                      <p className="mt-2 text-sm app-muted">{lead.created_at ? new Date(lead.created_at).toLocaleDateString("en-ZA") : "No date"}</p>
+                    </div>
+                    <select value={lead.status || "New"} onChange={(e) => updateLeadStatus(lead.id, e.target.value)} className={`rounded-full border-0 px-4 py-2 text-xs font-black outline-none ${statusStyles[lead.status || "New"]}`}>
+                      <option>New</option>
+                      <option>Contacted</option>
+                      <option>Quoted</option>
+                      <option>Completed</option>
+                      <option>Archived</option>
+                    </select>
+                  </div>
 
-              <tbody>
-                {filteredLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-slate-100 transition hover:bg-black/[0.02] dark:border-white/5 dark:hover:bg-white/[0.02]"
-                  >
-                    <td className="px-4 py-5">
-                      <p className="font-bold">{lead.name}</p>
-                      <p className="mt-1 text-sm app-subtle">{lead.email}</p>
-                    </td>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-black/10 p-3 dark:bg-black/20">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] app-subtle">Location</p>
+                      <p className="mt-1 text-sm font-bold">{details.location || "Not provided"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-black/10 p-3 dark:bg-black/20">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] app-subtle">Timeline</p>
+                      <p className="mt-1 text-sm font-bold">{details.timeline || "Not provided"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-black/10 p-3 dark:bg-black/20">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] app-subtle">Budget Range</p>
+                      <p className="mt-1 text-sm font-bold">{details.budgetRange || "Not provided"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-black/10 p-3 dark:bg-black/20">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] app-subtle">Preferred Contact</p>
+                      <p className="mt-1 text-sm font-bold">{details.contactMethod || "Not provided"}</p>
+                    </div>
+                  </div>
 
-                    <td className="px-4 py-5 font-medium">{lead.service}</td>
+                  {details.projectNotes.length > 0 && (
+                    <p className="mt-4 line-clamp-3 text-sm leading-6 app-muted">{details.projectNotes.join(" ")}</p>
+                  )}
 
-                    <td className="px-4 py-5 font-black text-sky-500">
-                      R{Number(lead.estimated_price || 0).toLocaleString()}
-                    </td>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button onClick={() => setSelectedLead(lead)} className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"><Eye className="inline h-3 w-3" /> View Details</button>
+                    <button onClick={() => prepareProjectFromLead(lead)} className="rounded-full bg-indigo-500 px-4 py-2 text-xs font-black text-white">Prepare Project</button>
+                    <button onClick={() => prepareInvoiceFromLead(lead)} className="rounded-full bg-amber-500 px-4 py-2 text-xs font-black text-white">Prepare Invoice</button>
+                    <a href={`mailto:${lead.email}`} className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white">Email</a>
+                    {whatsappNumber && <a href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-green-500 px-4 py-2 text-xs font-black text-white">WhatsApp</a>}
+                    <button onClick={() => archiveLead(lead.id)} className="rounded-full bg-slate-500 px-4 py-2 text-xs font-black text-white"><Archive className="inline h-3 w-3" /> Archive</button>
+                  </div>
+                </div>
+              );
+            })}
+            {!filteredLeads.length && <p className="rounded-2xl app-surface p-8 text-center font-bold app-muted lg:col-span-2">No leads found.</p>}
+          </div>
+        </div>
+      </section>
 
-                    <td className="px-4 py-5 text-sm app-subtle">
-                      {lead.created_at
-                        ? new Date(lead.created_at).toLocaleDateString("en-ZA")
-                        : "—"}
-                    </td>
+      <section id="projects" className="mx-auto max-w-7xl px-4 pb-8">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-purple-400">Projects</p>
+              <h2 className="mt-2 text-3xl font-black">Delivery pipeline</h2>
+            </div>
+            <button onClick={refreshDashboard} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-5 py-4 text-sm font-black text-white">
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+            </button>
+          </div>
+          <div className="mt-7 grid gap-4 lg:grid-cols-3">
+            {projects.slice(0, 9).map((project) => (
+              <div key={project.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+                <h3 className="text-xl font-black">{project.project_name}</h3>
+                <p className="mt-1 break-words text-sm app-subtle">{project.client_email}</p>
+                <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-sky-500" style={{ width: `${Number(project.progress || 0)}%` }} />
+                </div>
+                <p className="mt-2 text-sm font-bold text-sky-400">{Number(project.progress || 0)}% complete</p>
+                <div className="mt-5 grid gap-3">
+                  <select value={project.status || "Planning"} onChange={(e) => updateProjectStatus(project.id, e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none dark:border-white/10 dark:bg-white/5">
+                    <option>Planning</option>
+                    <option>In Progress</option>
+                    <option>Testing</option>
+                    <option>Completed</option>
+                  </select>
+                  <input type="number" min="0" max="100" value={project.progress || 0} onChange={(e) => updateProjectProgress(project.id, e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none dark:border-white/10 dark:bg-white/5" />
+                </div>
+              </div>
+            ))}
+            {!projects.length && <p className="rounded-2xl app-surface p-8 text-center font-bold app-muted lg:col-span-3">No projects yet.</p>}
+          </div>
+        </div>
+      </section>
 
-                    <td className="px-4 py-5">
-                      <select
-                        value={lead.status || "New"}
-                        onChange={(e) => updateLeadStatus(lead.id, e.target.value)}
-                        className={`rounded-full border-0 px-4 py-2 text-xs font-black outline-none ${
-                          statusStyles[lead.status || "New"]
-                        }`}
-                      >
-                        <option>New</option>
-                        <option>Contacted</option>
-                        <option>Quoted</option>
-                        <option>Completed</option>
-                        <option>Archived</option>
-                      </select>
-                    </td>
+      <section id="invoices" className="mx-auto max-w-7xl px-4 pb-8">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-green-400">Invoices</p>
+            <h2 className="mt-2 text-3xl font-black">Billing records</h2>
+            <p className="mt-3 app-muted">Total invoice value: <span className="font-black text-green-400">R{totalInvoiceValue.toLocaleString()}</span></p>
+          </div>
+          <div className="mt-7 grid gap-4 lg:grid-cols-3">
+            {invoices.slice(0, 12).map((invoice) => (
+              <div key={invoice.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-black">{invoice.invoice_number}</h3>
+                    <p className="mt-1 break-words text-sm app-subtle">{invoice.client_email}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black ${invoice.status === "Paid" ? "bg-green-500/10 text-green-400" : "bg-orange-500/10 text-orange-400"}`}>{invoice.status === "Paid" ? "Paid" : "Unpaid"}</span>
+                </div>
+                <p className="mt-5 text-3xl font-black text-green-400">R{Number(invoice.amount || 0).toLocaleString()}</p>
+                <p className="mt-2 text-sm app-muted">{invoice.service || invoice.notes || "MKETICS service"}</p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button onClick={() => markInvoicePaid(invoice.id, invoice.status)} className="rounded-full bg-green-500 px-4 py-2 text-xs font-black text-white">{invoice.status === "Paid" ? "Mark Unpaid" : "Mark Paid"}</button>
+                  <button onClick={() => exportInvoicePDF(invoice)} className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"><Download className="inline h-3 w-3" /> PDF</button>
+                </div>
+              </div>
+            ))}
+            {!invoices.length && <p className="rounded-2xl app-surface p-8 text-center font-bold app-muted lg:col-span-3">No invoices yet.</p>}
+          </div>
+        </div>
+      </section>
 
-                    <td className="px-4 py-5">
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          onClick={() => setSelectedLead(lead)}
-                          className="rounded-full bg-purple-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          <Eye className="inline h-3 w-3" /> View
-                        </button>
-
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="rounded-full bg-sky-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          Email
-                        </a>
-
-                        <a
-                          href={`https://wa.me/${lead.phone?.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full bg-green-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          WhatsApp
-                        </a>
-
-                        <button
-                          onClick={() => archiveLead(lead.id)}
-                          className="rounded-full bg-slate-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          <Archive className="inline h-3 w-3" /> Archive
-                        </button>
-
-                        <button
-                          onClick={() => deleteLead(lead.id)}
-                          className="rounded-full bg-red-500 px-4 py-2 text-xs font-black text-white"
-                        >
-                          <Trash2 className="inline h-3 w-3" /> Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {!filteredLeads.length && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-16 text-center">
-                      <p className="text-lg font-bold app-muted">No leads found.</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      <section id="tickets" className="mx-auto max-w-7xl px-4 pb-12">
+        <div className="glass-card rounded-[2rem] p-6 sm:p-8">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-400">Support</p>
+            <h2 className="mt-2 text-3xl font-black">Support tickets</h2>
+          </div>
+          <div className="mt-7 grid gap-4 lg:grid-cols-3">
+            {tickets.slice(0, 9).map((ticket) => (
+              <div key={ticket.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+                <h3 className="text-xl font-black">{ticket.title || ticket.subject || "Support request"}</h3>
+                <p className="mt-1 break-words text-sm app-subtle">{ticket.client_email}</p>
+                <p className="mt-4 line-clamp-3 text-sm leading-7 app-muted">{ticket.description || ticket.message || "No description provided."}</p>
+                <select value={ticket.status || "Open"} onChange={(e) => updateTicketStatus(ticket.id, e.target.value)} className="mt-5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none dark:border-white/10 dark:bg-white/5">
+                  <option>Open</option>
+                  <option>In Progress</option>
+                  <option>Resolved</option>
+                  <option>Closed</option>
+                </select>
+              </div>
+            ))}
+            {!tickets.length && <p className="rounded-2xl app-surface p-8 text-center font-bold app-muted lg:col-span-3">No support tickets yet.</p>}
           </div>
         </div>
       </section>
 
       {selectedLead && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white p-8 shadow-2xl dark:bg-slate-950">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-slate-950 sm:p-8">
             <div className="flex items-start justify-between gap-6">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-sky-500">
-                  Lead Details
-                </p>
-
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-500">Lead Details</p>
                 <h2 className="mt-3 text-3xl font-black">{selectedLead.name}</h2>
               </div>
-
-              <button
-                onClick={() => setSelectedLead(null)}
-                className="rounded-full bg-red-500 px-4 py-2 text-sm font-black text-white"
-              >
-                Close
-              </button>
+              <button onClick={() => setSelectedLead(null)} className="rounded-full bg-red-500 px-4 py-2 text-sm font-black text-white">Close</button>
             </div>
 
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
-              {[
-                ["Email", selectedLead.email],
-                ["Phone", selectedLead.phone],
-                ["Service", selectedLead.service],
-                [
-                  "Budget",
-                  `R${Number(selectedLead.estimated_price || 0).toLocaleString()}`,
-                ],
-                ["Status", selectedLead.status || "New"],
-                [
-                  "Created",
-                  selectedLead.created_at
-                    ? new Date(selectedLead.created_at).toLocaleString("en-ZA")
-                    : "—",
-                ],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl app-surface p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                    {label}
-                  </p>
+            {(() => {
+              const details = parseLeadDetails(selectedLead.message);
+              const whatsappNumber = cleanPhoneForWhatsApp(selectedLead.phone);
+              const whatsappMessage = encodeURIComponent(`Hi ${selectedLead.name || "there"}, this is MKETICS. We received your quote request for ${selectedLead.service || "your project"}.`);
+              return (
+                <>
+                  <div className="mt-8 grid gap-5 md:grid-cols-2">
+                    {[
+                      ["Email", selectedLead.email],
+                      ["Phone", selectedLead.phone],
+                      ["Service", selectedLead.service],
+                      ["Estimated Budget", `R${Number(selectedLead.estimated_price || 0).toLocaleString()}`],
+                      ["Location/Site", details.location || "Not provided"],
+                      ["Timeline", details.timeline || "Not provided"],
+                      ["Budget Range", details.budgetRange || "Not provided"],
+                      ["Preferred Contact", details.contactMethod || "Not provided"],
+                      ["Status", selectedLead.status || "New"],
+                      ["Created", selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleString("en-ZA") : "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-2xl app-surface p-5">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] app-subtle">{label}</p>
+                        <p className="mt-2 break-words font-bold">{value}</p>
+                      </div>
+                    ))}
+                  </div>
 
-                  <p className="mt-2 break-words font-bold">{value}</p>
-                </div>
-              ))}
-            </div>
+                  <div className="mt-5 rounded-2xl app-surface p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] app-subtle">Project Notes</p>
+                    <p className="mt-2 whitespace-pre-line leading-8 app-muted">{details.projectNotes.length ? details.projectNotes.join("\n") : "No message provided."}</p>
+                  </div>
 
-            <div className="mt-5 rounded-2xl app-surface p-5">
-              <p className="text-xs font-black uppercase tracking-[0.2em] app-subtle">
-                Project Notes
-              </p>
-
-              <p className="mt-2 leading-8 app-muted">
-                {selectedLead.message || "No message provided."}
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href={`mailto:${selectedLead.email}`}
-                className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white"
-              >
-                Email Client
-              </a>
-
-              <a
-                href={`https://wa.me/${selectedLead.phone?.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white"
-              >
-                WhatsApp Client
-              </a>
-            </div>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button onClick={() => prepareProjectFromLead(selectedLead)} className="rounded-full bg-indigo-500 px-5 py-3 text-sm font-black text-white">Prepare Project</button>
+                    <button onClick={() => prepareInvoiceFromLead(selectedLead)} className="rounded-full bg-amber-500 px-5 py-3 text-sm font-black text-white">Prepare Invoice</button>
+                    <a href={`mailto:${selectedLead.email}`} className="rounded-full bg-sky-500 px-5 py-3 text-sm font-black text-white">Email Client</a>
+                    {whatsappNumber && <a href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-green-500 px-5 py-3 text-sm font-black text-white">WhatsApp Client</a>}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
-
-        
       )}
 
       <Footer />

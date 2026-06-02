@@ -9,7 +9,6 @@ import {
   Search,
   LayoutDashboard,
   CheckCircle2,
-  Rocket,
   ShieldCheck,
   BarChart3,
 } from "lucide-react";
@@ -42,10 +41,10 @@ const services = [
 ];
 
 const benefits = [
-  "Premium digital branding",
-  "Modern website systems",
-  "SEO-focused structure",
-  "Business growth positioning",
+  "Professional brand and document support",
+  "Mobile-ready websites",
+  "Clear online presence",
+  "Client-ready business material",
 ];
 
 const metrics = [
@@ -68,7 +67,7 @@ const metrics = [
 
 export default function MketicsDigitalHub() {
   return (
-    <main className="min-h-screen app-bg">
+    <main className="min-h-screen app-bg brand-grid-bg">
       <Navbar />
 
       <section className="relative overflow-hidden px-4 pb-24 pt-32">
@@ -91,16 +90,14 @@ export default function MketicsDigitalHub() {
           </div>
 
           <h1 className="mt-8 text-5xl font-black leading-tight md:text-7xl">
-            Digital Presence &
+            Business documents, websites and
             <span className="block bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">
-              Business Growth
+              digital support
             </span>
           </h1>
 
           <p className="mx-auto mt-8 max-w-4xl text-lg leading-8 app-muted">
-            MKETICS Digital Hub helps businesses establish, manage and scale
-            their digital presence through branding, websites, SEO, content
-            systems and customer experiences.
+            MKETICS Digital Hub supports clients who need practical digital work: websites, brand assets, company profiles, proposals, business documents, CV support and online presence improvements.
           </p>
 
           <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
@@ -119,13 +116,6 @@ export default function MketicsDigitalHub() {
               View Portfolio
             </a>
 
-            <a
-              href="/start-trial"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-400/20 bg-sky-500/10 px-8 py-4 font-black text-sky-600 dark:text-sky-300"
-            >
-              <Rocket className="h-5 w-5" />
-              Start Trial
-            </a>
           </div>
 
           <div className="mt-14 grid gap-5 sm:grid-cols-3">
@@ -184,13 +174,11 @@ export default function MketicsDigitalHub() {
             </p>
 
             <h2 className="mt-4 text-4xl font-black md:text-5xl">
-              Modern digital experiences for modern businesses.
+              Practical digital support for businesses that need to look professional.
             </h2>
 
             <p className="mt-6 leading-8 app-muted">
-              MKETICS Digital Hub combines design, branding, strategy and digital
-              systems to help businesses strengthen their online presence and
-              customer engagement.
+              MKETICS Digital Hub is where clients get the smaller but important work done properly: profiles, proposals, websites, social graphics, CV updates, LinkedIn support and digital documents.
             </p>
           </div>
 
@@ -213,12 +201,11 @@ export default function MketicsDigitalHub() {
           <Sparkles className="mx-auto h-12 w-12" />
 
           <h2 className="mt-6 text-4xl font-black">
-            Ready to improve your digital presence?
+            Ready to make your business look more professional?
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/90">
-            Let MKETICS help build your business presence, brand identity and
-            modern digital experience.
+            Let MKETICS help with your website, profile, proposal, brand visuals and digital documents.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">

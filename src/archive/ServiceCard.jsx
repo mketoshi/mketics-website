@@ -33,7 +33,7 @@ export default function ServiceCard({
 
       {/* Button */}
       <a
-        href="/#quote"
+        href="/quote"
         className="mt-8 inline-flex items-center gap-2 text-sm font-black text-sky-300 transition hover:text-white"
       >
         Request this service →

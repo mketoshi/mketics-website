@@ -5,7 +5,6 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
-  Rocket,
   ArrowRight,
 } from "lucide-react";
 
@@ -74,7 +73,7 @@ export default function ClientLogin() {
 
         <p className="mt-6 leading-7 app-muted">
           Login securely to access invoices, projects, support requests,
-          proposals and business systems.
+          documents and support updates.
         </p>
 
         {notice && (
@@ -145,15 +144,15 @@ export default function ClientLogin() {
 
         <div className="mt-8 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-5">
           <div className="flex items-center gap-3">
-            <Rocket className="h-6 w-6 text-sky-500" />
+            <ShieldCheck className="h-6 w-6 text-sky-500" />
 
             <div>
               <p className="font-black">
-                MKETICS SaaS Platform
+                MKETICS Client Portal
               </p>
 
               <p className="text-sm app-subtle">
-                Enterprise client ecosystem
+                Secure project workspace
               </p>
             </div>
           </div>
