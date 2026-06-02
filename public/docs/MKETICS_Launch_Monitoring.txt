@@ -1,0 +1,11 @@
+MKETICS Launch Monitoring
+
+Check weekly:
+- Quote requests
+- Admin dashboard
+- Client portal
+- Invoice PDFs
+- Catalogue download
+- Mobile navigation
+- Cloudflare deployment
+- Google Search Console indexing
