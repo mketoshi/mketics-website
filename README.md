@@ -1,23 +1,13 @@
-# MKETICS Static Website - Branded Version
+# MKETICS Static Website Redesign
 
-This is a temporary static MKETICS website with uploaded MKETICS brand assets included.
+Static website rebuilt to match the official original blue/silver MKETICS logo.
 
-## Includes
+## Files
+- `index.html` - full single-page website
+- `styles.css` - responsive styling
+- `script.js` - mobile menu and reveal animations
+- `assets/` - official logo and web graphics
+- `_redirects` - Cloudflare Pages fallback
 
-- Static HTML/CSS/JS
-- MKETICS Alkebulan brand assets
-- WhatsApp quote form
-- Cloudflare `_redirects`
-- No database
-- No login
-- No dashboard
-- No SaaS wording
-
-## Cloudflare Pages Deploy Settings
-
-Build command: leave empty  
-Build output directory: /
-
-## Important
-
-Upload all files exactly as provided, including the `assets` folder and `_redirects` file.
+## Deploy on Cloudflare Pages
+Upload or commit all files in this folder. Set build command to empty and output directory to `/`.

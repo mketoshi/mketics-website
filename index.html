@@ -1,412 +1,230 @@
 <!DOCTYPE html>
-<html lang="en-ZA">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>MKETICS | Websites, Business Systems & IT Solutions</title>
-  <meta name="description" content="MKETICS builds websites, online stores, custom business systems, IT infrastructure, CCTV/cloud solutions, and digital readiness services for South African businesses." />
-  <meta name="keywords" content="MKETICS, websites, online stores, IT support, custom business systems, CCTV, cloud storage, network infrastructure, South Africa technology company" />
-  <meta name="author" content="MKETICS (PTY) LTD" />
-  <meta name="theme-color" content="#05070d" />
-
-  <meta property="og:title" content="MKETICS | Speak Innovation. Deliver Value." />
-  <meta property="og:description" content="Websites, online stores, custom business systems, IT infrastructure, CCTV/cloud solutions and digital business support." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://mketics.co.za/" />
-  <meta property="og:image" content="https://mketics.co.za/assets/hero-banner.png" />
-
-  <link rel="icon" href="assets/icon-logo.webp" type="image/webp" />
+  <meta name="description" content="MKETICS builds modern websites, business systems, IT infrastructure solutions and digital tools for growing businesses." />
+  <title>MKETICS | Smart Digital Systems for Serious Businesses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
+  <div class="site-glow"></div>
 
-  <svg class="svg-sprite" aria-hidden="true" focusable="false">
-    <symbol id="icon-code" viewBox="0 0 64 64">
-      <path d="M24 20L12 32l12 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M40 20l12 12-12 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M35 14L29 50" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-js" viewBox="0 0 64 64">
-      <rect x="10" y="10" width="44" height="44" rx="10" fill="none" stroke="currentColor" stroke-width="4"/>
-      <path d="M26 24v14c0 5-3 8-8 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      <path d="M36 44c2 2 9 3 11-1 2-5-5-7-8-8-6-2-5-10 3-10 3 0 5 1 7 3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-store" viewBox="0 0 64 64">
-      <path d="M14 26h36l-3 24H17l-3-24z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M22 26c0-7 4-12 10-12s10 5 10 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      <path d="M24 36h16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-network" viewBox="0 0 64 64">
-      <circle cx="32" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="4"/>
-      <circle cx="16" cy="44" r="6" fill="none" stroke="currentColor" stroke-width="4"/>
-      <circle cx="48" cy="44" r="6" fill="none" stroke="currentColor" stroke-width="4"/>
-      <path d="M29 20L19 38M35 20l10 18M22 44h20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-cloud" viewBox="0 0 64 64">
-      <path d="M22 48h25c7 0 12-5 12-12s-5-12-12-12h-1C43 17 37 13 30 13c-9 0-16 7-16 16v1C8 32 5 36 5 42c0 4 3 6 8 6h9z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M32 25v16M25 34l7 7 7-7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-shield" viewBox="0 0 64 64">
-      <path d="M32 8l22 9v15c0 14-9 23-22 28C19 55 10 46 10 32V17l22-9z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M23 33l6 6 13-15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-doc" viewBox="0 0 64 64">
-      <path d="M18 8h22l10 10v38H18V8z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M40 8v12h10M25 32h18M25 42h18" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-cctv" viewBox="0 0 64 64">
-      <path d="M14 24l30-9 4 14-30 9-4-14z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M39 31l8 8M47 39h9M26 36v14M18 50h18" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-discover" viewBox="0 0 64 64">
-      <circle cx="28" cy="28" r="15" fill="none" stroke="currentColor" stroke-width="4"/>
-      <path d="M39 39l13 13M28 20v8l6 4" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-scope" viewBox="0 0 64 64">
-      <path d="M14 14h36v36H14z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-      <path d="M22 25h20M22 34h20M22 43h12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
-    <symbol id="icon-build" viewBox="0 0 64 64">
-      <path d="M22 42L10 32l12-10M42 22l12 10-12 10M36 16L28 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-support" viewBox="0 0 64 64">
-      <path d="M18 38v-8c0-9 6-16 14-16s14 7 14 16v8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      <path d="M18 36h-5v10h5V36zM46 36h5v10h-5V36zM46 46c0 6-5 8-12 8h-5" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-    </symbol>
-  </svg>
-
-  <header class="site-header">
-    <nav class="nav container" aria-label="Main navigation">
-      <a class="brand" href="#home" aria-label="MKETICS home">
-        <img class="brand-logo" src="assets/icon-logo.webp" alt="MKETICS logo" />
-        <span>
-          <strong>MKETICS</strong>
-          <small>Modern Knowledge Engineering, Technology & Innovative Commercial Solutions</small>
-        </span>
+  <header class="site-header" id="top">
+    <nav class="nav shell">
+      <a href="#top" class="brand" aria-label="MKETICS home">
+        <img src="assets/mketics-logo-official.webp" alt="MKETICS official logo" />
       </a>
-
-      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
-
-      <div class="nav-links" id="navLinks">
+      <div class="nav-links" data-nav-links>
         <a href="#services">Services</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#process">Process</a>
-        <a href="#identity">Identity</a>
-        <a href="#contact">Contact</a>
-        <a class="nav-cta" href="#quote">Request Quote</a>
+        <a href="#solutions">Solutions</a>
+        <a href="#about">About</a>
+        <a href="#packages">Packages</a>
+        <a href="#contact" class="nav-cta">Request Quote</a>
       </div>
     </nav>
   </header>
 
-  <main id="home">
-    <section class="hero section">
+  <main>
+    <section class="hero section-pad">
       <div class="hero-bg" aria-hidden="true"></div>
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">Speak Innovation. Deliver Value.</p>
-          <h1>Technology rooted in purpose, built for business growth.</h1>
-          <p class="hero-text">
-            MKETICS builds websites, online stores, custom business systems, IT infrastructure, CCTV/cloud solutions and digital readiness support for South African businesses, schools and individuals.
-          </p>
-
+      <div class="shell hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow">Modern Knowledge Engineering, Technology & Innovative Commercial Solutions</span>
+          <h1>Smart Digital Systems for Serious Businesses</h1>
+          <p class="hero-lead">MKETICS builds websites, business systems, IT infrastructure and digital tools that help organisations operate smarter, look professional and grow with confidence.</p>
           <div class="hero-actions">
-            <a class="btn primary" href="#quote">Request a Quote</a>
-            <a class="btn secondary" href="https://wa.me/27722864367?text=Hi%20MKETICS%2C%20I%20would%20like%20to%20request%20a%20quote." target="_blank" rel="noopener">WhatsApp MKETICS</a>
+            <a href="#contact" class="btn btn-primary">Request a Quote</a>
+            <a href="#services" class="btn btn-ghost">Explore Services</a>
           </div>
-
-          <div class="trust-strip" aria-label="Trust indicators">
-            <span>Registered South African Company</span>
-            <span>Level 1 B-BBEE EME</span>
-            <span>Formal Quotations & Invoices</span>
+          <div class="hero-points" aria-label="MKETICS highlights">
+            <span>Websites</span>
+            <span>Systems</span>
+            <span>IT Infrastructure</span>
+            <span>Digital Hub</span>
           </div>
         </div>
-
-        <div class="hero-visual">
-          <img src="assets/official-logo.webp" alt="MKETICS official logo" />
-        </div>
-      </div>
-    </section>
-
-    <section class="brand-banner-section">
-      <div class="container">
-        <img class="wide-banner" src="assets/hero-banner.png" alt="MKETICS brand banner" />
-      </div>
-    </section>
-
-    <section id="services" class="section">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">What we build</p>
-          <h2>Three focused service pillars. One serious technology partner.</h2>
-          <p>MKETICS focuses on practical solutions that help organisations operate better, look professional and grow with confidence.</p>
-        </div>
-
-        <div class="pillar-grid">
-          <article class="pillar-card">
-            <div class="premium-icon"><svg><use href="#icon-code"></use></svg></div>
-            <h3>System Design & Development</h3>
-            <p>Custom business systems, dashboards, portals, invoice tools, booking tools, workflow systems, websites and online stores.</p>
-          </article>
-
-          <article class="pillar-card">
-            <div class="premium-icon"><svg><use href="#icon-network"></use></svg></div>
-            <h3>IT & Network Infrastructure</h3>
-            <p>IT support, Wi‑Fi, LAN planning, device setup, troubleshooting, cloud configuration, CCTV readiness and technical documentation.</p>
-          </article>
-
-          <article class="pillar-card">
-            <div class="premium-icon"><svg><use href="#icon-shield"></use></svg></div>
-            <h3>Digital Hub</h3>
-            <p>Business profiles, digital documents, branding support, online presence setup, business readiness checks and digital guidance.</p>
-          </article>
-        </div>
-
-        <div class="cards service-cards">
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-store"></use></svg></div>
-            <h3>Websites & Online Stores</h3>
-            <p>Landing pages, business websites, product catalogues, e-commerce stores, redesigns and launch support.</p>
-          </article>
-
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-js"></use></svg></div>
-            <h3>Custom Business Systems</h3>
-            <p>Client portals, admin dashboards, booking systems, reporting tools and internal management systems.</p>
-          </article>
-
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-support"></use></svg></div>
-            <h3>IT Support & Maintenance</h3>
-            <p>Remote support, onsite support where possible, software setup, device support and technical troubleshooting.</p>
-          </article>
-
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-network"></use></svg></div>
-            <h3>Network & Wi‑Fi Infrastructure</h3>
-            <p>Connectivity checks, routers, access points, site assessments, network planning and improvement recommendations.</p>
-          </article>
-
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-cctv"></use></svg></div>
-            <h3>CCTV & Cloud Storage</h3>
-            <p>IP camera guidance, remote monitoring planning, storage estimation, backup structure and cloud readiness.</p>
-          </article>
-
-          <article class="card">
-            <div class="service-icon"><svg><use href="#icon-doc"></use></svg></div>
-            <h3>Digital Business Support</h3>
-            <p>Company profiles, business documents, digital branding, online setup and business readiness reports.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="pricing" class="section muted">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">Starting prices</p>
-          <h2>Clear entry points. Final pricing depends on scope and required features.</h2>
-        </div>
-
-        <div class="pricing-grid">
-          <article class="price-card">
-            <h3>Landing Page</h3>
-            <p>For a simple online presence.</p>
-            <strong>From R950</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-
-          <article class="price-card featured">
-            <span class="badge">Popular</span>
-            <h3>Business Website</h3>
-            <p>For companies that need a professional website.</p>
-            <strong>From R2,500</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-
-          <article class="price-card">
-            <h3>Online Store</h3>
-            <p>For product sales, catalogue and payment setup.</p>
-            <strong>From R4,500</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-
-          <article class="price-card">
-            <h3>Business System</h3>
-            <p>For dashboards, portals and workflow tools.</p>
-            <strong>From R8,500</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-
-          <article class="price-card">
-            <h3>IT Support</h3>
-            <p>Remote or onsite assistance depending on location.</p>
-            <strong>From R350</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-
-          <article class="price-card">
-            <h3>Business Readiness Check</h3>
-            <p>Digital and compliance readiness guidance.</p>
-            <strong>From R750</strong>
-            <a href="#quote">Request quote</a>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="process" class="section">
-      <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">How MKETICS works</p>
-          <h2>A professional process from idea to delivery.</h2>
-        </div>
-
-        <div class="timeline">
-          <div class="step">
-            <span>01</span>
-            <div class="step-icon"><svg><use href="#icon-discover"></use></svg></div>
-            <h3>Understand</h3>
-            <p>We listen to your business need, goals, budget and current challenges.</p>
-          </div>
-          <div class="step">
-            <span>02</span>
-            <div class="step-icon"><svg><use href="#icon-scope"></use></svg></div>
-            <h3>Scope</h3>
-            <p>We define deliverables, phases, pricing and responsibilities clearly.</p>
-          </div>
-          <div class="step">
-            <span>03</span>
-            <div class="step-icon"><svg><use href="#icon-build"></use></svg></div>
-            <h3>Build</h3>
-            <p>We design, develop, configure, test and prepare the solution for handover.</p>
-          </div>
-          <div class="step">
-            <span>04</span>
-            <div class="step-icon"><svg><use href="#icon-support"></use></svg></div>
-            <h3>Support</h3>
-            <p>We help you maintain, improve and grow after launch.</p>
+        <div class="hero-card reveal delay-1">
+          <img src="assets/mketics-logo-official.webp" alt="MKETICS official blue and silver technology logo" />
+          <div class="status-card">
+            <strong>Purpose-driven technology</strong>
+            <span>Built for business growth, digital readiness and long-term value.</span>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="identity" class="section identity-section">
-      <div class="container identity-grid">
-        <div>
-          <p class="eyebrow">MKETICS identity</p>
-          <h2>Modern technology with an Alkebulan-rooted premium identity.</h2>
-          <p>
-            MKETICS represents knowledge, engineering, innovation, protection, connection and long-term value.
-            The brand combines African-rooted symbolism with modern digital systems, infrastructure and business transformation.
-          </p>
-          <div class="identity-points">
-            <span>Innovative Solutions</span>
-            <span>Trusted Partner</span>
-            <span>People Focused</span>
-            <span>Value Driven</span>
+    <section class="trust-strip">
+      <div class="shell trust-grid">
+        <div><strong>Private Company</strong><span>Registered MKETICS (PTY) LTD</span></div>
+        <div><strong>Level 1 B-BBEE</strong><span>EME contributor status</span></div>
+        <div><strong>Business Ready</strong><span>Web, systems and IT support</span></div>
+        <div><strong>South African Brand</strong><span>Built with purpose and Ubuntu</span></div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="services">
+      <div class="shell section-head reveal">
+        <span class="eyebrow">What MKETICS Does</span>
+        <h2>Technology services designed around your business goals.</h2>
+        <p>We combine software development, infrastructure support and digital business services into practical solutions that make your company look professional and work better.</p>
+      </div>
+
+      <div class="shell card-grid services-grid">
+        <article class="service-card reveal">
+          <div class="icon">&lt;/&gt;</div>
+          <h3>System Design & Development</h3>
+          <p>Custom websites, online stores, dashboards, portals and business systems designed to support real workflows.</p>
+          <ul>
+            <li>Business websites and landing pages</li>
+            <li>Online stores and payment setup</li>
+            <li>Custom systems and dashboards</li>
+          </ul>
+        </article>
+        <article class="service-card reveal delay-1">
+          <div class="icon">☁</div>
+          <h3>IT & Network Infrastructure</h3>
+          <p>Practical IT support for organisations that need stable connectivity, devices, cloud tools and secure systems.</p>
+          <ul>
+            <li>Network and Wi-Fi planning</li>
+            <li>Cloud and server support</li>
+            <li>Device, email and Microsoft 365 support</li>
+          </ul>
+        </article>
+        <article class="service-card reveal delay-2">
+          <div class="icon">◆</div>
+          <h3>Digital Hub</h3>
+          <p>Branding, documents, compliance readiness and digital assets that help small businesses appear credible.</p>
+          <ul>
+            <li>Company profiles and proposals</li>
+            <li>Business compliance health checks</li>
+            <li>Posters, banners and digital content</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="visual-section" id="solutions">
+      <div class="visual-bg" aria-hidden="true"></div>
+      <div class="shell split-grid">
+        <div class="reveal">
+          <span class="eyebrow">Solutions</span>
+          <h2>From a simple website to a complete digital platform.</h2>
+          <p>MKETICS helps businesses move from scattered manual processes to clear, professional and connected digital systems.</p>
+          <div class="solution-list">
+            <div><strong>Online Stores</strong><span>Products, payments, delivery and order management.</span></div>
+            <div><strong>Business Systems</strong><span>Dashboards, records, workflows and client-facing portals.</span></div>
+            <div><strong>Education & Office IT</strong><span>Support for labs, offices, networks and digital readiness.</span></div>
+            <div><strong>CCTV & Cloud Concepts</strong><span>Camera, storage and monitoring system planning.</span></div>
           </div>
         </div>
-
-        <div class="identity-logo-card">
-          <img src="assets/temple-logo.png" alt="MKETICS Alkebulan identity artwork" />
+        <div class="glass-panel reveal delay-1">
+          <h3>Built around clarity</h3>
+          <p>Every project starts with understanding the business problem, defining the scope, and building only what creates value.</p>
+          <a href="#contact" class="text-link">Start a project consultation →</a>
         </div>
       </div>
     </section>
 
-    <section id="quote" class="section quote-section">
-      <div class="container quote-grid">
-        <div>
-          <p class="eyebrow">Request a quote</p>
-          <h2>Tell MKETICS what you need built, fixed or improved.</h2>
-          <p>
-            Use the form below to prepare your request. It will open WhatsApp with your project details already written.
-          </p>
+    <section class="section-pad" id="about">
+      <div class="shell about-grid">
+        <div class="about-logo reveal">
+          <img src="assets/mketics-logo-official.webp" alt="MKETICS official logo" />
         </div>
+        <div class="reveal delay-1">
+          <span class="eyebrow">About MKETICS</span>
+          <h2>Technology with purpose, professionalism and long-term value.</h2>
+          <p>MKETICS is a purpose-driven technology company built to create smart digital systems, strengthen businesses, connect people and inspire unity through innovation, Ubuntu and long-term value.</p>
+          <p>The official blue and silver identity reflects the company’s focus on cloud technology, networking, systems development, digital engineering and business transformation.</p>
+          <div class="mini-stats">
+            <div><strong>01</strong><span>Clear scope</span></div>
+            <div><strong>02</strong><span>Professional design</span></div>
+            <div><strong>03</strong><span>Practical delivery</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        <form class="quote-form" id="quoteForm">
-          <label>
-            Full name
-            <input type="text" name="name" placeholder="Your name" required />
-          </label>
+    <section class="section-pad packages" id="packages">
+      <div class="shell section-head reveal">
+        <span class="eyebrow">Packages</span>
+        <h2>Start with what your business needs now.</h2>
+        <p>Simple packages help clients understand where to begin. Custom systems are quoted after scope discussion.</p>
+      </div>
+      <div class="shell price-grid">
+        <article class="price-card reveal">
+          <h3>Starter Website</h3>
+          <p>For businesses that need a clean online presence.</p>
+          <ul>
+            <li>Landing page or simple website</li>
+            <li>Mobile responsive design</li>
+            <li>WhatsApp and contact links</li>
+          </ul>
+          <a href="#contact" class="btn btn-ghost">Enquire</a>
+        </article>
+        <article class="price-card featured reveal delay-1">
+          <span class="badge">Popular</span>
+          <h3>Business Website</h3>
+          <p>For serious brands that need stronger structure and credibility.</p>
+          <ul>
+            <li>Multiple sections/pages</li>
+            <li>Service and trust sections</li>
+            <li>Quote-focused contact flow</li>
+          </ul>
+          <a href="#contact" class="btn btn-primary">Request Quote</a>
+        </article>
+        <article class="price-card reveal delay-2">
+          <h3>Custom System</h3>
+          <p>For platforms, portals, dashboards and advanced workflows.</p>
+          <ul>
+            <li>Scope and feature planning</li>
+            <li>Phased development options</li>
+            <li>Support and improvement roadmap</li>
+          </ul>
+          <a href="#contact" class="btn btn-ghost">Discuss Scope</a>
+        </article>
+      </div>
+    </section>
 
-          <label>
-            Phone / WhatsApp
-            <input type="tel" name="phone" placeholder="Your number" required />
-          </label>
-
-          <label>
-            Service needed
-            <select name="service" required>
-              <option value="">Choose a service</option>
-              <option>Website / Landing Page</option>
-              <option>Online Store</option>
-              <option>Custom Business System</option>
-              <option>IT Support</option>
-              <option>Network / Wi‑Fi Infrastructure</option>
-              <option>CCTV / Cloud Storage</option>
-              <option>Business Digital Readiness</option>
-              <option>Branding / Digital Documents</option>
-            </select>
-          </label>
-
-          <label>
-            Budget range
-            <select name="budget">
-              <option>Not sure yet</option>
-              <option>Below R1,000</option>
-              <option>R1,000 – R3,000</option>
-              <option>R3,000 – R7,500</option>
-              <option>R7,500 – R15,000</option>
-              <option>R15,000+</option>
-            </select>
-          </label>
-
-          <label class="full">
-            Project description
-            <textarea name="message" rows="5" placeholder="Briefly explain what you need..." required></textarea>
-          </label>
-
-          <button class="btn primary full" type="submit">Send request on WhatsApp</button>
+    <section class="cta" id="contact">
+      <div class="cta-bg" aria-hidden="true"></div>
+      <div class="shell cta-grid">
+        <div class="reveal">
+          <span class="eyebrow">Request a Quote</span>
+          <h2>Ready to rebuild your digital presence?</h2>
+          <p>Send MKETICS a short message about what you need. We will help you define the right starting point, scope and delivery direction.</p>
+          <div class="contact-lines">
+            <a href="mailto:info@mketics.co.za">info@mketics.co.za</a>
+            <a href="https://wa.me/270000000000" target="_blank" rel="noopener">WhatsApp MKETICS</a>
+          </div>
+        </div>
+        <form class="quote-form reveal delay-1" action="mailto:info@mketics.co.za" method="post" enctype="text/plain">
+          <label>Full name<input name="name" type="text" placeholder="Your name" required></label>
+          <label>Email or WhatsApp<input name="contact" type="text" placeholder="Your contact details" required></label>
+          <label>What do you need?<textarea name="message" rows="4" placeholder="Website, online store, business system, IT support..."></textarea></label>
+          <button class="btn btn-primary" type="submit">Send Request</button>
         </form>
-      </div>
-    </section>
-
-    <section id="contact" class="section contact-section">
-      <div class="container contact-card">
-        <div>
-          <img class="contact-logo" src="assets/official-logo.webp" alt="MKETICS logo" />
-        </div>
-
-        <div>
-          <p class="eyebrow">Contact MKETICS</p>
-          <h2>Ready to build something better?</h2>
-          <p>MKETICS is based in South Africa and supports clients remotely and onsite where possible.</p>
-
-          <div class="contact-details">
-            <p><strong>Phone / WhatsApp:</strong> <a href="https://wa.me/27722864367" target="_blank" rel="noopener">072 286 4367</a></p>
-            <p><strong>Email:</strong> <a href="mailto:info@mketics.co.za">info@mketics.co.za</a></p>
-            <p><strong>Company:</strong> MKETICS (PTY) LTD</p>
-            <p><strong>Location:</strong> KwaZulu-Natal, South Africa</p>
-          </div>
-        </div>
       </div>
     </section>
   </main>
 
-  <a class="floating-whatsapp" href="https://wa.me/27722864367?text=Hi%20MKETICS%2C%20I%20need%20help%20with%20a%20digital%20solution." target="_blank" rel="noopener" aria-label="Chat with MKETICS on WhatsApp">WhatsApp</a>
-
   <footer class="footer">
-    <div class="container footer-grid">
+    <div class="shell footer-grid">
       <div>
-        <strong>MKETICS</strong>
+        <img src="assets/mketics-logo-official.webp" alt="MKETICS logo" />
         <p>Speak Innovation. Deliver Value.</p>
       </div>
-      <p>© <span id="year"></span> MKETICS (PTY) LTD. All rights reserved.</p>
+      <div>
+        <strong>MKETICS (PTY) LTD</strong>
+        <span>Modern Knowledge Engineering, Technology & Innovative Commercial Solutions</span>
+      </div>
+      <a href="#top" class="back-top">Back to top ↑</a>
     </div>
   </footer>
 
