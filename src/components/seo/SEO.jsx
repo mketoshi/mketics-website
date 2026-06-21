@@ -7,7 +7,7 @@ const defaultDescription =
   "MKETICS is a South African technology company providing software development, IT infrastructure, digital business solutions, smart security technology and business readiness support.";
 
 const siteUrl = "https://mketics.co.za";
-const defaultImage = `${siteUrl}/assets/mketics-logo.webp`;
+const defaultImage = `${siteUrl}/assets/mketics-og-image.webp`;
 
 export default function SEO({
   title = defaultTitle,
