@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import SEO from "../components/seo/SEO";
+import ConversionCTA from "../components/sections/ConversionCTA";
 
 export default function Services() {
   return (
@@ -26,21 +27,24 @@ export default function Services() {
       description="Explore MKETICS services including software development, websites, IT infrastructure, digital business solutions, smart security technology and business readiness support."
       path="/services"
       />
-      <section className="relative overflow-hidden bg-[#020B1F] px-5 py-9 text-white lg:py-16">
+      <section className="relative overflow-hidden bg-[#020B1F] px-5 py-14 text-white lg:py-20">
         <div className="mx-auto max-w-7xl">
 
           <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-end">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.32em] text-cyan-300">
-                MKETICS Services
-              </p>
-              <h1 className="mt-5 max-w-4xl text-5xl font-black leading-tight tracking-tight md:text-7xl">
-                Digital solutions for modern business operations.
+            <p className="text-sm font-black uppercase tracking-[0.35em] text-cyan-300">
+              MKETICS Services
+            </p>
+              <h1 className="mt-6 max-w-5xl text-4xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Build smarter systems, stronger infrastructure and{" "}
+              <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
+              future-ready digital operations.
+              </span>
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-                MKETICS helps businesses, institutions and individuals build,
-                improve and manage digital systems through software development,
-                IT infrastructure, digital business support and smart technology.
+              <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">
+                MKETICS helps businesses, institutions and individuals design, improve
+                and manage technology through software development, IT infrastructure,
+                digital business support and smart technology solutions.
               </p>
 
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
@@ -294,4 +298,11 @@ function FocusItem({ text }) {
       <p className="text-sm leading-6 text-slate-300">{text}</p>
     </div>
   );
+  <ConversionCTA
+  eyebrow="Need a service?"
+  title="Choose the right MKETICS solution for your business."
+  description="Whether you need a website, business system, IT support, digital business setup or smart technology guidance, MKETICS can help you scope the right solution."
+  primaryLabel="Request Service Quote"
+  primaryHref="/contact"
+/>
 }
