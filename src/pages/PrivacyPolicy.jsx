@@ -1,11 +1,44 @@
+import LegalPage from "../components/sections/LegalPage";
+
 export default function PrivacyPolicy() {
   return (
-    <main className="min-h-screen px-6 py-24 text-white">
-      <div className="mx-auto max-w-5xl">
-        <a href="/" className="text-cyan-300">← Back to Home</a>
-        <h1 className="mt-8 text-5xl font-black">PrivacyPolicy</h1>
-        <p className="mt-4 text-slate-300">This page is ready for MKETICS website content.</p>
-      </div>
-    </main>
+    <LegalPage
+      eyebrow="Privacy"
+      title="Privacy Policy"
+      intro="This Privacy Policy explains how MKETICS (PTY) LTD collects, uses, stores and protects personal information when visitors, prospects and clients use the MKETICS website, forms, communication channels and related services."
+      sections={[
+        {
+          title: "Information we may collect",
+          items: [
+            "Name and surname.",
+            "Company or organisation name.",
+            "Email address and contact number.",
+            "Service interests or project requirements.",
+            "Messages submitted through contact, quote, support or assessment forms.",
+            "Booking and meeting information.",
+            "Technical website information such as device, browser, analytics and cookie data.",
+          ],
+        },
+        {
+          title: "How we use information",
+          items: [
+            "To respond to inquiries, quote requests and support messages.",
+            "To prepare proposals, quotations, invoices and service documents.",
+            "To schedule consultations, meetings and project reviews.",
+            "To deliver agreed technology, website, IT, digital business or security-related services.",
+            "To improve website performance, service quality and user experience.",
+          ],
+        },
+        {
+          title: "Information security",
+          items: [
+            "Client information should be accessed only by authorised MKETICS users or service-related personnel.",
+            "Private client documents should not be published publicly.",
+            "System credentials and sensitive access details should be handled carefully.",
+            "Website and portal systems should use appropriate authentication and secure configuration where implemented.",
+          ],
+        },
+      ]}
+    />
   );
 }
