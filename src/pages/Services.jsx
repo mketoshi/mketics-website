@@ -16,9 +16,16 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+import SEO from "../components/seo/SEO";
+
 export default function Services() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#020817] text-white">
+      <SEO
+      title="MKETICS Services | Software, IT, Digital Business & Smart Security"
+      description="Explore MKETICS services including software development, websites, IT infrastructure, digital business solutions, smart security technology and business readiness support."
+      path="/services"
+      />
       <section className="relative overflow-hidden bg-[#020B1F] px-5 py-9 text-white lg:py-16">
         <div className="mx-auto max-w-7xl">
 

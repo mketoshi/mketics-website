@@ -7,10 +7,16 @@ import {
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { pricingNotes, pricingPackages } from "../data/pricing";
+import SEO from "../components/seo/SEO";
 
 export default function Pricing() {
   return (
     <>
+    <SEO
+    title="MKETICS Pricing | Website, IT Support & Digital Business Packages"
+    description="View MKETICS starting prices for websites, business systems, IT support, digital business services, smart security planning and business readiness packages."
+    path="/pricing"
+    />
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[130px]" />

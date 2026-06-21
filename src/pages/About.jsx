@@ -14,6 +14,7 @@ import {
   Workflow,
 } from "lucide-react";
 import Button from "../components/ui/Button";
+import SEO from "../components/seo/SEO";
 
 const values = [
   {
@@ -69,6 +70,11 @@ const helpItems = [
 export default function About() {
   return (
     <>
+    <SEO
+    title="About MKETICS | Purpose-Driven Technology Company"
+    description="Learn about MKETICS, a purpose-driven South African technology company built on innovation, Ubuntu, professional service and long-term digital value."
+    path="/about"
+    />
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[130px]" />

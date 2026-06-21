@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { siteConfig } from "../data/site";
+import SEO from "../components/seo/SEO";
 
 const serviceOptions = [
   "Website / business system",
@@ -76,6 +77,11 @@ const responseSteps = [
 export default function Contact() {
   return (
     <>
+    <SEO
+    title="Contact MKETICS | Request a Quote or Consultation"
+    description="Contact MKETICS to request a quote, discuss a website, business system, IT support, digital business solution or smart technology project."
+    path="/contact"
+    />
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[130px]" />

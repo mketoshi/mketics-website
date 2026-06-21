@@ -12,6 +12,7 @@ import { servicePillars } from "../data/services";
 import ServiceExplorerPreview from "../components/sections/ServiceExplorerPreview";
 import LeadCaptureSection from "../components/sections/LeadCaptureSection";
 import { siteConfig } from "../data/site";
+import SEO from "../components/seo/SEO";
 
 const trustItems = [
   "Registered South African technology company",
@@ -37,7 +38,13 @@ const stats = [
 
 export default function Home() {
   return (
+    
     <>
+    <SEO
+      title="MKETICS | Software, IT Infrastructure & Digital Business Solutions"
+      description="MKETICS builds smart digital systems, strengthens IT infrastructure and supports businesses with software, websites, digital tools and smart technology solutions."
+        path="/"
+    />
       <section className="relative isolate overflow-hidden bg-[#020B1F]">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/20 blur-[120px]" />
