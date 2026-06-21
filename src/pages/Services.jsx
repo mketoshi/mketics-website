@@ -8,10 +8,12 @@ import {
   Globe2,
   Layers3,
   Megaphone,
+  MessageCircle,
   Network,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 import SEO from "../components/seo/SEO";
 import Button from "../components/ui/Button";
 import ConversionCTA from "../components/sections/ConversionCTA";
@@ -19,6 +21,7 @@ import ConversionCTA from "../components/sections/ConversionCTA";
 const servicePillars = [
   {
     title: "Software Engineering",
+    whatsappKey: "system",
     description:
       "Custom websites, business systems, dashboards, portals and digital platforms built around real business processes.",
     icon: Code2,
@@ -32,6 +35,7 @@ const servicePillars = [
   },
   {
     title: "IT Infrastructure",
+    whatsappKey: "infrastructure",
     description:
       "Reliable IT, network, Wi-Fi and technical support services for businesses, schools, offices and growing teams.",
     icon: Network,
@@ -45,6 +49,7 @@ const servicePillars = [
   },
   {
     title: "Digital Business Solutions",
+    whatsappKey: "digital",
     description:
       "Digital tools, documents, online presence, business readiness and operational support to help businesses work smarter.",
     icon: BriefcaseBusiness,
@@ -58,6 +63,7 @@ const servicePillars = [
   },
   {
     title: "Security & Smart Technology",
+    whatsappKey: "security",
     description:
       "Smart security planning, IP camera guidance, cloud surveillance concepts and technology solutions that improve visibility.",
     icon: ShieldCheck,
@@ -368,6 +374,24 @@ function ServicePillarCard({ service }) {
             <p className="text-sm font-semibold text-slate-700">{feature}</p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <Button to="/contact" className="justify-center">
+          Request Quote
+          <ArrowRight size={16} className="ml-2" />
+        </Button>
+
+        <Button
+          href={createWhatsAppLink(
+            whatsappMessages[service.whatsappKey] || whatsappMessages.general
+          )}
+          variant="secondary"
+          className="justify-center"
+        >
+          <MessageCircle size={16} className="mr-2" />
+          WhatsApp
+        </Button>
       </div>
     </article>
   );
