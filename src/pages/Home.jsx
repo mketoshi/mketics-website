@@ -1,332 +1,237 @@
 import {
   ArrowRight,
-  ShieldCheck,
-  Code2,
-  Server,
-  BriefcaseBusiness,
-  Sparkles,
-  Globe2,
-  Layers3,
   CheckCircle2,
-  Cpu,
+  Sparkles,
+  Layers3,
+  Users,
+  Globe2,
   Network,
-  Store,
-  FileCheck2,
-  Megaphone,
 } from "lucide-react";
+import Button from "../components/ui/Button";
+import { servicePillars } from "../data/services";
+import { siteConfig } from "../data/site";
+
+const trustItems = [
+  "Registered South African technology company",
+  "Level 1 B-BBEE Contributor",
+  "Software, IT infrastructure and digital business support",
+  "Google Workspace-enabled business operations",
+];
+
+const stats = [
+  {
+    label: "Core Service Pillars",
+    value: "4",
+  },
+  {
+    label: "Business Technology Focus",
+    value: "360°",
+  },
+  {
+    label: "Brand Promise",
+    value: "Value",
+  },
+];
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#020817] text-white">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-cyan-400/15 bg-[#020817]/85 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="/" className="group flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-sm font-black text-cyan-200 shadow-[0_0_35px_rgba(34,211,238,0.18)]">
-              M
-            </span>
-            <span className="text-xl font-black tracking-wide text-cyan-300">
-              MKETICS
-            </span>
-          </a>
-
-          <div className="hidden items-center gap-8 text-sm font-medium text-slate-200 md:flex">
-            <a href="/about" className="transition hover:text-cyan-300">About</a>
-            <a href="/services" className="transition hover:text-cyan-300">Services</a>
-            <a href="/projects" className="transition hover:text-cyan-300">Projects</a>
-            <a href="/resources" className="transition hover:text-cyan-300">Resources</a>
-            <a href="/contact" className="transition hover:text-cyan-300">Contact</a>
-          </div>
-
-          <a
-            href="/contact"
-            className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-5 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/20"
-          >
-            Request Quote
-          </a>
-        </nav>
-      </header>
-
-      <section className="relative px-6 pb-28 pt-36">
+    <>
+      <section className="relative isolate overflow-hidden bg-[#020B1F]">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[130px]" />
-          <div className="absolute right-0 top-28 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
-          <div className="absolute left-0 top-64 h-[360px] w-[360px] rounded-full bg-cyan-300/5 blur-[120px]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.04)_1px,transparent_1px)] bg-[size:72px_72px]" />
+          <div className="absolute left-1/2 top-0 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/20 blur-[120px]" />
+          <div className="absolute right-0 top-28 h-[420px] w-[420px] rounded-full bg-blue-600/20 blur-[130px]" />
+          <div className="absolute bottom-0 left-0 h-[380px] w-[380px] rounded-full bg-sky-300/10 blur-[120px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(25,217,255,0.12),transparent_35%),linear-gradient(180deg,rgba(2,11,31,0.2),#020B1F_90%)]" />
         </div>
 
-        <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 pb-16 pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-20">
           <div>
-            <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-white/5 px-4 py-2 text-sm text-cyan-100 shadow-[0_0_40px_rgba(25,217,255,0.12)]">
               <Sparkles size={16} />
-              Speak Innovation. Deliver Value.
+              {siteConfig.tagline}
             </div>
 
-            <h1 className="max-w-5xl text-5xl font-black leading-[1.03] tracking-tight md:text-7xl">
-              Digital Systems Built for{" "}
-              <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
-                Smarter Business Growth
+            <h1 className="mt-7 max-w-4xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-7xl">
+              Smart Digital Systems for{" "}
+              <span className="bg-gradient-to-r from-cyan-200 via-[#19D9FF] to-[#0B7CFF] bg-clip-text text-transparent">
+                Stronger Businesses
               </span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
-              MKETICS designs and develops modern websites, business systems,
-              IT infrastructure, digital tools and smart technology solutions
-              that help businesses, institutions and individuals operate with
-              confidence, clarity and long-term value.
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              MKETICS builds modern websites, business systems, IT
+              infrastructure, digital business tools and smart technology
+              solutions that help organisations operate better, connect people
+              and grow with confidence.
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <a
-                href="/contact"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-7 py-4 font-black text-slate-950 shadow-[0_0_45px_rgba(34,211,238,0.25)] transition hover:bg-cyan-300"
-              >
-                Request a Quote <ArrowRight size={18} />
-              </a>
-              <a
-                href="/services"
-                className="inline-flex items-center justify-center rounded-full border border-slate-500/50 px-7 py-4 font-bold text-slate-100 transition hover:border-cyan-300 hover:text-cyan-200"
-              >
+            <p className="mt-4 max-w-2xl text-base leading-7 text-cyan-100/90">
+              Purpose-driven technology built with innovation, Ubuntu and
+              long-term value.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button to="/contact">Request a Quote</Button>
+              <Button to="/services" variant="secondary">
                 Explore Services
-              </a>
+              </Button>
+              <Button href={siteConfig.whatsapp} variant="secondary">
+                Book a Consultation
+              </Button>
             </div>
 
-            <div className="mt-12 grid max-w-2xl gap-4 sm:grid-cols-3">
-              <Stat value="4+" label="Core service pillars" />
-              <Stat value="24/7" label="Digital-first thinking" />
-              <Stat value="Ubuntu" label="People-centred innovation" />
+            <p className="mt-4 text-sm text-slate-400">
+              Tell us what you need. We will review your request and guide you
+              on the best next step.
+            </p>
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {stats.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur"
+                >
+                  <p className="text-3xl font-black text-white">{item.value}</p>
+                  <p className="mt-1 text-sm text-slate-400">{item.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-6 rounded-[3rem] bg-cyan-400/10 blur-3xl" />
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-cyan-300/20 via-blue-500/10 to-transparent blur-2xl" />
 
-            <div className="relative rounded-[2rem] border border-cyan-300/20 bg-white/[0.05] p-5 shadow-2xl backdrop-blur-xl">
-              <div className="rounded-[1.6rem] border border-white/10 bg-[#030b1d]/90 p-6">
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">
-                      MKETICS System Core
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black">
-                      One digital partner. Multiple solutions.
-                    </h2>
-                  </div>
-                  <div className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-3 text-cyan-200">
-                    <Cpu size={28} />
-                  </div>
-                </div>
-
-                <div className="grid gap-4">
-                  <HeroModule
-                    icon={<Code2 />}
-                    title="Software Engineering"
-                    text="Websites, portals, dashboards and custom systems."
-                  />
-                  <HeroModule
-                    icon={<Server />}
-                    title="IT Infrastructure"
-                    text="Networks, support, cloud tools and technical setup."
-                  />
-                  <HeroModule
-                    icon={<BriefcaseBusiness />}
-                    title="Digital Business Solutions"
-                    text="Business registration, compliance readiness and digital tools."
-                  />
-                  <HeroModule
-                    icon={<ShieldCheck />}
-                    title="Security & Smart Technology"
-                    text="IP camera planning, smart systems and cloud surveillance concepts."
-                  />
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-cyan-300/20 bg-cyan-400/10 p-5">
-                  <p className="text-sm font-bold text-cyan-100">
-                    Built around clarity, reliability, innovation and long-term
-                    operational value.
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#061A33]/80 p-6 shadow-2xl backdrop-blur">
+              <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">
+                    MKETICS System
                   </p>
+                  <h2 className="mt-2 text-2xl font-black text-white">
+                    Digital Business Hub
+                  </h2>
                 </div>
+                <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
+                  <Layers3 size={28} />
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                <DashboardItem
+                  icon={Globe2}
+                  title="Websites & Portals"
+                  text="Build a professional digital presence with useful client-facing systems."
+                />
+                <DashboardItem
+                  icon={Network}
+                  title="Infrastructure & Cloud"
+                  text="Support connectivity, devices, business email and daily operations."
+                />
+                <DashboardItem
+                  icon={Users}
+                  title="Business Growth Tools"
+                  text="Use documents, automation and digital workflows to improve readiness."
+                />
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5">
+                <p className="text-sm font-semibold text-cyan-100">
+                  Recommended starting point
+                </p>
+                <p className="mt-2 text-2xl font-black text-white">
+                  Request a guided consultation
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  We help you choose the right solution, scope and development
+                  path before work starts.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-10 max-w-3xl">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Core Service Pillars
-          </p>
-          <h2 className="mt-4 text-4xl font-black leading-tight md:text-5xl">
-            Practical technology solutions built for real operations.
-          </h2>
-          <p className="mt-5 text-lg leading-8 text-slate-300">
-            From websites and business systems to infrastructure, digital
-            readiness and smart technology, MKETICS helps clients move from
-            ideas to working solutions.
-          </p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <ServiceCard
-            icon={<Code2 />}
-            title="System Design & Development"
-            text="Modern websites, portals, dashboards, online stores and custom business systems."
-          />
-          <ServiceCard
-            icon={<Server />}
-            title="IT & Network Infrastructure"
-            text="Network support, Wi-Fi planning, device setup, cloud tools and technical assistance."
-          />
-          <ServiceCard
-            icon={<BriefcaseBusiness />}
-            title="Digital Hub"
-            text="Digital marketing, business registration assistance, documents, automation and business tools."
-          />
-          <ServiceCard
-            icon={<ShieldCheck />}
-            title="Security & Smart Technology"
-            text="IP camera planning, cloud surveillance concepts and smart security consultation."
-          />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="rounded-[2rem] border border-cyan-300/20 bg-white/[0.04] p-8 md:p-10">
-          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-                Service Explorer
-              </p>
-              <h2 className="mt-4 text-4xl font-black">
-                Not sure what you need first?
-              </h2>
-              <p className="mt-5 leading-8 text-slate-300">
-                Start with the outcome you want. MKETICS can guide you toward
-                the right digital solution, whether you need visibility,
-                automation, infrastructure, compliance readiness or a complete
-                platform.
-              </p>
-              <a
-                href="/services"
-                className="mt-8 inline-flex items-center gap-2 rounded-full border border-cyan-300/40 px-6 py-3 font-bold text-cyan-100 transition hover:bg-cyan-400/10"
-              >
-                View all services <ArrowRight size={17} />
-              </a>
+      <section className="border-y border-white/10 bg-[#061A33]">
+        <div className="mx-auto grid max-w-7xl gap-4 px-5 py-6 sm:grid-cols-2 lg:grid-cols-4">
+          {trustItems.map((item) => (
+            <div key={item} className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 shrink-0 text-cyan-300" size={20} />
+              <p className="text-sm leading-6 text-slate-200">{item}</p>
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ExplorerCard icon={<Globe2 />} title="I need a website" />
-              <ExplorerCard icon={<Layers3 />} title="I need a business system" />
-              <ExplorerCard icon={<Network />} title="I need IT or network support" />
-              <ExplorerCard icon={<Store />} title="I need an online store" />
-              <ExplorerCard icon={<FileCheck2 />} title="I need compliance readiness" />
-              <ExplorerCard icon={<Megaphone />} title="I need digital marketing" />
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-              Why MKETICS
+      <section className="bg-[#EAF6FF] px-5 py-16 text-[#061A33] lg:py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Core Services
             </p>
-            <h2 className="mt-4 text-4xl font-black">
-              Built with technology, guided by Ubuntu.
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Technology Services Built Around Real Business Needs
             </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              MKETICS focuses on practical digital solutions that support daily
+              operations, improve visibility, strengthen communication and help
+              organisations grow with confidence.
+            </p>
           </div>
 
-          <div className="grid gap-5 lg:col-span-2">
-            <Reason text="We build solutions that are practical, understandable and useful for real business operations." />
-            <Reason text="We combine software, infrastructure, digital business support and smart technology under one brand." />
-            <Reason text="We focus on long-term value, not just once-off design or temporary fixes." />
+          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {servicePillars.map((service) => {
+              const Icon = service.icon;
+
+              return (
+                <article
+                  key={service.title}
+                  className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl"
+                >
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300 shadow-[0_0_30px_rgba(0,174,239,0.18)]">
+                    <Icon size={28} />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black text-[#020B1F]">
+                    {service.title}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    {service.summary}
+                  </p>
+
+                  <p className="mt-4 rounded-2xl bg-[#EAF6FF] p-4 text-sm leading-6 text-slate-700">
+                    {service.value}
+                  </p>
+
+                  <a
+                    href={service.href}
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#0B7CFF] transition group-hover:text-[#00AEEF]"
+                  >
+                    {service.cta}
+                    <ArrowRight size={16} />
+                  </a>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
+    </>
+  );
+}
 
-      <section className="mx-auto max-w-7xl px-6 pb-28">
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-cyan-400/10 p-10 md:p-14">
-          <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-cyan-300/20 blur-[100px]" />
-          <div className="relative max-w-3xl">
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-200">
-              Build with MKETICS
-            </p>
-            <h2 className="mt-4 text-4xl font-black leading-tight md:text-5xl">
-              Ready to turn your idea into a smart digital system?
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-slate-200">
-              Let’s plan the right solution for your business, institution or
-              personal project with a clear scope, professional structure and
-              long-term value.
-            </p>
-            <a
-              href="/contact"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-cyan-300 px-7 py-4 font-black text-slate-950 transition hover:bg-white"
-            >
-              Request a Quote <ArrowRight size={18} />
-            </a>
-          </div>
+function DashboardItem({ icon: Icon, title, text }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+      <div className="flex gap-4">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300">
+          <Icon size={22} />
         </div>
-      </section>
-    </main>
-  );
-}
-
-function HeroModule({ icon, title, text }) {
-  return (
-    <div className="flex gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan-300/40">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-400/10 text-cyan-200">
-        {icon}
+        <div>
+          <h3 className="font-bold text-white">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
+        </div>
       </div>
-      <div>
-        <h3 className="font-black text-white">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
-      </div>
-    </div>
-  );
-}
-
-function ServiceCard({ icon, title, text }) {
-  return (
-    <article className="group rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-300/50 hover:bg-cyan-400/[0.06]">
-      <div className="mb-5 inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-4 text-cyan-200 transition group-hover:shadow-[0_0_35px_rgba(34,211,238,0.18)]">
-        {icon}
-      </div>
-      <h3 className="text-xl font-black">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-slate-300">{text}</p>
-    </article>
-  );
-}
-
-function ExplorerCard({ icon, title }) {
-  return (
-    <a
-      href="/services"
-      className="flex items-center gap-4 rounded-3xl border border-white/10 bg-[#020817]/60 p-5 transition hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-cyan-400/10"
-    >
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-400/10 text-cyan-200">
-        {icon}
-      </span>
-      <span className="font-bold text-slate-100">{title}</span>
-    </a>
-  );
-}
-
-function Reason({ text }) {
-  return (
-    <div className="flex gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-      <CheckCircle2 className="mt-1 shrink-0 text-cyan-300" size={22} />
-      <p className="leading-7 text-slate-300">{text}</p>
-    </div>
-  );
-}
-
-function Stat({ value, label }) {
-  return (
-    <div className="rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-5">
-      <p className="text-2xl font-black text-cyan-200">{value}</p>
-      <p className="mt-1 text-sm text-slate-400">{label}</p>
     </div>
   );
 }
