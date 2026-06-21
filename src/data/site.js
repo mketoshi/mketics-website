@@ -10,6 +10,8 @@ export const siteConfig = {
   registrationNumber: "2026/290708/07",
   enterpriseNumber: "K2026290708",
   beeStatus: "Level 1 B-BBEE Contributor",
+  logo: "/assets/mketics-logo.webp",
+  icon: "/assets/mketics-icon.webp",
 };
 
 export const mainNav = [

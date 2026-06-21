@@ -16,9 +16,11 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#020B1F]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
         <Link to="/" className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-lg font-black text-cyan-200 shadow-[0_0_35px_rgba(25,217,255,0.22)]">
-            M
-          </div>
+          <img
+            src={siteConfig.logo}
+            alt={`${siteConfig.name} logo`}
+            className="h-11 w-auto object-contain"
+          />
 
           <div>
             <p className="text-lg font-black tracking-wide text-white">
