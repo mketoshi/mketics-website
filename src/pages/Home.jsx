@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import Button from "../components/ui/Button";
 import { servicePillars } from "../data/services";
+import ServiceExplorerPreview from "../components/sections/ServiceExplorerPreview";
+import LeadCaptureSection from "../components/sections/LeadCaptureSection";
 import { siteConfig } from "../data/site";
 
 const trustItems = [
@@ -216,6 +218,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+        <ServiceExplorerPreview />
+        <LeadCaptureSection />
+
     </>
   );
 }
