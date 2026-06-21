@@ -19,48 +19,8 @@ import {
 export default function Services() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#020817] text-white">
-      <header className="border-b border-cyan-400/15 bg-[#020817]/90 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-sm font-black text-cyan-200">
-              M
-            </span>
-            <span className="text-xl font-black tracking-wide text-cyan-300">
-              MKETICS
-            </span>
-          </a>
-
-          <div className="hidden items-center gap-8 text-sm font-medium text-slate-200 md:flex">
-            <a href="/" className="transition hover:text-cyan-300">Home</a>
-            <a href="/about" className="transition hover:text-cyan-300">About</a>
-            <a href="/projects" className="transition hover:text-cyan-300">Projects</a>
-            <a href="/resources" className="transition hover:text-cyan-300">Resources</a>
-            <a href="/contact" className="transition hover:text-cyan-300">Contact</a>
-          </div>
-
-          <a
-            href="/contact"
-            className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-5 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/20"
-          >
-            Request Quote
-          </a>
-        </nav>
-      </header>
-
-      <section className="relative px-6 pb-20 pt-20">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[130px]" />
-          <div className="absolute right-0 top-32 h-[420px] w-[420px] rounded-full bg-blue-500/10 blur-[120px]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.04)_1px,transparent_1px)] bg-[size:72px_72px]" />
-        </div>
-
+      <section className="relative overflow-hidden bg-[#020B1F] px-5 py-9 text-white lg:py-16">
         <div className="mx-auto max-w-7xl">
-          <a
-            href="/"
-            className="inline-flex items-center text-sm font-bold text-cyan-300 transition hover:text-cyan-100"
-          >
-            ← Back to Home
-          </a>
 
           <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-end">
             <div>
