@@ -6,22 +6,32 @@ import {
   WalletCards,
 } from "lucide-react";
 import Button from "../components/ui/Button";
-import { pricingNotes, pricingPackages } from "../data/pricing";
 import SEO from "../components/seo/SEO";
+import TrustCredibility from "../components/sections/TrustCredibility";
+import { pricingNotes, pricingPackages } from "../data/pricing";
 
 export default function Pricing() {
   return (
     <>
-    <SEO
-    title="MKETICS Pricing | Website, IT Support & Digital Business Packages"
-    description="View MKETICS starting prices for websites, business systems, IT support, digital business services, smart security planning and business readiness packages."
-    path="/pricing"
-    />
+      <SEO
+        title="MKETICS Pricing | Website, IT Support & Digital Business Packages"
+        description="View MKETICS starting prices for websites, business systems, IT support, digital business services, smart security planning and business readiness packages."
+        path="/pricing"
+      />
+
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
+          <img
+            src="/assets/mketics-bg5.png"
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover object-center opacity-35"
+          />
+          <div className="absolute inset-0 bg-[#020B1F]/75" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/85 to-[#020B1F]/45" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/30 via-transparent to-[#020B1F]" />
           <div className="absolute left-1/2 top-0 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[130px]" />
           <div className="absolute right-0 top-24 h-[420px] w-[420px] rounded-full bg-blue-600/15 blur-[120px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(25,217,255,0.10),transparent_38%),linear-gradient(180deg,rgba(2,11,31,0.1),#020B1F_92%)]" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_0.85fr] lg:items-center">
@@ -31,7 +41,7 @@ export default function Pricing() {
               Service Packages
             </div>
 
-            <h1 className="mt-7 max-w-5xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-7xl">
+            <h1 className="mt-7 max-w-5xl text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
               Transparent starting prices for{" "}
               <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
                 smart digital solutions.
@@ -57,7 +67,7 @@ export default function Pricing() {
 
           <div className="rounded-[2rem] border border-cyan-300/20 bg-white/[0.05] p-6 backdrop-blur-xl">
             <div className="flex items-start gap-4">
-              <div className="grid h-13 w-13 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
                 <Sparkles size={26} />
               </div>
               <div>
@@ -114,6 +124,12 @@ export default function Pricing() {
         </div>
       </section>
 
+      <TrustCredibility
+        variant="dark"
+        title="Pricing should feel clear, professional and safe."
+        description="MKETICS uses starting prices to help clients understand the investment range, while final quotations are based on scope, complexity, timelines and required deliverables."
+      />
+
       <section className="bg-white px-5 py-16 text-[#061A33] lg:py-24">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div>
@@ -158,7 +174,16 @@ export default function Pricing() {
       <section className="bg-[#020B1F] px-5 pb-20 text-white lg:pb-28">
         <div className="mx-auto max-w-7xl">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-cyan-400/10 p-8 md:p-14">
-            <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-cyan-300/20 blur-[100px]" />
+            <div className="absolute inset-0 -z-0">
+              <img
+                src="/assets/mketics-bg1.png"
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover object-center opacity-25"
+              />
+              <div className="absolute inset-0 bg-[#020B1F]/80" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/75 to-transparent" />
+            </div>
 
             <div className="relative max-w-3xl">
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-200">
