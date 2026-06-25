@@ -14,6 +14,7 @@ import SEO from "../components/seo/SEO";
 import Button from "../components/ui/Button";
 import { siteConfig } from "../data/site";
 import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
+import QuoteFlow from "../components/sections/QuoteFlow";
 
 const serviceOptions = [
   "Website Design & Development",
@@ -291,6 +292,11 @@ export default function Contact() {
           </div>
         </div>
       </section>
+      <QuoteFlow
+      variant="light"
+      title="A professional quote starts with clear information."
+      description="The better the request, the faster MKETICS can guide you with the right service, price direction and next step."
+      />
     </main>
   );
 }

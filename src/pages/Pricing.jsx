@@ -13,6 +13,7 @@ import Button from "../components/ui/Button";
 import TrustCredibility from "../components/sections/TrustCredibility";
 import { pricingNotes, pricingPackages } from "../data/pricing";
 import { createWhatsAppLink } from "../utils/whatsapp";
+import QuoteFlow from "../components/sections/QuoteFlow";
 
 export default function Pricing() {
   return (
@@ -147,6 +148,12 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+
+      <QuoteFlow
+      variant="light"
+      title="From starting price to final quotation."
+      description="MKETICS uses starting prices to guide planning, then confirms a final quote after understanding the real scope, timeline and deliverables."
+      />
 
       <TrustCredibility
         variant="dark"
