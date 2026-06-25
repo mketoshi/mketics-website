@@ -16,6 +16,7 @@ import ServiceExplorerPreview from "../components/sections/ServiceExplorerPrevie
 import LeadCaptureSection from "../components/sections/LeadCaptureSection";
 import TrustCredibility from "../components/sections/TrustCredibility";
 import { siteConfig } from "../data/site";
+import ServiceLandingCTAs from "../components/sections/ServiceLandingCTAs";
 
 const stats = [
   {
@@ -271,6 +272,12 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <ServiceLandingCTAs
+        variant="light"
+        title="Start with the service you need most."
+        description="Whether you need a website, business system, IT support, online store, digital readiness or smart security planning, MKETICS gives you a clear starting point."
+      />
 
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">

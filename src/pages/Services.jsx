@@ -13,10 +13,11 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 import SEO from "../components/seo/SEO";
 import Button from "../components/ui/Button";
 import ConversionCTA from "../components/sections/ConversionCTA";
+import ServiceLandingCTAs from "../components/sections/ServiceLandingCTAs";
+import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 
 const servicePillars = [
   {
@@ -140,9 +141,17 @@ export default function Services() {
 
       <section className="relative isolate overflow-hidden px-5 py-16 lg:py-24">
         <div className="absolute inset-0 -z-10">
+          <img
+            src="/assets/mketics-bg1.png"
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover object-center opacity-35"
+          />
+          <div className="absolute inset-0 bg-[#020B1F]/78" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/88 to-[#020B1F]/45" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
           <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px]" />
           <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(25,217,255,0.10),transparent_38%),linear-gradient(180deg,rgba(2,11,31,0.1),#020B1F_94%)]" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1fr_0.82fr] lg:items-center">
@@ -229,6 +238,12 @@ export default function Services() {
           </div>
         </div>
       </section>
+
+      <ServiceLandingCTAs
+        variant="dark"
+        title="Pick the service path that matches your current challenge."
+        description="Each option gives clients a quick way to request a quote or start a WhatsApp conversation with the right context already included."
+      />
 
       <section className="bg-white px-5 py-16 text-[#061A33] lg:py-24">
         <div className="mx-auto max-w-7xl">
@@ -382,16 +397,17 @@ function ServicePillarCard({ service }) {
           <ArrowRight size={16} className="ml-2" />
         </Button>
 
-        <Button
+        <a
           href={createWhatsAppLink(
             whatsappMessages[service.whatsappKey] || whatsappMessages.general
           )}
-          variant="secondary"
-          className="justify-center"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300 bg-white px-5 py-3 text-sm font-black text-[#061A33] transition hover:bg-[#061A33] hover:text-cyan-200"
         >
-          <MessageCircle size={16} className="mr-2" />
+          <MessageCircle size={16} />
           WhatsApp
-        </Button>
+        </a>
       </div>
     </article>
   );
