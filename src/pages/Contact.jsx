@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CheckCircle2,
   Clock3,
   Mail,
@@ -12,10 +11,10 @@ import {
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
 import Button from "../components/ui/Button";
-import { siteConfig } from "../data/site";
-import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 import QuoteFlow from "../components/sections/QuoteFlow";
+import { siteConfig } from "../data/site";
 import { seoPages } from "../data/seo";
+import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 
 const serviceOptions = [
   "Website Design & Development",
@@ -81,13 +80,15 @@ export default function Contact() {
             src="/assets/mketics-bg2.png"
             alt=""
             aria-hidden="true"
+            loading="eager"
+            decoding="async"
             className="h-full w-full object-cover object-center opacity-35"
           />
           <div className="absolute inset-0 bg-[#020B1F]/78" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/88 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px]" />
-          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px]" />
+          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[80px] lg:blur-[140px]" />
+          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[70px] lg:blur-[120px]" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
@@ -123,6 +124,7 @@ export default function Contact() {
                 title="WhatsApp"
                 text="Chat directly with MKETICS"
                 href={whatsappLink}
+                external
               />
 
               <ContactCard
@@ -151,9 +153,7 @@ export default function Contact() {
                       className="mt-0.5 shrink-0 text-cyan-300"
                       size={18}
                     />
-                    <p className="text-sm leading-6 text-slate-300">
-                      {point}
-                    </p>
+                    <p className="text-sm leading-6 text-slate-300">{point}</p>
                   </div>
                 ))}
               </div>
@@ -181,34 +181,66 @@ export default function Contact() {
               onSubmit={(event) => event.preventDefault()}
             >
               <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="Full Name" placeholder="Your name" />
-                <FormInput label="Phone / WhatsApp" placeholder="+27..." />
+                <FormInput
+                  label="Full Name"
+                  name="full-name"
+                  placeholder="Your name"
+                  autoComplete="name"
+                />
+                <FormInput
+                  label="Phone / WhatsApp"
+                  name="phone-whatsapp"
+                  placeholder="+27..."
+                  type="tel"
+                  autoComplete="tel"
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <FormInput
                   label="Email Address"
+                  name="email-address"
                   placeholder="you@example.com"
                   type="email"
+                  autoComplete="email"
                 />
                 <FormInput
                   label="Business / Organisation"
+                  name="business-organisation"
                   placeholder="Business name"
+                  autoComplete="organization"
                 />
               </div>
 
-              <FormSelect label="Service Needed" options={serviceOptions} />
+              <FormSelect
+                label="Service Needed"
+                name="service-needed"
+                options={serviceOptions}
+              />
 
               <div className="grid gap-4 md:grid-cols-2">
-                <FormSelect label="Estimated Budget" options={budgetOptions} />
-                <FormSelect label="Timeline" options={timelineOptions} />
+                <FormSelect
+                  label="Estimated Budget"
+                  name="estimated-budget"
+                  options={budgetOptions}
+                />
+                <FormSelect
+                  label="Timeline"
+                  name="timeline"
+                  options={timelineOptions}
+                />
               </div>
 
               <div>
-                <label className="text-sm font-bold text-white">
+                <label
+                  htmlFor="project-details"
+                  className="text-sm font-bold text-white"
+                >
                   Project Details
                 </label>
                 <textarea
+                  id="project-details"
+                  name="project-details"
                   rows="6"
                   placeholder="Tell us what you need, what problem you want to solve, who will use it, and what outcome you expect..."
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
@@ -230,7 +262,10 @@ export default function Contact() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button href={`mailto:${siteConfig.email}`} className="justify-center">
+                <Button
+                  href={`mailto:${siteConfig.email}`}
+                  className="justify-center"
+                >
                   Email MKETICS
                   <Send size={18} className="ml-2" />
                 </Button>
@@ -289,16 +324,17 @@ export default function Contact() {
           </div>
         </div>
       </section>
+
       <QuoteFlow
-      variant="light"
-      title="A professional quote starts with clear information."
-      description="The better the request, the faster MKETICS can guide you with the right service, price direction and next step."
+        variant="light"
+        title="A professional quote starts with clear information."
+        description="The better the request, the faster MKETICS can guide you with the right service, price direction and next step."
       />
     </main>
   );
 }
 
-function ContactCard({ icon: Icon, title, text, href }) {
+function ContactCard({ icon: Icon, title, text, href, external = false }) {
   const content = (
     <div className="flex items-start gap-4 rounded-3xl border border-cyan-300/15 bg-white/[0.05] p-5 transition hover:border-cyan-300/40 hover:bg-white/[0.08]">
       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300">
@@ -317,35 +353,71 @@ function ContactCard({ icon: Icon, title, text, href }) {
   return (
     <a
       href={href}
-      target={href.startsWith("http") ? "_blank" : undefined}
-      rel="noreferrer"
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      aria-label={`${title}: ${text}`}
     >
       {content}
     </a>
   );
 }
 
-function FormInput({ label, placeholder, type = "text" }) {
+function FormInput({
+  label,
+  placeholder,
+  type = "text",
+  name,
+  autoComplete = "off",
+}) {
+  const fieldId =
+    name ||
+    label
+      .toLowerCase()
+      .replaceAll(" / ", "-")
+      .replaceAll(" ", "-")
+      .replaceAll("/", "-");
+
   return (
     <div>
-      <label className="text-sm font-bold text-white">{label}</label>
+      <label htmlFor={fieldId} className="text-sm font-bold text-white">
+        {label}
+      </label>
       <input
+        id={fieldId}
+        name={fieldId}
         type={type}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       />
     </div>
   );
 }
 
-function FormSelect({ label, options }) {
+function FormSelect({ label, options, name }) {
+  const fieldId =
+    name ||
+    label
+      .toLowerCase()
+      .replaceAll(" / ", "-")
+      .replaceAll(" ", "-")
+      .replaceAll("/", "-");
+
   return (
     <div>
-      <label className="text-sm font-bold text-white">{label}</label>
-      <select className="mt-2 w-full rounded-2xl border border-white/10 bg-[#101827] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10">
-        <option>Select an option</option>
+      <label htmlFor={fieldId} className="text-sm font-bold text-white">
+        {label}
+      </label>
+      <select
+        id={fieldId}
+        name={fieldId}
+        className="mt-2 w-full rounded-2xl border border-white/10 bg-[#101827] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
+      >
+        <option value="">Select an option</option>
         {options.map((option) => (
-          <option key={option}>{option}</option>
+          <option key={option} value={option}>
+            {option}
+          </option>
         ))}
       </select>
     </div>
