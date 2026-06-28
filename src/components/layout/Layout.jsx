@@ -10,19 +10,23 @@ export default function Layout({ children }) {
   const [showFloatingCta, setShowFloatingCta] = useState(false);
 
   useEffect(() => {
-    const loadFloatingCta = () => setShowFloatingCta(true);
+    if (showFloatingCta) return;
 
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(loadFloatingCta, {
-        timeout: 2500,
-      });
+    const showCta = () => setShowFloatingCta(true);
 
-      return () => window.cancelIdleCallback(idleId);
-    }
+    const timer = window.setTimeout(showCta, 7000);
 
-    const timer = window.setTimeout(loadFloatingCta, 1800);
-    return () => window.clearTimeout(timer);
-  }, []);
+    window.addEventListener("scroll", showCta, { once: true, passive: true });
+    window.addEventListener("mousemove", showCta, { once: true });
+    window.addEventListener("touchstart", showCta, { once: true, passive: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", showCta);
+      window.removeEventListener("mousemove", showCta);
+      window.removeEventListener("touchstart", showCta);
+    };
+  }, [showFloatingCta]);
 
   return (
     <div className="min-h-screen bg-[#020B1F] pb-20 text-white sm:pb-0">
