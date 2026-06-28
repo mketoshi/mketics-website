@@ -16,9 +16,9 @@ import { servicePillars } from "../data/services";
 import ServiceExplorerPreview from "../components/sections/ServiceExplorerPreview";
 import LeadCaptureSection from "../components/sections/LeadCaptureSection";
 import TrustCredibility from "../components/sections/TrustCredibility";
-import { siteConfig } from "../data/site";
 import ServiceLandingCTAs from "../components/sections/ServiceLandingCTAs";
-
+import { siteConfig } from "../data/site";
+import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 
 const stats = [
   {
@@ -76,18 +76,21 @@ export default function Home() {
             src="/assets/mketics-bg3.png"
             alt=""
             aria-hidden="true"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             className="h-full w-full object-cover opacity-45"
           />
           <div className="absolute inset-0 bg-[#020B1F]/70" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/85 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px]" />
-          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px]" />
+          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[80px] lg:blur-[140px]" />
+          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[70px] lg:blur-[120px]" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
-            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200 shadow-[0_0_40px_rgba(25,217,255,0.12)]">
+            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200 shadow-[0_0_22px_rgba(25,217,255,0.16)] lg:shadow-[0_0_40px_rgba(25,217,255,0.12)]">
               <Sparkles size={16} />
               {siteConfig.tagline}
             </div>
@@ -121,9 +124,14 @@ export default function Home() {
                 Explore Services
               </Button>
 
-              <Button href={siteConfig.whatsapp} variant="secondary">
+              <a
+                href={createWhatsAppLink(whatsappMessages.general)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-cyan-300/40 bg-white/[0.06] px-6 py-3 font-black text-white transition hover:border-cyan-300 hover:bg-cyan-300 hover:text-[#061A33]"
+              >
                 Chat on WhatsApp
-              </Button>
+              </a>
             </div>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
@@ -144,10 +152,10 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-cyan-300/20 via-blue-500/10 to-transparent blur-2xl" />
+            <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-cyan-300/20 via-blue-500/10 to-transparent blur-xl lg:blur-2xl" />
 
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-[#061A33]/75 p-6 shadow-2xl backdrop-blur-xl">
-              <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan-300/15 blur-[100px]" />
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-[#061A33]/75 p-6 shadow-lg backdrop-blur-xl lg:shadow-2xl">
+              <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan-300/15 blur-[60px] lg:blur-[100px]" />
 
               <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
@@ -241,7 +249,7 @@ export default function Home() {
                   key={service.title}
                   className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl"
                 >
-                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300 shadow-[0_0_30px_rgba(0,174,239,0.18)]">
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300 shadow-[0_0_24px_rgba(0,174,239,0.16)] lg:shadow-[0_0_30px_rgba(0,174,239,0.18)]">
                     <Icon size={28} />
                   </div>
 
@@ -283,6 +291,8 @@ export default function Home() {
             src="/assets/mketics-bg4.png"
             alt=""
             aria-hidden="true"
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover object-center opacity-35"
           />
           <div className="absolute inset-0 bg-[#020B1F]/75" />
