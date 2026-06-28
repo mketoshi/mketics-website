@@ -73,19 +73,19 @@ export default function Home() {
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <img
-            src="/assets/mketics-bg3.png"
+            src="/assets/mketics-bg3.webp"
             alt=""
             aria-hidden="true"
             loading="eager"
             fetchPriority="high"
             decoding="async"
-            className="h-full w-full object-cover opacity-45"
+            className="hidden h-full w-full object-cover opacity-45 lg:block"
           />
           <div className="absolute inset-0 bg-[#020B1F]/70" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/85 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[80px] lg:blur-[140px]" />
-          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[70px] lg:blur-[120px]" />
+          <div className="absolute left-1/2 top-0 hidden h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px] lg:block" />
+          <div className="absolute right-0 top-24 hidden h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px] lg:block" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
@@ -152,10 +152,10 @@ export default function Home() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-cyan-300/20 via-blue-500/10 to-transparent blur-xl lg:blur-2xl" />
+            <div className="absolute -inset-4 hidden rounded-[2.5rem] bg-gradient-to-br from-cyan-300/20 via-blue-500/10 to-transparent blur-2xl lg:block" />
 
             <div className="relative overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-[#061A33]/75 p-6 shadow-lg backdrop-blur-xl lg:shadow-2xl">
-              <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan-300/15 blur-[60px] lg:blur-[100px]" />
+              <div className="absolute -right-20 -top-20 hidden h-72 w-72 rounded-full bg-cyan-300/15 blur-[100px] lg:block" />
 
               <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
@@ -288,12 +288,12 @@ export default function Home() {
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <img
-            src="/assets/mketics-bg4.png"
+            src="/assets/mketics-bg4.webp"
             alt=""
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover object-center opacity-35"
+            className="hidden h-full w-full object-cover object-center opacity-35 lg:block"
           />
           <div className="absolute inset-0 bg-[#020B1F]/75" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/80 to-[#020B1F]/40" />
