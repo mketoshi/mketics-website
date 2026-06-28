@@ -10,6 +10,7 @@ import {
 import Button from "../components/ui/Button";
 import { caseStudies, projectFilters } from "../data/caseStudies";
 import SEO from "../components/seo/SEO";
+import { seoPages } from "../data/seo";
 
 export default function Projects() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -21,11 +22,8 @@ export default function Projects() {
 
   return (
     <>
-    <SEO
-    title="MKETICS Projects | Case Studies & Technology Solutions"
-    description="View MKETICS project examples across websites, digital systems, IT infrastructure, business documents, online stores and smart technology planning."
-    path="/projects"
-    />
+    <SEO {...seoPages.projects} />
+    
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[130px]" />

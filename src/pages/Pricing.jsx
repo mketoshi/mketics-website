@@ -14,15 +14,12 @@ import TrustCredibility from "../components/sections/TrustCredibility";
 import { pricingNotes, pricingPackages } from "../data/pricing";
 import { createWhatsAppLink } from "../utils/whatsapp";
 import QuoteFlow from "../components/sections/QuoteFlow";
+import { seoPages } from "../data/seo";
 
 export default function Pricing() {
   return (
     <>
-      <SEO
-        title="MKETICS Pricing | Website, IT Support & Digital Business Packages"
-        description="View MKETICS starting prices for websites, business systems, IT support, digital business services, smart security planning and business readiness packages."
-        path="/pricing"
-      />
+      <SEO {...seoPages.pricing} />
 
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">

@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
+import { seoPages } from "../data/seo";
 import Button from "../components/ui/Button";
 import { servicePillars } from "../data/services";
 import ServiceExplorerPreview from "../components/sections/ServiceExplorerPreview";
@@ -67,11 +68,7 @@ const outcomes = [
 export default function Home() {
   return (
     <>
-      <SEO
-        title="MKETICS | Software, IT Infrastructure & Digital Business Solutions"
-        description="MKETICS builds smart digital systems, strengthens IT infrastructure and supports businesses with software, websites, digital tools and smart technology solutions."
-        path="/"
-      />
+      <SEO {...seoPages.home} />
 
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">

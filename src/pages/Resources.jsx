@@ -16,6 +16,7 @@ import {
 } from "../data/resources";
 import { siteConfig } from "../data/site";
 import SEO from "../components/seo/SEO";
+import { seoPages } from "../data/seo";
 
 export default function Resources() {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -27,11 +28,8 @@ export default function Resources() {
 
   return (
     <>
-    <SEO
-    title="MKETICS Resources | Technology Guides for Businesses"
-    description="Read practical MKETICS resources on websites, IT support, cybersecurity, Google Workspace, online stores, smart security and digital business readiness."
-    path="/resources"
-    />
+    <SEO {...seoPages.resources} />
+    
       <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[130px]" />

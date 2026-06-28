@@ -18,6 +18,7 @@ import Button from "../components/ui/Button";
 import ConversionCTA from "../components/sections/ConversionCTA";
 import ServiceLandingCTAs from "../components/sections/ServiceLandingCTAs";
 import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
+import { seoPages } from "../data/seo";
 
 const servicePillars = [
   {
@@ -133,11 +134,7 @@ const processSteps = [
 export default function Services() {
   return (
     <main className="bg-[#020B1F] text-white">
-      <SEO
-        title="MKETICS Services | Software, IT, Digital Business & Smart Security"
-        description="Explore MKETICS services including software development, websites, IT infrastructure, digital business solutions, smart security technology and business readiness support."
-        path="/services"
-      />
+      <SEO {...seoPages.services} />
 
       <section className="relative isolate overflow-hidden px-5 py-16 lg:py-24">
         <div className="absolute inset-0 -z-10">

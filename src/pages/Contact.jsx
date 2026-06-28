@@ -15,6 +15,7 @@ import Button from "../components/ui/Button";
 import { siteConfig } from "../data/site";
 import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 import QuoteFlow from "../components/sections/QuoteFlow";
+import { seoPages } from "../data/seo";
 
 const serviceOptions = [
   "Website Design & Development",
@@ -72,11 +73,7 @@ export default function Contact() {
 
   return (
     <main className="bg-[#020B1F] text-white">
-      <SEO
-        title="Contact MKETICS | Request a Quote or Consultation"
-        description="Contact MKETICS to request a quote, discuss a website, business system, IT support, digital business solution or smart technology project."
-        path="/contact"
-      />
+      <SEO {...seoPages.contact} />
 
       <section className="relative isolate overflow-hidden px-5 py-16 lg:py-24">
         <div className="absolute inset-0 -z-10">
