@@ -7,9 +7,9 @@ export default function FloatingContactCTA() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-4 right-4 z-50 sm:bottom-5 sm:right-5">
       {isOpen && (
-        <div className="mb-4 w-[310px] overflow-hidden rounded-[1.5rem] border border-cyan-300/25 bg-[#020B1F]/95 text-white shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+        <div className="mb-4 w-[min(310px,calc(100vw-2rem))] overflow-hidden rounded-[1.5rem] border border-cyan-300/25 bg-[#020B1F]/95 text-white shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           <div className="relative overflow-hidden p-5">
             <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-cyan-300/15 blur-3xl" />
 
