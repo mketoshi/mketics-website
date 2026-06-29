@@ -26,8 +26,8 @@ const stats = [
     value: "4",
   },
   {
-    label: "Business Technology Focus",
-    value: "360°",
+    label: "Service Explorer Options",
+    value: "54",
   },
   {
     label: "B-BBEE Contributor",
@@ -37,32 +37,101 @@ const stats = [
 
 const trustItems = [
   "Registered South African technology company",
+  "Premium blue, silver and water-inspired digital brand",
   "Software, IT infrastructure and digital business support",
-  "Professional quote and consultation flow",
   "Built around innovation, Ubuntu and long-term value",
 ];
 
 const outcomes = [
   {
     title: "Build",
-    text: "Websites, portals, systems and digital platforms that support real business operations.",
+    text: "Websites, portals, online stores, dashboards and business systems that support real operations.",
     icon: Layers3,
   },
   {
     title: "Strengthen",
-    text: "IT infrastructure, networks, cloud tools and digital environments that help teams work better.",
+    text: "IT support, cloud tools, networks, business email and office technology support for daily productivity.",
     icon: Network,
   },
   {
     title: "Protect",
-    text: "Smart security planning, safer digital practices and technology guidance before investment.",
+    text: "Smart security planning, basic cybersecurity awareness and safer technology decisions before investment.",
     icon: ShieldCheck,
   },
   {
     title: "Grow",
-    text: "Digital business support, documents, online presence and readiness services for serious growth.",
+    text: "Digital marketing, business documents, online visibility and readiness support for serious growth.",
     icon: Zap,
   },
+];
+
+const solutionPaths = [
+  {
+    title: "Digital Launch",
+    subtitle: "For startups and growing businesses",
+    text: "Start with a professional website, business email, company profile, Google visibility and a clean digital foundation.",
+    icon: Globe2,
+    points: [
+      "Starter or Business Website",
+      "Professional Business Email",
+      "Company Profile Design",
+      "Google Business Profile Setup",
+    ],
+  },
+  {
+    title: "Business Systems",
+    subtitle: "For operations that need structure",
+    text: "Move from manual work to dashboards, portals, booking tools, invoice tracking or custom business systems.",
+    icon: Layers3,
+    points: [
+      "Custom Web Application",
+      "Client Portal",
+      "Admin Dashboard",
+      "Business Management System",
+    ],
+  },
+  {
+    title: "Infrastructure Support",
+    subtitle: "For offices, schools and teams",
+    text: "Improve office technology, Wi-Fi, networks, cloud storage, devices and support processes with practical IT guidance.",
+    icon: Network,
+    points: [
+      "Network & Wi-Fi Assessment",
+      "IT Support",
+      "Google Workspace Setup",
+      "Monthly IT Support",
+    ],
+  },
+];
+
+const processSteps = [
+  {
+    number: "01",
+    title: "Discover",
+    text: "We understand your business, current challenge, goals, budget direction and urgency.",
+  },
+  {
+    number: "02",
+    title: "Recommend",
+    text: "We guide you to the best starting service using the MKETICS Service Explorer and consultation flow.",
+  },
+  {
+    number: "03",
+    title: "Plan",
+    text: "We define scope, deliverables, timeline, responsibilities and professional pricing before work begins.",
+  },
+  {
+    number: "04",
+    title: "Deliver",
+    text: "We implement with clear communication, practical execution, testing and handover support.",
+  },
+];
+
+const clientSegments = [
+  "Small businesses that need a professional online presence",
+  "Schools, colleges and institutions that need digital communication tools",
+  "Private companies that need systems, dashboards or IT support",
+  "Startups and individuals who need business readiness support",
 ];
 
 export default function Home() {
@@ -81,8 +150,8 @@ export default function Home() {
             decoding="async"
             className="hidden h-full w-full object-cover opacity-45 lg:block"
           />
-          <div className="absolute inset-0 bg-[#020B1F]/70" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/85 to-[#020B1F]/45" />
+          <div className="absolute inset-0 bg-[#020B1F]/72" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/88 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
           <div className="absolute left-1/2 top-0 hidden h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px] lg:block" />
           <div className="absolute right-0 top-24 hidden h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px] lg:block" />
@@ -96,22 +165,22 @@ export default function Home() {
             </div>
 
             <h1 className="mt-7 max-w-5xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-7xl">
-              Smart digital systems for{" "}
+              Premium digital systems for{" "}
               <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
-                stronger businesses.
+                serious business growth.
               </span>
             </h1>
 
             <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">
-              MKETICS helps businesses, schools and organisations build modern
-              websites, custom systems, IT infrastructure, digital business
-              tools and smart technology solutions that improve operations and
-              create long-term value.
+              MKETICS helps businesses, schools, organisations and individuals
+              build modern websites, custom systems, IT infrastructure, digital
+              business tools, marketing support and smart technology solutions
+              that improve operations and create long-term value.
             </p>
 
             <p className="mt-4 max-w-3xl text-base leading-7 text-cyan-100/90">
-              Purpose-driven technology built with innovation, Ubuntu, clarity
-              and professional execution.
+              Modern Knowledge Engineering, Technology & Innovative Commercial
+              Solutions — built with innovation, Ubuntu, clarity and execution.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
@@ -163,7 +232,7 @@ export default function Home() {
                     MKETICS Digital Hub
                   </p>
                   <h2 className="mt-2 text-2xl font-black text-white">
-                    Technology built around business value.
+                    One brand. Multiple technology solutions.
                   </h2>
                 </div>
 
@@ -175,31 +244,36 @@ export default function Home() {
               <div className="relative mt-6 grid gap-4">
                 <DashboardItem
                   icon={Globe2}
-                  title="Websites & Portals"
-                  text="Build a professional digital presence with useful client-facing systems."
+                  title="Websites & Online Presence"
+                  text="Starter websites, business websites, online stores, landing pages and catalogue websites."
+                />
+                <DashboardItem
+                  icon={Layers3}
+                  title="Systems & Portals"
+                  text="Client portals, dashboards, invoice systems, booking systems and business management tools."
                 />
                 <DashboardItem
                   icon={Network}
-                  title="Infrastructure & Cloud"
-                  text="Support connectivity, devices, business email and daily operations."
+                  title="IT, Cloud & Infrastructure"
+                  text="IT support, networks, Wi-Fi, Google Workspace, Microsoft 365 and business email setup."
                 />
                 <DashboardItem
-                  icon={Users}
-                  title="Business Growth Tools"
-                  text="Use documents, digital workflows and readiness services to improve operations."
+                  icon={Zap}
+                  title="Marketing & Business Readiness"
+                  text="Digital marketing, company profiles, business registration guidance and compliance readiness."
                 />
               </div>
 
               <div className="relative mt-6 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5">
                 <p className="text-sm font-semibold text-cyan-100">
-                  Recommended starting point
+                  Flagship website feature
                 </p>
                 <p className="mt-2 text-2xl font-black text-white">
-                  Request a guided consultation
+                  Guided Service Explorer
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-300">
-                  We help you choose the right solution, scope, budget direction
-                  and delivery path before serious work starts.
+                  Visitors answer simple questions and receive a recommended
+                  MKETICS service with a quote and WhatsApp action.
                 </p>
               </div>
             </div>
@@ -226,7 +300,7 @@ export default function Home() {
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
-                Core Services
+                Core Service Pillars
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
                 Technology services built around real business needs.
@@ -282,10 +356,45 @@ export default function Home() {
       <ServiceLandingCTAs
         variant="light"
         title="Start with the service you need most."
-        description="Whether you need a website, business system, IT support, online store, digital readiness or smart security planning, MKETICS gives you a clear starting point."
+        description="Whether you need a website, system, IT support, online store, digital marketing, business readiness or smart security planning, MKETICS gives you a clear starting point."
       />
 
-      <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
+      <section
+        className="bg-white px-5 py-16 text-[#061A33] lg:py-24"
+        style={{
+          contentVisibility: "auto",
+          containIntrinsicSize: "900px",
+        }}
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Solution Paths
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Choose a path that matches where your business is going.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              MKETICS does not only build isolated products. We help clients
+              connect the right services into a practical digital growth path.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
+            {solutionPaths.map((path) => (
+              <SolutionPathCard key={path.title} path={path} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24"
+        style={{
+          contentVisibility: "auto",
+          containIntrinsicSize: "900px",
+        }}
+      >
         <div className="absolute inset-0 -z-10">
           <img
             src="/assets/mketics-bg4.webp"
@@ -295,22 +404,23 @@ export default function Home() {
             decoding="async"
             className="hidden h-full w-full object-cover object-center opacity-35 lg:block"
           />
-          <div className="absolute inset-0 bg-[#020B1F]/75" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/80 to-[#020B1F]/40" />
+          <div className="absolute inset-0 bg-[#020B1F]/78" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/82 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F] via-transparent to-[#020B1F]" />
         </div>
 
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 max-w-3xl">
             <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
-              What MKETICS helps you achieve
+              What MKETICS Helps You Achieve
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
               From idea to structured digital execution.
             </h2>
             <p className="mt-5 text-lg leading-8 text-slate-300">
               The focus is not only design. The focus is better systems,
-              stronger operations, clearer communication and useful technology.
+              stronger operations, clearer communication, safer decisions and
+              useful technology.
             </p>
           </div>
 
@@ -322,7 +432,109 @@ export default function Home() {
         </div>
       </section>
 
+      <section
+        className="bg-[#EAF6FF] px-5 py-16 text-[#061A33] lg:py-24"
+        style={{
+          contentVisibility: "auto",
+          containIntrinsicSize: "800px",
+        }}
+      >
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Delivery Approach
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Clear process. Professional communication. Practical delivery.
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              MKETICS follows a structured approach so clients understand what
+              is being built, why it matters, what it includes, and how the work
+              will move from idea to delivery.
+            </p>
+
+            <div className="mt-8 rounded-[2rem] border border-cyan-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-[#0B7CFF]">
+                Best starting point
+              </p>
+              <p className="mt-3 text-2xl font-black text-[#020B1F]">
+                Use the Service Explorer before requesting a quote.
+              </p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                The Service Explorer helps identify your recommended service,
+                supporting services, readiness level and next step.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {processSteps.map((step) => (
+              <article
+                key={step.number}
+                className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:border-cyan-300 hover:shadow-lg"
+              >
+                <div className="flex gap-5">
+                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-lg font-black text-cyan-300">
+                    {step.number}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-[#020B1F]">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      {step.text}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <ServiceExplorerPreview />
+
+      <section
+        className="bg-white px-5 py-16 text-[#061A33] lg:py-24"
+        style={{
+          contentVisibility: "auto",
+          containIntrinsicSize: "700px",
+        }}
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+                Who We Serve
+              </p>
+              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+                Built for clients who want technology with direction.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-slate-700">
+                MKETICS supports clients who want practical solutions, better
+                structure, stronger presentation and long-term technology value.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {clientSegments.map((segment) => (
+                <div
+                  key={segment}
+                  className="flex items-start gap-3 rounded-[1.5rem] border border-slate-200 bg-[#EAF6FF] p-5"
+                >
+                  <CheckCircle2
+                    className="mt-0.5 shrink-0 text-[#0B7CFF]"
+                    size={20}
+                  />
+                  <p className="text-sm font-semibold leading-7 text-slate-700">
+                    {segment}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <TrustCredibility
         variant="light"
@@ -363,6 +575,51 @@ function OutcomeCard({ item }) {
       <h3 className="mt-5 text-xl font-black text-white">{item.title}</h3>
 
       <p className="mt-3 text-sm leading-7 text-slate-300">{item.text}</p>
+    </article>
+  );
+}
+
+function SolutionPathCard({ path }) {
+  const Icon = path.icon;
+
+  return (
+    <article className="group rounded-[2rem] border border-slate-200 bg-[#F8FCFF] p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:bg-white hover:shadow-xl">
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <Icon size={28} />
+        </div>
+
+        <span className="rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#0B7CFF]">
+          Path
+        </span>
+      </div>
+
+      <p className="mt-6 text-sm font-black uppercase tracking-[0.22em] text-[#0B7CFF]">
+        {path.subtitle}
+      </p>
+
+      <h3 className="mt-3 text-2xl font-black text-[#020B1F]">
+        {path.title}
+      </h3>
+
+      <p className="mt-3 text-sm leading-7 text-slate-600">{path.text}</p>
+
+      <div className="mt-5 grid gap-3">
+        {path.points.map((point) => (
+          <div key={point} className="flex items-start gap-3">
+            <CheckCircle2
+              className="mt-0.5 shrink-0 text-[#0B7CFF]"
+              size={18}
+            />
+            <p className="text-sm leading-6 text-slate-700">{point}</p>
+          </div>
+        ))}
+      </div>
+
+      <Button to="/contact" className="mt-6">
+        Request This Path
+        <ArrowRight size={16} className="ml-2" />
+      </Button>
     </article>
   );
 }
