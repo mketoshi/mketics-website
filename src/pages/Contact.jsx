@@ -1,8 +1,11 @@
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  AlertCircle,
   CheckCircle2,
   ClipboardList,
   Clock3,
+  Loader2,
   Mail,
   MapPin,
   MessageCircle,
@@ -12,13 +15,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
-import Button from "../components/ui/Button";
 import QuoteFlow from "../components/sections/QuoteFlow";
 import { siteConfig } from "../data/site";
 import { seoPages } from "../data/seo";
 import { serviceExplorerItems } from "../data/serviceExplorer";
 import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
 import { getServiceExplorerLeadFromSearch } from "../utils/serviceExplorerLead";
+import { submitContactForm } from "../utils/contactSubmission";
 
 const serviceOptions = [
   "General Consultation",
@@ -64,12 +67,44 @@ const trustPoints = [
   "Support for businesses, schools and organisations",
 ];
 
+function getInitialFormData(serviceExplorerLead) {
+  return {
+    fullName: "",
+    phone: "",
+    email: "",
+    organisation: "",
+    serviceNeeded: serviceExplorerLead?.service || "",
+    budget: "",
+    timeline: "",
+    preferredContact: "WhatsApp",
+    projectDetails: serviceExplorerLead?.notes || "",
+  };
+}
+
 export default function Contact() {
   const [searchParams] = useSearchParams();
-  const serviceExplorerLead = getServiceExplorerLeadFromSearch(searchParams);
 
-  const selectedService = serviceExplorerLead?.service || "";
-  const selectedNotes = serviceExplorerLead?.notes || "";
+  const serviceExplorerLead = useMemo(
+    () => getServiceExplorerLeadFromSearch(searchParams),
+    [searchParams]
+  );
+
+  const [formData, setFormData] = useState(() =>
+    getInitialFormData(serviceExplorerLead)
+  );
+
+  const [formStatus, setFormStatus] = useState({
+    state: "idle",
+    message: "",
+  });
+
+  useEffect(() => {
+    setFormData((current) => ({
+      ...current,
+      serviceNeeded: serviceExplorerLead?.service || current.serviceNeeded,
+      projectDetails: serviceExplorerLead?.notes || current.projectDetails,
+    }));
+  }, [serviceExplorerLead]);
 
   const whatsappLink = createWhatsAppLink(
     serviceExplorerLead
@@ -78,6 +113,119 @@ export default function Contact() {
   );
 
   const emailLink = buildEmailLink(serviceExplorerLead);
+
+  function updateField(field, value) {
+    setFormData((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (formStatus.state !== "idle") {
+      setFormStatus({
+        state: "idle",
+        message: "",
+      });
+    }
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!formData.fullName.trim()) {
+      setFormStatus({
+        state: "error",
+        message: "Please enter your full name before submitting.",
+      });
+      return;
+    }
+
+    if (!formData.phone.trim() && !formData.email.trim()) {
+      setFormStatus({
+        state: "error",
+        message: "Please enter at least a phone number or email address.",
+      });
+      return;
+    }
+
+    if (!formData.serviceNeeded.trim()) {
+      setFormStatus({
+        state: "error",
+        message: "Please select the service you need.",
+      });
+      return;
+    }
+
+    if (!formData.projectDetails.trim()) {
+      setFormStatus({
+        state: "error",
+        message: "Please describe what you need MKETICS to assist with.",
+      });
+      return;
+    }
+
+    setFormStatus({
+      state: "loading",
+      message: "Submitting your request...",
+    });
+
+    const payload = {
+      formName: "MKETICS Website Contact Form",
+      leadSource: serviceExplorerLead ? "Service Explorer" : "Contact Page",
+      submittedAt: new Date().toISOString(),
+      pageUrl: window.location.href,
+
+      fullName: formData.fullName,
+      phone: formData.phone,
+      email: formData.email,
+      organisation: formData.organisation,
+      serviceNeeded: formData.serviceNeeded,
+      budget: formData.budget,
+      timeline: formData.timeline,
+      preferredContact: formData.preferredContact,
+      projectDetails: formData.projectDetails,
+
+      serviceExplorer: serviceExplorerLead
+        ? {
+            recommendedService: serviceExplorerLead.service,
+            pillar: serviceExplorerLead.pillar,
+            readiness: serviceExplorerLead.readiness,
+            supporting: serviceExplorerLead.supporting,
+            answers: serviceExplorerLead.answers,
+            notes: serviceExplorerLead.notes,
+          }
+        : null,
+    };
+
+    try {
+      await submitContactForm(payload);
+
+      setFormStatus({
+        state: "success",
+        message:
+          "Your request has been submitted successfully. MKETICS will review it and respond as soon as possible.",
+      });
+
+      setFormData((current) => ({
+        ...current,
+        fullName: "",
+        phone: "",
+        email: "",
+        organisation: "",
+        budget: "",
+        timeline: "",
+        preferredContact: "WhatsApp",
+        serviceNeeded: serviceExplorerLead?.service || "",
+        projectDetails: serviceExplorerLead?.notes || "",
+      }));
+    } catch (error) {
+      setFormStatus({
+        state: "error",
+        message:
+          error.message ||
+          "Something went wrong while submitting your request. Please try WhatsApp or email.",
+      });
+    }
+  }
 
   return (
     <main className="bg-[#020B1F] text-white">
@@ -209,104 +357,95 @@ export default function Contact() {
               </div>
             )}
 
-            <form
-              className="grid gap-4"
-              onSubmit={(event) => event.preventDefault()}
-            >
-              {serviceExplorerLead && (
-                <>
-                  <input
-                    type="hidden"
-                    name="lead-source"
-                    value="Service Explorer"
-                  />
-                  <input
-                    type="hidden"
-                    name="service-pillar"
-                    value={serviceExplorerLead.pillar}
-                  />
-                  <input
-                    type="hidden"
-                    name="readiness-level"
-                    value={serviceExplorerLead.readiness}
-                  />
-                  <input
-                    type="hidden"
-                    name="supporting-services"
-                    value={serviceExplorerLead.supporting}
-                  />
-                  <input
-                    type="hidden"
-                    name="selected-answers"
-                    value={serviceExplorerLead.answers}
-                  />
-                </>
-              )}
-
+            <form className="grid gap-4" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormInput
                   label="Full Name"
-                  name="full-name"
+                  name="fullName"
                   placeholder="Your name"
                   autoComplete="name"
+                  value={formData.fullName}
+                  onChange={(value) => updateField("fullName", value)}
                 />
                 <FormInput
                   label="Phone / WhatsApp"
-                  name="phone-whatsapp"
+                  name="phone"
                   placeholder="+27..."
                   type="tel"
                   autoComplete="tel"
+                  value={formData.phone}
+                  onChange={(value) => updateField("phone", value)}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <FormInput
                   label="Email Address"
-                  name="email-address"
+                  name="email"
                   placeholder="you@example.com"
                   type="email"
                   autoComplete="email"
+                  value={formData.email}
+                  onChange={(value) => updateField("email", value)}
                 />
                 <FormInput
                   label="Business / Organisation"
-                  name="business-organisation"
+                  name="organisation"
                   placeholder="Business name"
                   autoComplete="organization"
+                  value={formData.organisation}
+                  onChange={(value) => updateField("organisation", value)}
                 />
               </div>
 
               <FormSelect
                 label="Service Needed"
-                name="service-needed"
+                name="serviceNeeded"
                 options={serviceOptions}
-                defaultValue={selectedService}
+                value={formData.serviceNeeded}
+                onChange={(value) => updateField("serviceNeeded", value)}
               />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <FormSelect
                   label="Estimated Budget"
-                  name="estimated-budget"
+                  name="budget"
                   options={budgetOptions}
+                  value={formData.budget}
+                  onChange={(value) => updateField("budget", value)}
                 />
                 <FormSelect
                   label="Timeline"
                   name="timeline"
                   options={timelineOptions}
+                  value={formData.timeline}
+                  onChange={(value) => updateField("timeline", value)}
                 />
               </div>
 
+              <FormSelect
+                label="Preferred Contact Method"
+                name="preferredContact"
+                options={["WhatsApp", "Phone Call", "Email"]}
+                value={formData.preferredContact}
+                onChange={(value) => updateField("preferredContact", value)}
+              />
+
               <div>
                 <label
-                  htmlFor="project-details"
+                  htmlFor="projectDetails"
                   className="text-sm font-bold text-white"
                 >
                   Project Details
                 </label>
                 <textarea
-                  id="project-details"
-                  name="project-details"
+                  id="projectDetails"
+                  name="projectDetails"
                   rows="8"
-                  defaultValue={selectedNotes}
+                  value={formData.projectDetails}
+                  onChange={(event) =>
+                    updateField("projectDetails", event.target.value)
+                  }
                   placeholder="Tell us what you need, what problem you want to solve, who will use it, and what outcome you expect..."
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
                 />
@@ -319,20 +458,35 @@ export default function Contact() {
                     size={18}
                   />
                   <p className="text-sm leading-7 text-slate-300">
-                    This form is currently a professional lead-capture layout.
-                    Form submission automation can be connected later using
-                    EmailJS, Formspree, Supabase or a backend API. Service
-                    Explorer recommendations are preserved in the form and
-                    WhatsApp message.
+                    Your request will be submitted to MKETICS with the selected
+                    service, budget direction, timeline and Service Explorer
+                    recommendation where applicable.
                   </p>
                 </div>
               </div>
 
+              {formStatus.state !== "idle" && (
+                <FormStatusMessage status={formStatus} />
+              )}
+
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button href={emailLink} className="justify-center">
-                  Email MKETICS
-                  <Send size={18} className="ml-2" />
-                </Button>
+                <button
+                  type="submit"
+                  disabled={formStatus.state === "loading"}
+                  className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 font-black text-[#061A33] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {formStatus.state === "loading" ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      Submit Request
+                      <Send size={18} className="ml-2" />
+                    </>
+                  )}
+                </button>
 
                 <a
                   href={whatsappLink}
@@ -344,6 +498,14 @@ export default function Contact() {
                   WhatsApp MKETICS
                 </a>
               </div>
+
+              <a
+                href={emailLink}
+                className="inline-flex items-center justify-center rounded-full border border-white/10 px-6 py-3 text-sm font-black text-slate-300 transition hover:border-cyan-300/60 hover:text-white"
+              >
+                <Mail size={16} className="mr-2" />
+                Email Instead
+              </a>
             </form>
           </div>
         </div>
@@ -495,52 +657,39 @@ function FormInput({
   type = "text",
   name,
   autoComplete = "off",
-  defaultValue = "",
+  value,
+  onChange,
 }) {
-  const fieldId =
-    name ||
-    label
-      .toLowerCase()
-      .replaceAll(" / ", "-")
-      .replaceAll(" ", "-")
-      .replaceAll("/", "-");
-
   return (
     <div>
-      <label htmlFor={fieldId} className="text-sm font-bold text-white">
+      <label htmlFor={name} className="text-sm font-bold text-white">
         {label}
       </label>
       <input
-        id={fieldId}
-        name={fieldId}
+        id={name}
+        name={name}
         type={type}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       />
     </div>
   );
 }
 
-function FormSelect({ label, options, name, defaultValue = "" }) {
-  const fieldId =
-    name ||
-    label
-      .toLowerCase()
-      .replaceAll(" / ", "-")
-      .replaceAll(" ", "-")
-      .replaceAll("/", "-");
-
+function FormSelect({ label, options, name, value, onChange }) {
   return (
     <div>
-      <label htmlFor={fieldId} className="text-sm font-bold text-white">
+      <label htmlFor={name} className="text-sm font-bold text-white">
         {label}
       </label>
       <select
-        id={fieldId}
-        name={fieldId}
-        defaultValue={defaultValue}
+        id={name}
+        name={name}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="mt-2 w-full rounded-2xl border border-white/10 bg-[#101827] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       >
         <option value="">Select an option</option>
@@ -550,6 +699,29 @@ function FormSelect({ label, options, name, defaultValue = "" }) {
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function FormStatusMessage({ status }) {
+  const isSuccess = status.state === "success";
+
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        isSuccess
+          ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100"
+          : "border-red-300/40 bg-red-400/10 text-red-100"
+      }`}
+    >
+      <div className="flex gap-3">
+        {isSuccess ? (
+          <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
+        ) : (
+          <AlertCircle className="mt-0.5 shrink-0" size={20} />
+        )}
+        <p className="text-sm font-semibold leading-7">{status.message}</p>
+      </div>
     </div>
   );
 }
