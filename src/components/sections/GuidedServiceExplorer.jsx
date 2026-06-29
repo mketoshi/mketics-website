@@ -15,6 +15,7 @@ import {
   getServiceExplorerRecommendation,
   serviceExplorerQuestions,
 } from "../../data/serviceExplorerQuestions";
+import { buildServiceExplorerContactUrl } from "../../utils/serviceExplorerLead";
 
 export default function GuidedServiceExplorer() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -203,6 +204,7 @@ function RecommendationResult({
 }) {
   const primaryService = recommendation.primaryService;
   const supportingServices = recommendation.supportingServices;
+  const contactUrl = buildServiceExplorerContactUrl(recommendation);
 
   return (
     <div className="mt-7">
@@ -289,7 +291,7 @@ function RecommendationResult({
       </div>
 
       <div className="mt-7 flex flex-col gap-3 lg:flex-row">
-        <Button to="/contact" className="justify-center">
+        <Button to={contactUrl} className="justify-center">
           Request a Quote Based on This Recommendation
           <Send size={16} className="ml-2" />
         </Button>

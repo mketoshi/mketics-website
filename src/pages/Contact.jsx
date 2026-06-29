@@ -1,5 +1,7 @@
+import { useSearchParams } from "react-router-dom";
 import {
   CheckCircle2,
+  ClipboardList,
   Clock3,
   Mail,
   MapPin,
@@ -14,18 +16,13 @@ import Button from "../components/ui/Button";
 import QuoteFlow from "../components/sections/QuoteFlow";
 import { siteConfig } from "../data/site";
 import { seoPages } from "../data/seo";
+import { serviceExplorerItems } from "../data/serviceExplorer";
 import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
+import { getServiceExplorerLeadFromSearch } from "../utils/serviceExplorerLead";
 
 const serviceOptions = [
-  "Website Design & Development",
-  "Custom Business System / Portal / Dashboard",
-  "Online Store / E-commerce",
-  "IT Support / Network Support",
-  "Google Workspace / Business Email",
-  "Business Registration / Readiness Support",
-  "Digital Marketing Support",
-  "Smart Security / IP Camera Planning",
   "General Consultation",
+  ...serviceExplorerItems.map((service) => service.title),
 ];
 
 const budgetOptions = [
@@ -68,7 +65,19 @@ const trustPoints = [
 ];
 
 export default function Contact() {
-  const whatsappLink = createWhatsAppLink(whatsappMessages.general);
+  const [searchParams] = useSearchParams();
+  const serviceExplorerLead = getServiceExplorerLeadFromSearch(searchParams);
+
+  const selectedService = serviceExplorerLead?.service || "";
+  const selectedNotes = serviceExplorerLead?.notes || "";
+
+  const whatsappLink = createWhatsAppLink(
+    serviceExplorerLead
+      ? buildContactWhatsAppMessage(serviceExplorerLead)
+      : whatsappMessages.general
+  );
+
+  const emailLink = buildEmailLink(serviceExplorerLead);
 
   return (
     <main className="bg-[#020B1F] text-white">
@@ -77,18 +86,18 @@ export default function Contact() {
       <section className="relative isolate overflow-hidden px-5 py-16 lg:py-24">
         <div className="absolute inset-0 -z-10">
           <img
-            src="/assets/mketics-bg2.png"
+            src="/assets/mketics-bg2.webp"
             alt=""
             aria-hidden="true"
             loading="eager"
             decoding="async"
-            className="h-full w-full object-cover object-center opacity-35"
+            className="hidden h-full w-full object-cover object-center opacity-35 lg:block"
           />
           <div className="absolute inset-0 bg-[#020B1F]/78" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/88 to-[#020B1F]/45" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[80px] lg:blur-[140px]" />
-          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[70px] lg:blur-[120px]" />
+          <div className="absolute left-1/2 top-0 hidden h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px] lg:block" />
+          <div className="absolute right-0 top-24 hidden h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px] lg:block" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
@@ -110,6 +119,10 @@ export default function Contact() {
               MKETICS will help you choose the right service path, scope and
               next steps.
             </p>
+
+            {serviceExplorerLead && (
+              <ServiceExplorerLeadCard lead={serviceExplorerLead} />
+            )}
 
             <div className="mt-8 grid gap-4">
               <ContactCard
@@ -176,10 +189,60 @@ export default function Contact() {
               </p>
             </div>
 
+            {serviceExplorerLead && (
+              <div className="mb-6 rounded-[1.5rem] border border-cyan-300/25 bg-cyan-300/10 p-5">
+                <div className="flex items-start gap-3">
+                  <ClipboardList
+                    className="mt-0.5 shrink-0 text-cyan-300"
+                    size={22}
+                  />
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
+                      Service Explorer Data Attached
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-300">
+                      The form below has been prefilled using the visitor’s
+                      Service Explorer recommendation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form
               className="grid gap-4"
               onSubmit={(event) => event.preventDefault()}
             >
+              {serviceExplorerLead && (
+                <>
+                  <input
+                    type="hidden"
+                    name="lead-source"
+                    value="Service Explorer"
+                  />
+                  <input
+                    type="hidden"
+                    name="service-pillar"
+                    value={serviceExplorerLead.pillar}
+                  />
+                  <input
+                    type="hidden"
+                    name="readiness-level"
+                    value={serviceExplorerLead.readiness}
+                  />
+                  <input
+                    type="hidden"
+                    name="supporting-services"
+                    value={serviceExplorerLead.supporting}
+                  />
+                  <input
+                    type="hidden"
+                    name="selected-answers"
+                    value={serviceExplorerLead.answers}
+                  />
+                </>
+              )}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <FormInput
                   label="Full Name"
@@ -216,6 +279,7 @@ export default function Contact() {
                 label="Service Needed"
                 name="service-needed"
                 options={serviceOptions}
+                defaultValue={selectedService}
               />
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -241,7 +305,8 @@ export default function Contact() {
                 <textarea
                   id="project-details"
                   name="project-details"
-                  rows="6"
+                  rows="8"
+                  defaultValue={selectedNotes}
                   placeholder="Tell us what you need, what problem you want to solve, who will use it, and what outcome you expect..."
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
                 />
@@ -256,16 +321,15 @@ export default function Contact() {
                   <p className="text-sm leading-7 text-slate-300">
                     This form is currently a professional lead-capture layout.
                     Form submission automation can be connected later using
-                    EmailJS, Formspree, Supabase or a backend API.
+                    EmailJS, Formspree, Supabase or a backend API. Service
+                    Explorer recommendations are preserved in the form and
+                    WhatsApp message.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button
-                  href={`mailto:${siteConfig.email}`}
-                  className="justify-center"
-                >
+                <Button href={emailLink} className="justify-center">
                   Email MKETICS
                   <Send size={18} className="ml-2" />
                 </Button>
@@ -334,6 +398,69 @@ export default function Contact() {
   );
 }
 
+function ServiceExplorerLeadCard({ lead }) {
+  const supportingServices = lead.supporting
+    ? lead.supporting.split(",").map((item) => item.trim()).filter(Boolean)
+    : [];
+
+  return (
+    <div className="mt-8 rounded-[2rem] border border-cyan-300/25 bg-cyan-300/10 p-6">
+      <div className="flex items-start gap-4">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-[#061A33]">
+          <ClipboardList size={24} />
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+            Service Explorer Recommendation
+          </p>
+
+          <h2 className="mt-2 text-2xl font-black text-white">
+            {lead.service}
+          </h2>
+
+          <p className="mt-3 text-sm leading-7 text-slate-300">
+            <span className="font-bold text-white">Service Pillar:</span>{" "}
+            {lead.pillar}
+          </p>
+
+          <p className="mt-1 text-sm leading-7 text-slate-300">
+            <span className="font-bold text-white">Readiness Level:</span>{" "}
+            {lead.readiness}
+          </p>
+
+          {supportingServices.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-bold text-white">
+                Supporting Services:
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {supportingServices.map((service) => (
+                  <span
+                    key={service}
+                    className="rounded-full border border-cyan-300/25 bg-white/[0.05] px-3 py-1 text-xs font-bold text-cyan-100"
+                  >
+                    {service}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <details className="mt-5 rounded-2xl border border-white/10 bg-[#020B1F]/35 p-4">
+            <summary className="cursor-pointer text-sm font-black text-cyan-200">
+              View selected answers
+            </summary>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">
+              {lead.answers || "No answer summary available."}
+            </p>
+          </details>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ContactCard({ icon: Icon, title, text, href, external = false }) {
   const content = (
     <div className="flex items-start gap-4 rounded-3xl border border-cyan-300/15 bg-white/[0.05] p-5 transition hover:border-cyan-300/40 hover:bg-white/[0.08]">
@@ -368,6 +495,7 @@ function FormInput({
   type = "text",
   name,
   autoComplete = "off",
+  defaultValue = "",
 }) {
   const fieldId =
     name ||
@@ -388,13 +516,14 @@ function FormInput({
         type={type}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        defaultValue={defaultValue}
         className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       />
     </div>
   );
 }
 
-function FormSelect({ label, options, name }) {
+function FormSelect({ label, options, name, defaultValue = "" }) {
   const fieldId =
     name ||
     label
@@ -411,6 +540,7 @@ function FormSelect({ label, options, name }) {
       <select
         id={fieldId}
         name={fieldId}
+        defaultValue={defaultValue}
         className="mt-2 w-full rounded-2xl border border-white/10 bg-[#101827] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       >
         <option value="">Select an option</option>
@@ -422,4 +552,42 @@ function FormSelect({ label, options, name }) {
       </select>
     </div>
   );
+}
+
+function buildContactWhatsAppMessage(lead) {
+  return `Hello MKETICS, I completed the Service Explorer and would like to request a quote.
+
+Recommended Service: ${lead.service}
+Service Pillar: ${lead.pillar}
+Readiness Level: ${lead.readiness}
+Supporting Services: ${lead.supporting || "Not applicable"}
+
+Selected Answers:
+${lead.answers || "Not available"}
+
+Please assist me with the next step, scope and pricing direction.`;
+}
+
+function buildEmailLink(lead) {
+  const subject = lead
+    ? `MKETICS Quote Request - ${lead.service}`
+    : "MKETICS Quote Request";
+
+  const body = lead
+    ? `Hello MKETICS,
+
+I completed the Service Explorer and would like to request a quote.
+
+${lead.notes}
+
+Please assist me with the next step, scope and pricing direction.`
+    : `Hello MKETICS,
+
+I would like to request a quote or consultation.
+
+Please assist me with the next step.`;
+
+  return `mailto:${siteConfig.email}?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(body)}`;
 }
