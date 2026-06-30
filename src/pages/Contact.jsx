@@ -67,6 +67,18 @@ const trustPoints = [
   "Support for businesses, schools and organisations",
 ];
 
+function buildShortProjectDetails(serviceExplorerLead) {
+  if (!serviceExplorerLead) return "";
+
+  return `I completed the MKETICS Service Explorer.
+
+Recommended Service: ${serviceExplorerLead.service}
+Service Pillar: ${serviceExplorerLead.pillar}
+Readiness Level: ${serviceExplorerLead.readiness}
+
+Please help me confirm the scope, pricing direction and next step.`;
+}
+
 function getInitialFormData(serviceExplorerLead) {
   return {
     fullName: "",
@@ -77,7 +89,7 @@ function getInitialFormData(serviceExplorerLead) {
     budget: "",
     timeline: "",
     preferredContact: "WhatsApp",
-    projectDetails: serviceExplorerLead?.notes || "",
+    projectDetails: buildShortProjectDetails(serviceExplorerLead),
   };
 }
 
@@ -102,7 +114,10 @@ export default function Contact() {
     setFormData((current) => ({
       ...current,
       serviceNeeded: serviceExplorerLead?.service || current.serviceNeeded,
-      projectDetails: serviceExplorerLead?.notes || current.projectDetails,
+      projectDetails:
+        serviceExplorerLead && !current.projectDetails.trim()
+          ? buildShortProjectDetails(serviceExplorerLead)
+          : current.projectDetails || buildShortProjectDetails(serviceExplorerLead),
     }));
   }, [serviceExplorerLead]);
 
@@ -202,7 +217,7 @@ export default function Contact() {
       setFormStatus({
         state: "success",
         message:
-          "Your request has been submitted successfully. MKETICS will review it and respond as soon as possible.",
+          "Request submitted successfully. MKETICS received your enquiry and will review your project details. You may also WhatsApp MKETICS if the matter is urgent.",
       });
 
       setFormData((current) => ({
@@ -215,7 +230,7 @@ export default function Contact() {
         timeline: "",
         preferredContact: "WhatsApp",
         serviceNeeded: serviceExplorerLead?.service || "",
-        projectDetails: serviceExplorerLead?.notes || "",
+        projectDetails: buildShortProjectDetails(serviceExplorerLead),
       }));
     } catch (error) {
       setFormStatus({
@@ -228,10 +243,10 @@ export default function Contact() {
   }
 
   return (
-    <main className="bg-[#020B1F] text-white">
+    <main className="bg-[#020B1F] pb-12 text-white">
       <SEO {...seoPages.contact} />
 
-      <section className="relative isolate overflow-hidden px-5 py-16 lg:py-24">
+      <section className="relative isolate overflow-hidden px-5 py-12 lg:py-24">
         <div className="absolute inset-0 -z-10">
           <img
             src="/assets/mketics-bg2.webp"
@@ -248,8 +263,8 @@ export default function Contact() {
           <div className="absolute right-0 top-24 hidden h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px] lg:block" />
         </div>
 
-        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div>
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div className="order-2 lg:order-1">
             <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200 shadow-[0_0_40px_rgba(25,217,255,0.12)]">
               <Sparkles size={16} />
               Contact MKETICS
@@ -272,7 +287,7 @@ export default function Contact() {
               <ServiceExplorerLeadCard lead={serviceExplorerLead} />
             )}
 
-            <div className="mt-8 grid gap-4">
+            <div className="mt-8 grid gap-3 sm:gap-4">
               <ContactCard
                 icon={Phone}
                 title="Phone"
@@ -302,7 +317,7 @@ export default function Contact() {
               />
             </div>
 
-            <div className="mt-8 rounded-[2rem] border border-cyan-300/15 bg-white/[0.05] p-6 backdrop-blur-xl">
+            <div className="mt-8 rounded-[2rem] border border-cyan-300/15 bg-white/[0.05] p-5 lg:p-6 lg:backdrop-blur-xl">
               <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
                 Why contact MKETICS?
               </p>
@@ -321,7 +336,10 @@ export default function Contact() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-cyan-300/20 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-xl">
+          <div
+            id="request-form"
+            className="order-1 rounded-[2rem] border border-cyan-300/20 bg-white/[0.06] p-5 shadow-2xl lg:order-2 lg:p-6 lg:backdrop-blur-xl"
+          >
             <div className="mb-6">
               <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
                 Request Form
@@ -332,8 +350,8 @@ export default function Contact() {
               </h2>
 
               <p className="mt-3 text-sm leading-7 text-slate-300">
-                The more detail you provide, the easier it is for MKETICS to
-                prepare a serious response, quotation or consultation plan.
+                Send MKETICS your request directly. A clear message helps us
+                respond with the right service, scope and pricing direction.
               </p>
             </div>
 
@@ -349,8 +367,9 @@ export default function Contact() {
                       Service Explorer Data Attached
                     </p>
                     <p className="mt-2 text-sm leading-7 text-slate-300">
-                      The form below has been prefilled using the visitor’s
-                      Service Explorer recommendation.
+                      Your recommendation has been attached. The form stays
+                      clean, while MKETICS still receives the full selected
+                      answers in the email.
                     </p>
                   </div>
                 </div>
@@ -441,7 +460,7 @@ export default function Contact() {
                 <textarea
                   id="projectDetails"
                   name="projectDetails"
-                  rows="8"
+                  rows="6"
                   value={formData.projectDetails}
                   onChange={(event) =>
                     updateField("projectDetails", event.target.value)
@@ -458,8 +477,8 @@ export default function Contact() {
                     size={18}
                   />
                   <p className="text-sm leading-7 text-slate-300">
-                    Your request will be submitted to MKETICS with the selected
-                    service, budget direction, timeline and Service Explorer
+                    Your request will be submitted with your selected service,
+                    budget direction, timeline and Service Explorer
                     recommendation where applicable.
                   </p>
                 </div>
@@ -566,7 +585,7 @@ function ServiceExplorerLeadCard({ lead }) {
     : [];
 
   return (
-    <div className="mt-8 rounded-[2rem] border border-cyan-300/25 bg-cyan-300/10 p-6">
+    <div className="mt-8 rounded-[2rem] border border-cyan-300/25 bg-cyan-300/10 p-5 lg:p-6">
       <div className="flex items-start gap-4">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-[#061A33]">
           <ClipboardList size={24} />
@@ -625,8 +644,8 @@ function ServiceExplorerLeadCard({ lead }) {
 
 function ContactCard({ icon: Icon, title, text, href, external = false }) {
   const content = (
-    <div className="flex items-start gap-4 rounded-3xl border border-cyan-300/15 bg-white/[0.05] p-5 transition hover:border-cyan-300/40 hover:bg-white/[0.08]">
-      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300">
+    <div className="flex items-start gap-4 rounded-3xl border border-cyan-300/15 bg-white/[0.05] p-4 transition hover:border-cyan-300/40 hover:bg-white/[0.08] lg:p-5">
+      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300 lg:h-12 lg:w-12">
         <Icon size={22} />
       </div>
 
