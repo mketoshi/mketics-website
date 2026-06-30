@@ -172,7 +172,7 @@ export default function Contact() {
       formName: "MKETICS Website Contact Form",
       leadSource: serviceExplorerLead ? "Service Explorer" : "Contact Page",
       submittedAt: new Date().toISOString(),
-      pageUrl: window.location.href,
+      pageUrl: `${window.location.origin}${window.location.pathname}`,
 
       fullName: formData.fullName,
       phone: formData.phone,
