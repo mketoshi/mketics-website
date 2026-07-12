@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "../components/layout/Layout";
+import AnalyticsProvider from "../components/analytics/AnalyticsProvider";
 
 const Home = lazy(() => import("../pages/Home"));
 const About = lazy(() => import("../pages/About"));
@@ -24,6 +25,7 @@ const WebsiteDisclaimer = lazy(() => import("../pages/WebsiteDisclaimer"));
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+     <AnalyticsProvider />
       <Layout>
         <Suspense fallback={<PageLoader />}>
           <Routes>

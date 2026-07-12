@@ -6,6 +6,7 @@ export default function Button({
   href,
   variant = "primary",
   className = "",
+  ...props
 }) {
   const base =
     "inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950";
@@ -15,23 +16,30 @@ export default function Button({
       "bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] text-white shadow-[0_0_30px_rgba(0,174,239,0.28)] hover:scale-[1.02]",
     secondary:
       "border border-cyan-300/40 bg-white/5 text-white hover:bg-white/10",
-    light:
-      "bg-white text-[#061A33] hover:bg-[#EAF6FF]",
+    light: "bg-white text-[#061A33] hover:bg-[#EAF6FF]",
   };
 
-  const classes = `${base} ${styles[variant]} ${className}`;
+  const classes = `${base} ${styles[variant] || styles.primary} ${className}`;
 
   if (to) {
     return (
-      <Link to={to} className={classes}>
+      <Link to={to} className={classes} {...props}>
         {children}
       </Link>
     );
   }
 
+  if (href) {
+    return (
+      <a href={href} className={classes} {...props}>
+        {children}
+      </a>
+    );
+  }
+
   return (
-    <a href={href} className={classes}>
+    <button className={classes} {...props}>
       {children}
-    </a>
+    </button>
   );
 }

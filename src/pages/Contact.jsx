@@ -1,5 +1,6 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { trackEvent, trackLead } from "../utils/analytics";
 import {
   AlertCircle,
   ArrowRight,
@@ -167,6 +168,12 @@ export default function Contact() {
     const validationErrors = validateForm(form);
 
     if (validationErrors.length) {
+      trackEvent("contact_form_validation_error", {
+        method: "emailjs_contact_form",
+        service_needed: form.serviceNeeded || "not_selected",
+        has_service_explorer_data: serviceExplorerLead.exists,
+      });
+
       setStatus({
         type: "error",
         message: validationErrors[0],
@@ -207,6 +214,18 @@ export default function Contact() {
           : null,
       });
 
+      trackLead({
+        method: "emailjs_contact_form",
+        lead_source: serviceExplorerLead.exists
+          ? "service_explorer_handoff"
+          : "contact_page",
+        service_needed: form.serviceNeeded || "not_selected",
+        budget_direction: form.budget || "not_provided",
+        timeline: form.timeline || "not_provided",
+        preferred_contact: form.preferredContact || "not_provided",
+        has_service_explorer_data: serviceExplorerLead.exists,
+      });
+
       setStatus({
         type: "success",
         message:
@@ -223,6 +242,12 @@ export default function Contact() {
           : "",
       });
     } catch (error) {
+      trackEvent("contact_form_error", {
+        method: "emailjs_contact_form",
+        service_needed: form.serviceNeeded || "not_selected",
+        has_service_explorer_data: serviceExplorerLead.exists,
+      });
+
       setStatus({
         type: "error",
         message:
@@ -266,7 +291,15 @@ export default function Contact() {
             </p>
 
             <div className="mt-7 flex flex-col gap-4 sm:flex-row">
-              <Button to="#quote-form">
+              <Button
+                to="#quote-form"
+                onClick={() =>
+                  trackEvent("quote_cta_click", {
+                    location: "contact_hero",
+                    cta: "start_request",
+                  })
+                }
+              >
                 Start Request
                 <ArrowRight size={18} className="ml-2" />
               </Button>
@@ -275,6 +308,13 @@ export default function Contact() {
                 href={createWhatsAppLink(whatsappMessage)}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() =>
+                  trackEvent("whatsapp_click", {
+                    location: "contact_hero",
+                    service_needed: form.serviceNeeded || "not_selected",
+                    has_service_explorer_data: serviceExplorerLead.exists,
+                  })
+                }
                 className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-white px-6 py-3 font-black text-[#061A33] shadow-sm transition hover:border-cyan-300 hover:bg-cyan-300"
               >
                 <MessageCircle size={18} className="mr-2" />
@@ -331,6 +371,11 @@ export default function Contact() {
               title="Phone"
               text={contactDetails.phone}
               href={`tel:${contactDetails.phone.replace(/\s/g, "")}`}
+              onClick={() =>
+                trackEvent("phone_click", {
+                  location: "contact_options",
+                })
+              }
             />
 
             <ContactCard
@@ -339,6 +384,13 @@ export default function Contact() {
               text="Chat directly with MKETICS"
               href={createWhatsAppLink(whatsappMessage)}
               external
+              onClick={() =>
+                trackEvent("whatsapp_click", {
+                  location: "contact_options",
+                  service_needed: form.serviceNeeded || "not_selected",
+                  has_service_explorer_data: serviceExplorerLead.exists,
+                })
+              }
             />
 
             <ContactCard
@@ -346,6 +398,11 @@ export default function Contact() {
               title="Email"
               text={contactDetails.email}
               href={`mailto:${contactDetails.email}`}
+              onClick={() =>
+                trackEvent("email_click", {
+                  location: "contact_options",
+                })
+              }
             />
 
             <ContactCard
@@ -501,6 +558,13 @@ Example:
                 href={createWhatsAppLink(whatsappMessage)}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() =>
+                  trackEvent("whatsapp_click", {
+                    location: "contact_form",
+                    service_needed: form.serviceNeeded || "not_selected",
+                    has_service_explorer_data: serviceExplorerLead.exists,
+                  })
+                }
                 className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-6 py-3 font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
               >
                 <MessageCircle size={18} className="mr-2" />
@@ -509,6 +573,13 @@ Example:
 
               <a
                 href={emailLink}
+                onClick={() =>
+                  trackEvent("email_click", {
+                    location: "contact_form",
+                    service_needed: form.serviceNeeded || "not_selected",
+                    has_service_explorer_data: serviceExplorerLead.exists,
+                  })
+                }
                 className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
               >
                 <Mail size={18} className="mr-2" />
@@ -551,7 +622,14 @@ Example:
   );
 }
 
-function ContactCard({ icon: Icon, title, text, href, external = false }) {
+function ContactCard({
+  icon: Icon,
+  title,
+  text,
+  href,
+  external = false,
+  onClick,
+}) {
   const content = (
     <div className="flex h-full items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl">
       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
@@ -572,6 +650,7 @@ function ContactCard({ icon: Icon, title, text, href, external = false }) {
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
+      onClick={onClick}
       className="block h-full"
     >
       {content}
@@ -597,7 +676,10 @@ function ServiceExplorerLeadCard({ lead }) {
           </h3>
 
           <div className="mt-4 grid gap-3">
-            <DetailLine label="Recommended Service" value={lead.recommendedService} />
+            <DetailLine
+              label="Recommended Service"
+              value={lead.recommendedService}
+            />
             <DetailLine label="Service Pillar" value={lead.pillar} />
             <DetailLine label="Readiness Level" value={lead.readiness} />
             <DetailLine label="Supporting Services" value={lead.supporting} />
@@ -880,7 +962,8 @@ function normaliseAnswers(...values) {
       .map((item) => {
         if (typeof item === "string") return item;
 
-        const question = item?.question || item?.label || item?.key || "Question";
+        const question =
+          item?.question || item?.label || item?.key || "Question";
         const answer = item?.answer || item?.value || item?.selected || "";
 
         return `${question}: ${answer}`;
@@ -891,7 +974,9 @@ function normaliseAnswers(...values) {
 
   if (typeof found === "object") {
     return Object.entries(found)
-      .map(([key, value]) => `${toReadableLabel(key)}: ${formatAnswerValue(value)}`)
+      .map(
+        ([key, value]) => `${toReadableLabel(key)}: ${formatAnswerValue(value)}`
+      )
       .join("\n");
   }
 
