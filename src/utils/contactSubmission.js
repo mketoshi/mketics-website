@@ -1,13 +1,30 @@
 import emailjs from "@emailjs/browser";
+import { storeLeadSubmission } from "./leadSubmission";
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export async function submitContactForm(payload) {
+  const databaseResult = await storeLeadSubmission(payload);
+  const emailResult = await sendEmailNotification(payload);
+
+  return {
+    database: databaseResult,
+    email: emailResult,
+  };
+}
+
+async function sendEmailNotification(payload) {
+  console.log("EmailJS config check:", {
+    serviceId: EMAILJS_SERVICE_ID,
+    templateId: EMAILJS_TEMPLATE_ID,
+    hasPublicKey: Boolean(EMAILJS_PUBLIC_KEY),
+  });
+
   if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
     throw new Error(
-      "EmailJS is not configured. Check the website environment variables."
+      "EmailJS is not configured. Check VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID and VITE_EMAILJS_PUBLIC_KEY."
     );
   }
 
@@ -28,7 +45,9 @@ export async function submitContactForm(payload) {
     project_details: payload.projectDetails || "",
 
     recommended_service:
-      payload.serviceExplorer?.recommendedService || payload.serviceNeeded || "",
+      payload.serviceExplorer?.recommendedService ||
+      payload.serviceNeeded ||
+      "",
     service_pillar: payload.serviceExplorer?.pillar || "",
     readiness_level: payload.serviceExplorer?.readiness || "",
     supporting_services: payload.serviceExplorer?.supporting || "",
@@ -39,7 +58,7 @@ export async function submitContactForm(payload) {
   };
 
   try {
-    return await emailjs.send(
+    const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       EMAILJS_TEMPLATE_ID,
       templateParams,
@@ -47,12 +66,21 @@ export async function submitContactForm(payload) {
         publicKey: EMAILJS_PUBLIC_KEY,
       }
     );
-  } catch (error) {
-    const errorText =
-      error?.text ||
-      error?.message ||
-      "EmailJS failed to send the message. Please try WhatsApp or email.";
 
-    throw new Error(errorText);
+    console.log("EmailJS success:", response);
+    return response;
+  } catch (error) {
+    console.error("EmailJS submission failed:", {
+      status: error?.status,
+      text: error?.text,
+      message: error?.message,
+      fullError: error,
+    });
+
+    throw new Error(
+      error?.text ||
+        error?.message ||
+        "EmailJS failed. Check Service ID, Template ID, Public Key and template settings."
+    );
   }
 }
