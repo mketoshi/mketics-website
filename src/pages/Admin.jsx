@@ -4,17 +4,20 @@ import {
   ArrowRight,
   CheckCircle2,
   ClipboardList,
+  Clock,
   Eye,
   FileText,
   Loader2,
   Lock,
   LogOut,
   Mail,
+  MessageCircle,
   Phone,
   RefreshCw,
   Save,
   Search,
   ShieldCheck,
+  StickyNote,
   X,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
@@ -30,6 +33,14 @@ const leadStatusOptions = [
   "won",
   "lost",
   "archived",
+];
+
+const noteTemplates = [
+  "Client contacted on WhatsApp. Waiting for response.",
+  "Client requested a quotation. Prepare scope and pricing direction.",
+  "Follow-up needed. Client has not responded yet.",
+  "Client needs consultation before quote can be finalised.",
+  "Client details reviewed. Ready for next action.",
 ];
 
 export default function Admin() {
@@ -54,6 +65,22 @@ export default function Admin() {
     loading: false,
     error: "",
     leads: [],
+  });
+
+  const [notesState, setNotesState] = useState({
+    loading: false,
+    error: "",
+    notes: [],
+  });
+
+  const [noteForm, setNoteForm] = useState({
+    note: "",
+  });
+
+  const [noteSaveState, setNoteSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -114,12 +141,18 @@ export default function Admin() {
     const newLeads = leadsState.leads.filter(
       (lead) => lead.status === "new"
     ).length;
+    const reviewed = leadsState.leads.filter(
+      (lead) => lead.status === "reviewed"
+    ).length;
+    const contacted = leadsState.leads.filter(
+      (lead) => lead.status === "contacted"
+    ).length;
     const quoted = leadsState.leads.filter(
       (lead) => lead.status === "quoted"
     ).length;
     const won = leadsState.leads.filter((lead) => lead.status === "won").length;
 
-    return { total, newLeads, quoted, won };
+    return { total, newLeads, reviewed, contacted, quoted, won };
   }, [leadsState.leads]);
 
   useEffect(() => {
@@ -155,6 +188,15 @@ export default function Admin() {
       error: "",
       success: "",
     });
+
+    setNoteForm({ note: "" });
+    setNoteSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
+
+    fetchLeadNotes(selectedLead.id);
   }, [selectedLeadId, selectedLead?.status, selectedLead?.internal_notes]);
 
   async function loadInitialSession() {
@@ -326,6 +368,12 @@ export default function Admin() {
       leads: [],
     });
 
+    setNotesState({
+      loading: false,
+      error: "",
+      notes: [],
+    });
+
     setSelectedLeadId(null);
   }
 
@@ -382,6 +430,40 @@ export default function Admin() {
           error?.message ||
           "Unable to load leads. Check Supabase RLS and admin profile role.",
         leads: [],
+      });
+    }
+  }
+
+  async function fetchLeadNotes(leadId) {
+    if (!supabase || !leadId) return;
+
+    try {
+      setNotesState({
+        loading: true,
+        error: "",
+        notes: [],
+      });
+
+      const { data, error } = await supabase
+        .from("lead_notes")
+        .select("id, lead_id, author_id, note, created_at")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setNotesState({
+        loading: false,
+        error: "",
+        notes: data || [],
+      });
+    } catch (error) {
+      setNotesState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to load lead notes. Check Supabase lead_notes policy.",
+        notes: [],
       });
     }
   }
@@ -450,6 +532,64 @@ export default function Admin() {
     }
   }
 
+  async function handleAddLeadNote(event) {
+    event.preventDefault();
+
+    if (!selectedLead || !supabase) return;
+
+    if (!noteForm.note.trim()) {
+      setNoteSaveState({
+        loading: false,
+        error: "Write a note before saving.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setNoteSaveState({
+        loading: true,
+        error: "",
+        success: "",
+      });
+
+      const newNote = {
+        lead_id: selectedLead.id,
+        author_id: authState.profile?.id || null,
+        note: noteForm.note.trim(),
+      };
+
+      const { data, error } = await supabase
+        .from("lead_notes")
+        .insert(newNote)
+        .select("id, lead_id, author_id, note, created_at")
+        .single();
+
+      if (error) throw error;
+
+      setNotesState((current) => ({
+        ...current,
+        notes: [data, ...current.notes],
+      }));
+
+      setNoteForm({ note: "" });
+
+      setNoteSaveState({
+        loading: false,
+        error: "",
+        success: "Follow-up note saved.",
+      });
+    } catch (error) {
+      setNoteSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to save note. Check Supabase lead_notes insert policy.",
+        success: "",
+      });
+    }
+  }
+
   function handleOpenLead(lead) {
     setSelectedLeadId(lead.id);
   }
@@ -458,6 +598,12 @@ export default function Admin() {
     setSelectedLeadId(null);
 
     setDetailSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
+
+    setNoteSaveState({
       loading: false,
       error: "",
       success: "",
@@ -492,6 +638,32 @@ export default function Admin() {
         success: "",
       });
     }
+  }
+
+  function updateNoteField(event) {
+    setNoteForm({
+      note: event.target.value,
+    });
+
+    if (noteSaveState.error || noteSaveState.success) {
+      setNoteSaveState({
+        loading: false,
+        error: "",
+        success: "",
+      });
+    }
+  }
+
+  function useNoteTemplate(template) {
+    setNoteForm({
+      note: template,
+    });
+
+    setNoteSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
   }
 
   if (authState.loading) {
@@ -655,9 +827,11 @@ export default function Admin() {
 
       <section className="px-5 py-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
             <StatCard label="Total Leads" value={leadStats.total} />
-            <StatCard label="New Leads" value={leadStats.newLeads} />
+            <StatCard label="New" value={leadStats.newLeads} />
+            <StatCard label="Reviewed" value={leadStats.reviewed} />
+            <StatCard label="Contacted" value={leadStats.contacted} />
             <StatCard label="Quoted" value={leadStats.quoted} />
             <StatCard label="Won" value={leadStats.won} />
           </div>
@@ -785,9 +959,17 @@ export default function Admin() {
               lead={selectedLead}
               form={detailForm}
               saveState={detailSaveState}
+              notesState={notesState}
+              noteForm={noteForm}
+              noteSaveState={noteSaveState}
+              profile={authState.profile}
               onChange={updateDetailField}
+              onNoteChange={updateNoteField}
+              onUseTemplate={useNoteTemplate}
               onClose={handleCloseLead}
               onSave={handleSaveLeadDetails}
+              onAddNote={handleAddLeadNote}
+              onRefreshNotes={() => fetchLeadNotes(selectedLead.id)}
             />
           ) : (
             <div className="mt-6 rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
@@ -798,12 +980,12 @@ export default function Admin() {
 
                 <div>
                   <h3 className="text-lg font-black text-[#020B1F]">
-                    Lead detail ready.
+                    Lead follow-up ready.
                   </h3>
 
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    Click View on any lead to open the detail panel, update the
-                    status and add internal MKETICS notes.
+                    Click View on any lead to open follow-up actions, update the
+                    status and save note history.
                   </p>
                 </div>
               </div>
@@ -902,10 +1084,25 @@ function LeadDetailPanel({
   lead,
   form,
   saveState,
+  notesState,
+  noteForm,
+  noteSaveState,
+  profile,
   onChange,
+  onNoteChange,
+  onUseTemplate,
   onClose,
   onSave,
+  onAddNote,
+  onRefreshNotes,
 }) {
+  const whatsappLink = createClientWhatsAppLink(
+    lead.phone,
+    buildFollowUpWhatsAppMessage(lead)
+  );
+
+  const emailLink = createClientEmailLink(lead);
+
   return (
     <section className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -933,7 +1130,7 @@ function LeadDetailPanel({
         </button>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="grid gap-5">
           <DetailCard title="Client Details" icon={Mail}>
             <DetailLine label="Full Name" value={lead.full_name} />
@@ -946,11 +1143,45 @@ function LeadDetailPanel({
             />
           </DetailCard>
 
+          <DetailCard title="Follow-up Actions" icon={MessageCircle}>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <ActionLink
+                href={whatsappLink}
+                disabled={!lead.phone}
+                label="WhatsApp"
+                icon={MessageCircle}
+                external
+              />
+
+              <ActionLink
+                href={emailLink}
+                disabled={!lead.email}
+                label="Email"
+                icon={Mail}
+              />
+
+              <ActionLink
+                href={lead.phone ? `tel:${sanitizePhoneForTel(lead.phone)}` : "#"}
+                disabled={!lead.phone}
+                label="Call"
+                icon={Phone}
+              />
+            </div>
+
+            <p className="mt-3 text-xs font-semibold leading-6 text-slate-500">
+              Use these actions to follow up with the client, then save a note
+              so MKETICS has a proper communication history.
+            </p>
+          </DetailCard>
+
           <DetailCard title="Project Request" icon={ClipboardList}>
             <DetailLine label="Service Needed" value={lead.service_needed} />
             <DetailLine label="Budget" value={lead.budget} />
             <DetailLine label="Timeline" value={lead.timeline} />
-            <DetailLine label="Lead Source" value={toReadableLabel(lead.lead_source)} />
+            <DetailLine
+              label="Lead Source"
+              value={toReadableLabel(lead.lead_source)}
+            />
 
             <div className="mt-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
@@ -994,91 +1225,262 @@ function LeadDetailPanel({
               )}
             </DetailCard>
           )}
+
+          <LeadNotesHistory
+            notesState={notesState}
+            profile={profile}
+            onRefresh={onRefreshNotes}
+          />
         </div>
 
-        <form
-          onSubmit={onSave}
-          className="rounded-[1.5rem] border border-cyan-200 bg-[#F8FCFF] p-5"
-        >
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
-            <ShieldCheck size={22} />
-          </div>
-
-          <h3 className="mt-4 text-xl font-black text-[#020B1F]">
-            Manage this lead
-          </h3>
-
-          <p className="mt-2 text-sm leading-7 text-slate-600">
-            Update the status and keep internal notes for MKETICS follow-up.
-          </p>
-
-          {saveState.error && (
-            <StatusMessage type="error" message={saveState.error} />
-          )}
-
-          {saveState.success && (
-            <StatusMessage type="success" message={saveState.success} />
-          )}
-
-          <label className="mt-5 block">
-            <span className="text-sm font-black text-[#061A33]">
-              Lead Status
-            </span>
-
-            <select
-              name="status"
-              value={form.status}
-              onChange={onChange}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
-            >
-              {leadStatusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {toReadableLabel(status)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="mt-4 block">
-            <span className="text-sm font-black text-[#061A33]">
-              Internal Notes
-            </span>
-
-            <textarea
-              name="internalNotes"
-              value={form.internalNotes}
-              onChange={onChange}
-              rows={9}
-              placeholder="Example: Contacted client on WhatsApp. Waiting for content and logo."
-              className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={saveState.loading}
-            className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+        <div className="grid gap-5 content-start">
+          <form
+            onSubmit={onSave}
+            className="rounded-[1.5rem] border border-cyan-200 bg-[#F8FCFF] p-5"
           >
-            {saveState.loading ? (
-              <>
-                <Loader2 size={18} className="mr-2 animate-spin" />
-                Saving
-              </>
-            ) : (
-              <>
-                <Save size={18} className="mr-2" />
-                Save Lead Update
-              </>
-            )}
-          </button>
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+              <ShieldCheck size={22} />
+            </div>
 
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-            <DetailLine label="Current Status" value={toReadableLabel(lead.status)} />
-            <DetailLine label="Last Updated" value={formatFullDate(lead.updated_at)} />
-          </div>
-        </form>
+            <h3 className="mt-4 text-xl font-black text-[#020B1F]">
+              Manage this lead
+            </h3>
+
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              Update the status and keep internal notes for MKETICS follow-up.
+            </p>
+
+            {saveState.error && (
+              <StatusMessage type="error" message={saveState.error} />
+            )}
+
+            {saveState.success && (
+              <StatusMessage type="success" message={saveState.success} />
+            )}
+
+            <label className="mt-5 block">
+              <span className="text-sm font-black text-[#061A33]">
+                Lead Status
+              </span>
+
+              <select
+                name="status"
+                value={form.status}
+                onChange={onChange}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+              >
+                {leadStatusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {toReadableLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="mt-4 block">
+              <span className="text-sm font-black text-[#061A33]">
+                Internal Summary
+              </span>
+
+              <textarea
+                name="internalNotes"
+                value={form.internalNotes}
+                onChange={onChange}
+                rows={6}
+                placeholder="Example: Client contacted on WhatsApp. Waiting for content and logo."
+                className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={saveState.loading}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {saveState.loading ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  Saving
+                </>
+              ) : (
+                <>
+                  <Save size={18} className="mr-2" />
+                  Save Lead Update
+                </>
+              )}
+            </button>
+
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <DetailLine
+                label="Current Status"
+                value={toReadableLabel(lead.status)}
+              />
+              <DetailLine
+                label="Last Updated"
+                value={formatFullDate(lead.updated_at)}
+              />
+            </div>
+          </form>
+
+          <form
+            onSubmit={onAddNote}
+            className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+              <StickyNote size={22} />
+            </div>
+
+            <h3 className="mt-4 text-xl font-black text-[#020B1F]">
+              Add follow-up note
+            </h3>
+
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              Save each important interaction so the lead history stays clear.
+            </p>
+
+            {noteSaveState.error && (
+              <StatusMessage type="error" message={noteSaveState.error} />
+            )}
+
+            {noteSaveState.success && (
+              <StatusMessage type="success" message={noteSaveState.success} />
+            )}
+
+            <label className="mt-5 block">
+              <span className="text-sm font-black text-[#061A33]">
+                New Note
+              </span>
+
+              <textarea
+                value={noteForm.note}
+                onChange={onNoteChange}
+                rows={7}
+                placeholder="Example: Sent WhatsApp follow-up. Client will send logo and content tomorrow."
+                className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold leading-7 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+              />
+            </label>
+
+            <div className="mt-4 grid gap-2">
+              {noteTemplates.map((template) => (
+                <button
+                  type="button"
+                  key={template}
+                  onClick={() => onUseTemplate(template)}
+                  className="rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-left text-xs font-bold leading-5 text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50"
+                >
+                  {template}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={noteSaveState.loading}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#061A33] px-6 py-3 font-black text-white transition hover:bg-[#0B7CFF] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {noteSaveState.loading ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  Saving Note
+                </>
+              ) : (
+                <>
+                  <Save size={18} className="mr-2" />
+                  Save Follow-up Note
+                </>
+              )}
+            </button>
+          </form>
+        </div>
       </div>
     </section>
+  );
+}
+
+function LeadNotesHistory({ notesState, profile, onRefresh }) {
+  return (
+    <DetailCard title="Follow-up Note History" icon={Clock}>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={notesState.loading}
+          className="inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300 disabled:opacity-70"
+        >
+          {notesState.loading ? (
+            <Loader2 size={14} className="mr-2 animate-spin" />
+          ) : (
+            <RefreshCw size={14} className="mr-2" />
+          )}
+          Refresh Notes
+        </button>
+      </div>
+
+      {notesState.error && (
+        <StatusMessage type="error" message={notesState.error} />
+      )}
+
+      {notesState.loading && (
+        <div className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-5 text-center">
+          <Loader2 className="mx-auto animate-spin text-[#0B7CFF]" size={24} />
+          <p className="mt-2 text-sm font-black text-slate-500">
+            Loading notes...
+          </p>
+        </div>
+      )}
+
+      {!notesState.loading && notesState.notes.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-5">
+          <p className="text-sm font-bold leading-6 text-slate-600">
+            No follow-up notes have been saved for this lead yet.
+          </p>
+        </div>
+      )}
+
+      {!notesState.loading &&
+        notesState.notes.map((note) => (
+          <article
+            key={note.id}
+            className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4"
+          >
+            <p className="whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
+              {note.note}
+            </p>
+
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#0B7CFF]">
+              {formatFullDate(note.created_at)} •{" "}
+              {profile?.full_name || profile?.email || "MKETICS Admin"}
+            </p>
+          </article>
+        ))}
+    </DetailCard>
+  );
+}
+
+function ActionLink({ href, disabled, label, icon: Icon, external = false }) {
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-black text-slate-400"
+      >
+        <Icon size={16} className="mr-2" />
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+    >
+      <Icon size={16} className="mr-2" />
+      {label}
+    </a>
   );
 }
 
@@ -1168,6 +1570,76 @@ function Td({ children }) {
       {children}
     </td>
   );
+}
+
+function createClientWhatsAppLink(phone, message) {
+  const number = normalisePhoneForWhatsApp(phone);
+
+  if (!number) return "#";
+
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
+
+function createClientEmailLink(lead) {
+  const subject = `MKETICS Follow-up - ${lead.service_needed || "Your enquiry"}`;
+
+  const body = [
+    `Hello ${lead.full_name || ""},`,
+    "",
+    "Thank you for contacting MKETICS.",
+    "",
+    `We received your enquiry about: ${
+      lead.service_needed || "your project request"
+    }.`,
+    "",
+    "Kindly let us know if you are available for a quick follow-up so we can confirm the scope and next step.",
+    "",
+    "Regards,",
+    "MKETICS (PTY) LTD",
+  ].join("\n");
+
+  return `mailto:${lead.email}?subject=${encodeURIComponent(
+    subject
+  )}&body=${encodeURIComponent(body)}`;
+}
+
+function buildFollowUpWhatsAppMessage(lead) {
+  return [
+    `Hello ${lead.full_name || ""},`,
+    "",
+    "Thank you for contacting MKETICS.",
+    "",
+    `We received your enquiry about: ${
+      lead.service_needed || "your project request"
+    }.`,
+    "",
+    "Kindly let us know if you are available for a quick follow-up so we can confirm the scope and next step.",
+    "",
+    "Regards,",
+    "MKETICS (PTY) LTD",
+  ].join("\n");
+}
+
+function normalisePhoneForWhatsApp(phone) {
+  if (!phone) return "";
+
+  const digits = String(phone).replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  if (digits.startsWith("27")) return digits;
+
+  if (digits.startsWith("0")) {
+    return `27${digits.slice(1)}`;
+  }
+
+  return digits;
+}
+
+function sanitizePhoneForTel(phone) {
+  if (!phone) return "";
+
+  return String(phone).replace(/\s/g, "");
 }
 
 function formatDate(value) {
