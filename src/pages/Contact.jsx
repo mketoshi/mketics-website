@@ -1,657 +1,566 @@
+import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
   ClipboardList,
-  Clock3,
   Loader2,
   Mail,
   MapPin,
   MessageCircle,
   Phone,
+  SearchCheck,
   Send,
   ShieldCheck,
   Sparkles,
+  WalletCards,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
+import Button from "../components/ui/Button";
 import QuoteFlow from "../components/sections/QuoteFlow";
 import { siteConfig } from "../data/site";
 import { seoPages } from "../data/seo";
 import { serviceExplorerItems } from "../data/serviceExplorer";
-import { createWhatsAppLink, whatsappMessages } from "../utils/whatsapp";
+import { createWhatsAppLink } from "../utils/whatsapp";
 import { getServiceExplorerLeadFromSearch } from "../utils/serviceExplorerLead";
 import { submitContactForm } from "../utils/contactSubmission";
 
-const serviceOptions = [
-  "General Consultation",
-  ...serviceExplorerItems.map((service) => service.title),
-];
+const contactDetails = {
+  phone: siteConfig.phone || "+27 72 286 4367",
+  email: siteConfig.email || "services@mketics.co.za",
+  whatsapp: siteConfig.whatsapp || "https://wa.me/27722864367",
+  serviceArea: "South Africa • Remote and project-based support",
+};
+
+const initialForm = {
+  fullName: "",
+  email: "",
+  phone: "",
+  organisation: "",
+  serviceNeeded: "",
+  budget: "",
+  timeline: "",
+  preferredContact: "WhatsApp",
+  projectDetails: "",
+};
 
 const budgetOptions = [
+  "I am still planning",
   "Below R2,500",
   "R2,500 - R5,000",
-  "R5,000 - R15,000",
-  "R15,000 - R45,000",
-  "R45,000+",
-  "Not sure yet",
+  "R5,000 - R10,000",
+  "R10,000 - R25,000",
+  "R25,000+",
+  "Custom system / larger project budget",
 ];
 
 const timelineOptions = [
-  "Urgent",
-  "This week",
-  "This month",
-  "1 - 3 months",
-  "Still planning",
+  "I am still planning",
+  "As soon as possible",
+  "Within 1 week",
+  "Within 2 - 4 weeks",
+  "Within 1 - 3 months",
+  "Flexible timeline",
 ];
 
-const responseSteps = [
-  {
-    title: "1. Review",
-    text: "MKETICS reviews your request based on service type, urgency, budget and project details.",
-  },
-  {
-    title: "2. Clarify",
-    text: "If needed, we ask follow-up questions so the scope is clear before pricing.",
-  },
-  {
-    title: "3. Quote",
-    text: "You receive guidance, pricing direction or a formal quotation depending on the request.",
-  },
+const contactMethodOptions = ["WhatsApp", "Phone call", "Email"];
+
+const fallbackServiceOptions = [
+  "Website / Online Presence",
+  "Online Store / E-commerce",
+  "Custom System / Portal",
+  "IT Support / Network Support",
+  "Business Email / Google Workspace",
+  "Digital Marketing",
+  "Business Registration / Readiness",
+  "Maintenance / Monthly Support",
+  "Not sure yet",
 ];
 
-const trustPoints = [
-  "Professional quote flow",
-  "Clear project scoping",
-  "Business-ready communication",
-  "Support for businesses, schools and organisations",
+const nextSteps = [
+  {
+    title: "Review",
+    text: "MKETICS reviews your request, service direction and project details.",
+    icon: SearchCheck,
+  },
+  {
+    title: "Clarify",
+    text: "We may ask follow-up questions to confirm scope, budget and timeline.",
+    icon: ClipboardList,
+  },
+  {
+    title: "Quote",
+    text: "You receive pricing direction or a formal quotation based on the confirmed scope.",
+    icon: WalletCards,
+  },
+  {
+    title: "Start",
+    text: "Once approved, the work moves into setup, design, development or support.",
+    icon: ShieldCheck,
+  },
 ];
-
-function buildShortProjectDetails(serviceExplorerLead) {
-  if (!serviceExplorerLead) return "";
-
-  return `I completed the MKETICS Service Explorer.
-
-Recommended Service: ${serviceExplorerLead.service}
-Service Pillar: ${serviceExplorerLead.pillar}
-Readiness Level: ${serviceExplorerLead.readiness}
-
-Please help me confirm the scope, pricing direction and next step.`;
-}
-
-function getInitialFormData(serviceExplorerLead) {
-  return {
-    fullName: "",
-    phone: "",
-    email: "",
-    organisation: "",
-    serviceNeeded: serviceExplorerLead?.service || "",
-    budget: "",
-    timeline: "",
-    preferredContact: "WhatsApp",
-    projectDetails: buildShortProjectDetails(serviceExplorerLead),
-  };
-}
 
 export default function Contact() {
   const [searchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
 
-  const serviceExplorerLead = useMemo(
-    () => getServiceExplorerLeadFromSearch(searchParams),
-    [searchParams]
-  );
+  const serviceExplorerLead = useMemo(() => {
+    const rawLead = getServiceExplorerLeadFromSearch(searchParams);
+    return normaliseServiceExplorerLead(rawLead);
+  }, [searchKey, searchParams]);
 
-  const [formData, setFormData] = useState(() =>
-    getInitialFormData(serviceExplorerLead)
-  );
+  const serviceOptions = useMemo(() => {
+    const dynamicOptions = serviceExplorerItems
+      .map((item) => item?.title || item?.name || item?.label || "")
+      .filter(Boolean);
 
-  const [formStatus, setFormStatus] = useState({
-    state: "idle",
+    return [...new Set([...dynamicOptions, ...fallbackServiceOptions])];
+  }, []);
+
+  const [form, setForm] = useState(initialForm);
+  const [status, setStatus] = useState({
+    type: "idle",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setFormData((current) => ({
-      ...current,
-      serviceNeeded: serviceExplorerLead?.service || current.serviceNeeded,
-      projectDetails:
-        serviceExplorerLead && !current.projectDetails.trim()
-          ? buildShortProjectDetails(serviceExplorerLead)
-          : current.projectDetails || buildShortProjectDetails(serviceExplorerLead),
-    }));
-  }, [serviceExplorerLead]);
+    if (!serviceExplorerLead.exists) return;
 
-  const whatsappLink = createWhatsAppLink(
-    serviceExplorerLead
-      ? buildContactWhatsAppMessage(serviceExplorerLead)
-      : whatsappMessages.general
+    setForm((current) => ({
+      ...current,
+      serviceNeeded:
+        current.serviceNeeded || serviceExplorerLead.recommendedService,
+      projectDetails:
+        current.projectDetails ||
+        buildPrefillProjectDetails(serviceExplorerLead),
+    }));
+  }, [searchKey, serviceExplorerLead]);
+
+  const whatsappMessage = useMemo(
+    () => buildContactWhatsAppMessage(form, serviceExplorerLead),
+    [form, serviceExplorerLead]
   );
 
-  const emailLink = buildEmailLink(serviceExplorerLead);
+  const emailLink = useMemo(
+    () => buildEmailLink(form, serviceExplorerLead),
+    [form, serviceExplorerLead]
+  );
 
-  function updateField(field, value) {
-    setFormData((current) => ({
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setForm((current) => ({
       ...current,
-      [field]: value,
+      [name]: value,
     }));
 
-    if (formStatus.state !== "idle") {
-      setFormStatus({
-        state: "idle",
-        message: "",
-      });
+    if (status.type !== "idle") {
+      setStatus({ type: "idle", message: "" });
     }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!formData.fullName.trim()) {
-      setFormStatus({
-        state: "error",
-        message: "Please enter your full name before submitting.",
+    const validationErrors = validateForm(form);
+
+    if (validationErrors.length) {
+      setStatus({
+        type: "error",
+        message: validationErrors[0],
       });
       return;
     }
 
-    if (!formData.phone.trim() && !formData.email.trim()) {
-      setFormStatus({
-        state: "error",
-        message: "Please enter at least a phone number or email address.",
-      });
-      return;
-    }
-
-    if (!formData.serviceNeeded.trim()) {
-      setFormStatus({
-        state: "error",
-        message: "Please select the service you need.",
-      });
-      return;
-    }
-
-    if (!formData.projectDetails.trim()) {
-      setFormStatus({
-        state: "error",
-        message: "Please describe what you need MKETICS to assist with.",
-      });
-      return;
-    }
-
-    setFormStatus({
-      state: "loading",
-      message: "Submitting your request...",
-    });
-
-    const payload = {
-      formName: "MKETICS Website Contact Form",
-      leadSource: serviceExplorerLead ? "Service Explorer" : "Contact Page",
-      submittedAt: new Date().toISOString(),
-      pageUrl: `${window.location.origin}${window.location.pathname}`,
-
-      fullName: formData.fullName,
-      phone: formData.phone,
-      email: formData.email,
-      organisation: formData.organisation,
-      serviceNeeded: formData.serviceNeeded,
-      budget: formData.budget,
-      timeline: formData.timeline,
-      preferredContact: formData.preferredContact,
-      projectDetails: formData.projectDetails,
-
-      serviceExplorer: serviceExplorerLead
-        ? {
-            recommendedService: serviceExplorerLead.service,
-            pillar: serviceExplorerLead.pillar,
-            readiness: serviceExplorerLead.readiness,
-            supporting: serviceExplorerLead.supporting,
-            answers: serviceExplorerLead.answers,
-            notes: serviceExplorerLead.notes,
-          }
-        : null,
-    };
+    setIsSubmitting(true);
+    setStatus({ type: "idle", message: "" });
 
     try {
-      await submitContactForm(payload);
+      await submitContactForm({
+        formName: "MKETICS Website Contact Form",
+        leadSource: serviceExplorerLead.exists
+          ? "Service Explorer Handoff"
+          : "Contact Page",
+        submittedAt: new Date().toISOString(),
+        pageUrl: window.location.href,
 
-      setFormStatus({
-        state: "success",
-        message:
-          "Request submitted successfully. MKETICS received your enquiry and will review your project details. You may also WhatsApp MKETICS if the matter is urgent.",
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        organisation: form.organisation,
+        serviceNeeded: form.serviceNeeded,
+        budget: form.budget,
+        timeline: form.timeline,
+        preferredContact: form.preferredContact,
+        projectDetails: form.projectDetails,
+
+        serviceExplorer: serviceExplorerLead.exists
+          ? {
+              recommendedService: serviceExplorerLead.recommendedService,
+              pillar: serviceExplorerLead.pillar,
+              readiness: serviceExplorerLead.readiness,
+              supporting: serviceExplorerLead.supporting,
+              answers: serviceExplorerLead.answers,
+            }
+          : null,
       });
 
-      setFormData((current) => ({
-        ...current,
-        fullName: "",
-        phone: "",
-        email: "",
-        organisation: "",
-        budget: "",
-        timeline: "",
-        preferredContact: "WhatsApp",
-        serviceNeeded: serviceExplorerLead?.service || "",
-        projectDetails: buildShortProjectDetails(serviceExplorerLead),
-      }));
+      setStatus({
+        type: "success",
+        message:
+          "Your request has been submitted successfully. MKETICS will review it and respond as soon as possible.",
+      });
+
+      setForm({
+        ...initialForm,
+        serviceNeeded: serviceExplorerLead.exists
+          ? serviceExplorerLead.recommendedService
+          : "",
+        projectDetails: serviceExplorerLead.exists
+          ? buildPrefillProjectDetails(serviceExplorerLead)
+          : "",
+      });
     } catch (error) {
-      setFormStatus({
-        state: "error",
+      setStatus({
+        type: "error",
         message:
-          error.message ||
-          "Something went wrong while submitting your request. Please try WhatsApp or email.",
+          error?.message ||
+          "Your request could not be submitted. Please try again or contact MKETICS on WhatsApp.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
-    <main className="bg-[#020B1F] pb-12 text-white">
+    <main className="bg-white text-[#061A33]">
       <SEO {...seoPages.contact} />
 
-      <section className="relative isolate overflow-hidden px-5 py-12 lg:py-24">
+      <section className="relative isolate overflow-hidden bg-[#EAF6FF] px-5 py-12 lg:py-16">
         <div className="absolute inset-0 -z-10">
-          <img
-            src="/assets/mketics-bg2.webp"
-            alt=""
-            aria-hidden="true"
-            loading="eager"
-            decoding="async"
-            className="hidden h-full w-full object-cover object-center opacity-35 lg:block"
-          />
-          <div className="absolute inset-0 bg-[#020B1F]/78" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/88 to-[#020B1F]/45" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 hidden h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px] lg:block" />
-          <div className="absolute right-0 top-24 hidden h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px] lg:block" />
+          <div className="absolute left-[-12rem] top-[-12rem] h-[34rem] w-[34rem] rounded-full bg-cyan-300/40 blur-[140px]" />
+          <div className="absolute right-[-14rem] top-10 h-[36rem] w-[36rem] rounded-full bg-blue-500/20 blur-[150px]" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/80 to-transparent" />
         </div>
 
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div className="order-2 lg:order-1">
-            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200 shadow-[0_0_40px_rgba(25,217,255,0.12)]">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-[#0B7CFF] shadow-sm">
               <Sparkles size={16} />
               Contact MKETICS
             </div>
 
-            <h1 className="mt-7 max-w-4xl text-4xl font-black leading-[1.06] tracking-tight sm:text-5xl lg:text-6xl">
-              Tell us what you want to build, fix or{" "}
-              <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
-                improve.
+            <h1 className="mt-6 max-w-5xl text-4xl font-black leading-[1.05] tracking-tight text-[#020B1F] sm:text-5xl lg:text-6xl">
+              Tell MKETICS what you want to{" "}
+              <span className="bg-gradient-to-r from-[#0B7CFF] via-[#00AEEF] to-[#061A33] bg-clip-text text-transparent">
+                build, fix or improve.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">
-              Share your business need, project idea or technical challenge.
-              MKETICS will help you choose the right service path, scope and
-              next steps.
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-700">
+              Send your request with the service direction, budget, timeline and
+              project details. MKETICS will review your enquiry and guide the
+              next step.
             </p>
 
-            {serviceExplorerLead && (
-              <ServiceExplorerLeadCard lead={serviceExplorerLead} />
-            )}
+            <div className="mt-7 flex flex-col gap-4 sm:flex-row">
+              <Button to="#quote-form">
+                Start Request
+                <ArrowRight size={18} className="ml-2" />
+              </Button>
 
-            <div className="mt-8 grid gap-3 sm:gap-4">
-              <ContactCard
-                icon={Phone}
-                title="Phone"
-                text={siteConfig.phone}
-                href={`tel:${siteConfig.phone.replace(/\s/g, "")}`}
-              />
-
-              <ContactCard
-                icon={MessageCircle}
-                title="WhatsApp"
-                text="Chat directly with MKETICS"
-                href={whatsappLink}
-                external
-              />
-
-              <ContactCard
-                icon={Mail}
-                title="Email"
-                text={siteConfig.email}
-                href={`mailto:${siteConfig.email}`}
-              />
-
-              <ContactCard
-                icon={MapPin}
-                title="Service Area"
-                text="South Africa • Remote and project-based support"
-              />
-            </div>
-
-            <div className="mt-8 rounded-[2rem] border border-cyan-300/15 bg-white/[0.05] p-5 lg:p-6 lg:backdrop-blur-xl">
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
-                Why contact MKETICS?
-              </p>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {trustPoints.map((point) => (
-                  <div key={point} className="flex items-start gap-3">
-                    <CheckCircle2
-                      className="mt-0.5 shrink-0 text-cyan-300"
-                      size={18}
-                    />
-                    <p className="text-sm leading-6 text-slate-300">{point}</p>
-                  </div>
-                ))}
-              </div>
+              <a
+                href={createWhatsAppLink(whatsappMessage)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-white px-6 py-3 font-black text-[#061A33] shadow-sm transition hover:border-cyan-300 hover:bg-cyan-300"
+              >
+                <MessageCircle size={18} className="mr-2" />
+                WhatsApp
+              </a>
             </div>
           </div>
 
-          <div
-            id="request-form"
-            className="order-1 rounded-[2rem] border border-cyan-300/20 bg-white/[0.06] p-5 shadow-2xl lg:order-2 lg:p-6 lg:backdrop-blur-xl"
-          >
-            <div className="mb-6">
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
-                Request Form
+          <div className="hidden rounded-[2.5rem] border border-white bg-white p-5 shadow-2xl lg:block">
+            <div className="rounded-[2rem] bg-[#020B1F] p-6 text-white">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">
+                Contact Flow
               </p>
 
-              <h2 className="mt-3 text-3xl font-black text-white">
-                Start with clear project details.
+              <h2 className="mt-3 text-3xl font-black">
+                Clear request. Better response.
               </h2>
 
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Send MKETICS your request directly. A clear message helps us
-                respond with the right service, scope and pricing direction.
+              <p className="mt-4 text-sm leading-7 text-slate-300">
+                The more clearly you explain the problem, goal and timeline, the
+                easier it is for MKETICS to recommend the right service or quote.
               </p>
-            </div>
 
-            {serviceExplorerLead && (
-              <div className="mb-6 rounded-[1.5rem] border border-cyan-300/25 bg-cyan-300/10 p-5">
-                <div className="flex items-start gap-3">
-                  <ClipboardList
-                    className="mt-0.5 shrink-0 text-cyan-300"
-                    size={22}
-                  />
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
-                      Service Explorer Data Attached
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-300">
-                      Your recommendation has been attached. The form stays
-                      clean, while MKETICS still receives the full selected
-                      answers in the email.
-                    </p>
-                  </div>
-                </div>
+              <div className="mt-6 grid gap-3">
+                <MiniCheck text="Share your service direction" />
+                <MiniCheck text="Add budget and timeline" />
+                <MiniCheck text="Receive next-step guidance" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-12 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Contact Options
+            </p>
+
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Choose how to reach MKETICS.
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              Use the form for a structured request, or contact MKETICS directly
+              through WhatsApp, phone or email.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <ContactCard
+              icon={Phone}
+              title="Phone"
+              text={contactDetails.phone}
+              href={`tel:${contactDetails.phone.replace(/\s/g, "")}`}
+            />
+
+            <ContactCard
+              icon={MessageCircle}
+              title="WhatsApp"
+              text="Chat directly with MKETICS"
+              href={createWhatsAppLink(whatsappMessage)}
+              external
+            />
+
+            <ContactCard
+              icon={Mail}
+              title="Email"
+              text={contactDetails.email}
+              href={`mailto:${contactDetails.email}`}
+            />
+
+            <ContactCard
+              icon={MapPin}
+              title="Service Area"
+              text={contactDetails.serviceArea}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section id="quote-form" className="bg-[#EAF6FF] px-5 py-12 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Request Form
+            </p>
+
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Send a clear project request.
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              Use this form for websites, systems, IT support, digital business
+              solutions, maintenance or guidance.
+            </p>
+
+            {serviceExplorerLead.exists && (
+              <div className="mt-7">
+                <ServiceExplorerLeadCard lead={serviceExplorerLead} />
               </div>
             )}
+          </div>
 
-            <form className="grid gap-4" onSubmit={handleSubmit}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormInput
-                  label="Full Name"
-                  name="fullName"
-                  placeholder="Your name"
-                  autoComplete="name"
-                  value={formData.fullName}
-                  onChange={(value) => updateField("fullName", value)}
-                />
-                <FormInput
-                  label="Phone / WhatsApp"
-                  name="phone"
-                  placeholder="+27..."
-                  type="tel"
-                  autoComplete="tel"
-                  value={formData.phone}
-                  onChange={(value) => updateField("phone", value)}
-                />
-              </div>
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:p-8"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormInput
+                label="Full Name"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                placeholder="Your name and surname"
+                required
+              />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormInput
-                  label="Email Address"
-                  name="email"
-                  placeholder="you@example.com"
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
-                  onChange={(value) => updateField("email", value)}
-                />
-                <FormInput
-                  label="Business / Organisation"
-                  name="organisation"
-                  placeholder="Business name"
-                  autoComplete="organization"
-                  value={formData.organisation}
-                  onChange={(value) => updateField("organisation", value)}
-                />
-              </div>
+              <FormInput
+                label="Business / Organisation"
+                name="organisation"
+                value={form.organisation}
+                onChange={handleChange}
+                placeholder="Business name, school or organisation"
+              />
+
+              <FormInput
+                label="Email Address"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+              />
+
+              <FormInput
+                label="Phone / WhatsApp"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="+27 72 286 4367"
+              />
 
               <FormSelect
                 label="Service Needed"
                 name="serviceNeeded"
+                value={form.serviceNeeded}
+                onChange={handleChange}
                 options={serviceOptions}
-                value={formData.serviceNeeded}
-                onChange={(value) => updateField("serviceNeeded", value)}
+                placeholder="Choose a service"
+                required
               />
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormSelect
-                  label="Estimated Budget"
-                  name="budget"
-                  options={budgetOptions}
-                  value={formData.budget}
-                  onChange={(value) => updateField("budget", value)}
-                />
-                <FormSelect
-                  label="Timeline"
-                  name="timeline"
-                  options={timelineOptions}
-                  value={formData.timeline}
-                  onChange={(value) => updateField("timeline", value)}
-                />
-              </div>
 
               <FormSelect
-                label="Preferred Contact Method"
-                name="preferredContact"
-                options={["WhatsApp", "Phone Call", "Email"]}
-                value={formData.preferredContact}
-                onChange={(value) => updateField("preferredContact", value)}
+                label="Budget Direction"
+                name="budget"
+                value={form.budget}
+                onChange={handleChange}
+                options={budgetOptions}
+                placeholder="Choose budget range"
               />
 
-              <div>
-                <label
-                  htmlFor="projectDetails"
-                  className="text-sm font-bold text-white"
-                >
-                  Project Details
-                </label>
-                <textarea
-                  id="projectDetails"
-                  name="projectDetails"
-                  rows="6"
-                  value={formData.projectDetails}
-                  onChange={(event) =>
-                    updateField("projectDetails", event.target.value)
-                  }
-                  placeholder="Tell us what you need, what problem you want to solve, who will use it, and what outcome you expect..."
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
-                />
-              </div>
+              <FormSelect
+                label="Timeline"
+                name="timeline"
+                value={form.timeline}
+                onChange={handleChange}
+                options={timelineOptions}
+                placeholder="Choose timeline"
+              />
 
-              <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/10 p-4">
-                <div className="flex gap-3">
-                  <ShieldCheck
-                    className="mt-1 shrink-0 text-cyan-300"
-                    size={18}
-                  />
-                  <p className="text-sm leading-7 text-slate-300">
-                    Your request will be submitted with your selected service,
-                    budget direction, timeline and Service Explorer
-                    recommendation where applicable.
-                  </p>
-                </div>
-              </div>
+              <FormSelect
+                label="Preferred Contact"
+                name="preferredContact"
+                value={form.preferredContact}
+                onChange={handleChange}
+                options={contactMethodOptions}
+                placeholder="Choose contact method"
+              />
+            </div>
 
-              {formStatus.state !== "idle" && (
-                <FormStatusMessage status={formStatus} />
-              )}
+            <div className="mt-4">
+              <FormTextArea
+                label="Project Details"
+                name="projectDetails"
+                value={form.projectDetails}
+                onChange={handleChange}
+                placeholder={`Tell MKETICS what you need help with.
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="submit"
-                  disabled={formStatus.state === "loading"}
-                  className="inline-flex items-center justify-center rounded-full bg-cyan-300 px-6 py-3 font-black text-[#061A33] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {formStatus.state === "loading" ? (
-                    <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Request
-                      <Send size={18} className="ml-2" />
-                    </>
-                  )}
-                </button>
+Example:
+- I need a website for my business
+- I want clients to contact me on WhatsApp
+- I need business email setup
+- My budget direction is around R5,000
+- I want to start within 2 weeks`}
+                required
+              />
+            </div>
 
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-300 bg-white px-6 py-3 font-black text-[#061A33] transition hover:bg-cyan-300"
-                >
-                  <MessageCircle size={18} />
-                  WhatsApp MKETICS
-                </a>
-              </div>
+            <FormStatusMessage status={status} />
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 sm:col-span-1"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    Sending
+                  </>
+                ) : (
+                  <>
+                    Submit Request
+                    <Send size={18} className="ml-2" />
+                  </>
+                )}
+              </button>
+
+              <a
+                href={createWhatsAppLink(whatsappMessage)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-6 py-3 font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+              >
+                <MessageCircle size={18} className="mr-2" />
+                WhatsApp
+              </a>
 
               <a
                 href={emailLink}
-                className="inline-flex items-center justify-center rounded-full border border-white/10 px-6 py-3 text-sm font-black text-slate-300 transition hover:border-cyan-300/60 hover:text-white"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
               >
-                <Mail size={16} className="mr-2" />
+                <Mail size={18} className="mr-2" />
                 Email Instead
               </a>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#EAF6FF] px-5 py-16 text-[#061A33] lg:py-24">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
-              What Happens Next
-            </p>
-
-            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-              A clear response process for serious inquiries.
-            </h2>
-
-            <p className="mt-5 text-lg leading-8 text-slate-700">
-              MKETICS reviews your request, clarifies missing details and then
-              recommends the right next step.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {responseSteps.map((step) => (
-              <div
-                key={step.title}
-                className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl"
-              >
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
-                  <Clock3 size={22} />
-                </div>
-
-                <h3 className="mt-5 text-xl font-black text-[#020B1F]">
-                  {step.title}
-                </h3>
-
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  {step.text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <QuoteFlow
-        variant="light"
-        title="A professional quote starts with clear information."
-        description="The better the request, the faster MKETICS can guide you with the right service, price direction and next step."
-      />
-    </main>
-  );
-}
-
-function ServiceExplorerLeadCard({ lead }) {
-  const supportingServices = lead.supporting
-    ? lead.supporting.split(",").map((item) => item.trim()).filter(Boolean)
-    : [];
-
-  return (
-    <div className="mt-8 rounded-[2rem] border border-cyan-300/25 bg-cyan-300/10 p-5 lg:p-6">
-      <div className="flex items-start gap-4">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-[#061A33]">
-          <ClipboardList size={24} />
-        </div>
-
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
-            Service Explorer Recommendation
-          </p>
-
-          <h2 className="mt-2 text-2xl font-black text-white">
-            {lead.service}
-          </h2>
-
-          <p className="mt-3 text-sm leading-7 text-slate-300">
-            <span className="font-bold text-white">Service Pillar:</span>{" "}
-            {lead.pillar}
-          </p>
-
-          <p className="mt-1 text-sm leading-7 text-slate-300">
-            <span className="font-bold text-white">Readiness Level:</span>{" "}
-            {lead.readiness}
-          </p>
-
-          {supportingServices.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm font-bold text-white">
-                Supporting Services:
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {supportingServices.map((service) => (
-                  <span
-                    key={service}
-                    className="rounded-full border border-cyan-300/25 bg-white/[0.05] px-3 py-1 text-xs font-bold text-cyan-100"
-                  >
-                    {service}
-                  </span>
-                ))}
-              </div>
             </div>
-          )}
-
-          <details className="mt-5 rounded-2xl border border-white/10 bg-[#020B1F]/35 p-4">
-            <summary className="cursor-pointer text-sm font-black text-cyan-200">
-              View selected answers
-            </summary>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">
-              {lead.answers || "No answer summary available."}
-            </p>
-          </details>
+          </form>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section className="px-5 py-12 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+                What Happens Next
+              </p>
+
+              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+                A simple response process.
+              </h2>
+
+              <p className="mt-5 text-lg leading-8 text-slate-700">
+                MKETICS reviews the request and responds with the most practical
+                next step based on the project type and readiness.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {nextSteps.map((step) => (
+                <NextStepCard key={step.title} step={step} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <QuoteFlow />
+    </main>
   );
 }
 
 function ContactCard({ icon: Icon, title, text, href, external = false }) {
   const content = (
-    <div className="flex items-start gap-4 rounded-3xl border border-cyan-300/15 bg-white/[0.05] p-4 transition hover:border-cyan-300/40 hover:bg-white/[0.08] lg:p-5">
-      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300 lg:h-12 lg:w-12">
+    <div className="flex h-full items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl">
+      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
         <Icon size={22} />
       </div>
 
       <div>
-        <h3 className="font-black text-white">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
+        <h3 className="text-lg font-black text-[#020B1F]">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p>
       </div>
     </div>
   );
@@ -663,122 +572,415 @@ function ContactCard({ icon: Icon, title, text, href, external = false }) {
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
-      aria-label={`${title}: ${text}`}
+      className="block h-full"
     >
       {content}
     </a>
   );
 }
 
-function FormInput({
-  label,
-  placeholder,
-  type = "text",
-  name,
-  autoComplete = "off",
-  value,
-  onChange,
-}) {
+function ServiceExplorerLeadCard({ lead }) {
   return (
-    <div>
-      <label htmlFor={name} className="text-sm font-bold text-white">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
-      />
+    <div className="rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <SearchCheck size={22} />
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0B7CFF]">
+            Service Explorer Handoff
+          </p>
+
+          <h3 className="mt-2 text-xl font-black text-[#020B1F]">
+            Recommended service included.
+          </h3>
+
+          <div className="mt-4 grid gap-3">
+            <DetailLine label="Recommended Service" value={lead.recommendedService} />
+            <DetailLine label="Service Pillar" value={lead.pillar} />
+            <DetailLine label="Readiness Level" value={lead.readiness} />
+            <DetailLine label="Supporting Services" value={lead.supporting} />
+          </div>
+
+          {lead.answers && (
+            <details className="mt-5 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+              <summary className="cursor-pointer text-sm font-black text-[#061A33]">
+                View selected answers
+              </summary>
+
+              <pre className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
+                {lead.answers}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function FormSelect({ label, options, name, value, onChange }) {
+function DetailLine({ label, value }) {
+  if (!value) return null;
+
   return (
     <div>
-      <label htmlFor={name} className="text-sm font-bold text-white">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
         {label}
-      </label>
-      <select
-        id={name}
+      </p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function FormInput({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required = false,
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-black text-[#061A33]">
+        {label}
+        {required && <span className="text-[#0B7CFF]"> *</span>}
+      </span>
+
+      <input
         name={name}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-[#101827] px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
+        onChange={onChange}
+        type={type}
+        placeholder={placeholder}
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#061A33] outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+      />
+    </label>
+  );
+}
+
+function FormSelect({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  placeholder,
+  required = false,
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-black text-[#061A33]">
+        {label}
+        {required && <span className="text-[#0B7CFF]"> *</span>}
+      </span>
+
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#061A33] outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
       >
-        <option value="">Select an option</option>
+        <option value="">{placeholder}</option>
+
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
         ))}
       </select>
-    </div>
+    </label>
+  );
+}
+
+function FormTextArea({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-black text-[#061A33]">
+        {label}
+        {required && <span className="text-[#0B7CFF]"> *</span>}
+      </span>
+
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows={8}
+        placeholder={placeholder}
+        className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold leading-7 text-[#061A33] outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+      />
+    </label>
   );
 }
 
 function FormStatusMessage({ status }) {
-  const isSuccess = status.state === "success";
+  if (status.type === "idle" || !status.message) return null;
+
+  const isSuccess = status.type === "success";
 
   return (
     <div
-      className={`rounded-2xl border p-4 ${
+      className={`mt-5 flex items-start gap-3 rounded-2xl border p-4 ${
         isSuccess
-          ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100"
-          : "border-red-300/40 bg-red-400/10 text-red-100"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+          : "border-red-200 bg-red-50 text-red-900"
       }`}
     >
-      <div className="flex gap-3">
-        {isSuccess ? (
-          <CheckCircle2 className="mt-0.5 shrink-0" size={20} />
-        ) : (
-          <AlertCircle className="mt-0.5 shrink-0" size={20} />
-        )}
-        <p className="text-sm font-semibold leading-7">{status.message}</p>
-      </div>
+      {isSuccess ? (
+        <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+      ) : (
+        <AlertCircle size={20} className="mt-0.5 shrink-0" />
+      )}
+
+      <p className="text-sm font-bold leading-6">{status.message}</p>
     </div>
   );
 }
 
-function buildContactWhatsAppMessage(lead) {
-  return `Hello MKETICS, I completed the Service Explorer and would like to request a quote.
+function NextStepCard({ step }) {
+  const Icon = step.icon;
 
-Recommended Service: ${lead.service}
-Service Pillar: ${lead.pillar}
-Readiness Level: ${lead.readiness}
-Supporting Services: ${lead.supporting || "Not applicable"}
+  return (
+    <article className="rounded-[2rem] border border-slate-200 bg-[#F8FCFF] p-6 shadow-sm">
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+        <Icon size={22} />
+      </div>
 
-Selected Answers:
-${lead.answers || "Not available"}
+      <h3 className="mt-5 text-xl font-black text-[#020B1F]">{step.title}</h3>
 
-Please assist me with the next step, scope and pricing direction.`;
+      <p className="mt-3 text-sm leading-7 text-slate-600">{step.text}</p>
+    </article>
+  );
 }
 
-function buildEmailLink(lead) {
-  const subject = lead
-    ? `MKETICS Quote Request - ${lead.service}`
-    : "MKETICS Quote Request";
+function MiniCheck({ text }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+      <CheckCircle2 className="mt-0.5 shrink-0 text-cyan-300" size={18} />
+      <p className="text-sm font-semibold leading-6 text-slate-300">{text}</p>
+    </div>
+  );
+}
 
-  const body = lead
-    ? `Hello MKETICS,
+function validateForm(form) {
+  if (!form.fullName.trim()) {
+    return ["Please enter your full name."];
+  }
 
-I completed the Service Explorer and would like to request a quote.
+  if (!form.email.trim() && !form.phone.trim()) {
+    return ["Please enter either your email address or phone number."];
+  }
 
-${lead.notes}
+  if (!form.serviceNeeded.trim()) {
+    return ["Please choose the service you need."];
+  }
 
-Please assist me with the next step, scope and pricing direction.`
-    : `Hello MKETICS,
+  if (!form.projectDetails.trim()) {
+    return ["Please describe what you need help with."];
+  }
 
-I would like to request a quote or consultation.
+  return [];
+}
 
-Please assist me with the next step.`;
+function normaliseServiceExplorerLead(rawLead) {
+  const recommendedService = firstText(
+    rawLead?.recommendedService,
+    rawLead?.service,
+    rawLead?.serviceNeeded,
+    rawLead?.title
+  );
 
-  return `mailto:${siteConfig.email}?subject=${encodeURIComponent(
+  const pillar = firstText(
+    rawLead?.pillar,
+    rawLead?.servicePillar,
+    rawLead?.service_pillar
+  );
+
+  const readiness = firstText(
+    rawLead?.readiness,
+    rawLead?.readinessLevel,
+    rawLead?.readiness_level
+  );
+
+  const supporting = normaliseList(
+    rawLead?.supporting,
+    rawLead?.supportingServices,
+    rawLead?.supporting_services
+  );
+
+  const answers = normaliseAnswers(
+    rawLead?.answers,
+    rawLead?.selectedAnswers,
+    rawLead?.selected_answers
+  );
+
+  return {
+    exists: Boolean(
+      recommendedService || pillar || readiness || supporting || answers
+    ),
+    recommendedService,
+    pillar,
+    readiness,
+    supporting,
+    answers,
+  };
+}
+
+function firstText(...values) {
+  const found = values.find(
+    (value) => typeof value === "string" && value.trim()
+  );
+
+  return found ? found.trim() : "";
+}
+
+function normaliseList(...values) {
+  const found = values.find((value) => {
+    if (Array.isArray(value)) return value.length > 0;
+    return typeof value === "string" && value.trim();
+  });
+
+  if (!found) return "";
+
+  if (Array.isArray(found)) {
+    return found
+      .map((item) => {
+        if (typeof item === "string") return item;
+        return item?.title || item?.name || item?.label || "";
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return String(found).trim();
+}
+
+function normaliseAnswers(...values) {
+  const found = values.find((value) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (value && typeof value === "object") return Object.keys(value).length > 0;
+    return typeof value === "string" && value.trim();
+  });
+
+  if (!found) return "";
+
+  if (Array.isArray(found)) {
+    return found
+      .map((item) => {
+        if (typeof item === "string") return item;
+
+        const question = item?.question || item?.label || item?.key || "Question";
+        const answer = item?.answer || item?.value || item?.selected || "";
+
+        return `${question}: ${answer}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  if (typeof found === "object") {
+    return Object.entries(found)
+      .map(([key, value]) => `${toReadableLabel(key)}: ${formatAnswerValue(value)}`)
+      .join("\n");
+  }
+
+  return String(found).trim();
+}
+
+function formatAnswerValue(value) {
+  if (Array.isArray(value)) return value.join(", ");
+  if (value && typeof value === "object") {
+    return value.answer || value.value || value.label || JSON.stringify(value);
+  }
+  return String(value || "");
+}
+
+function toReadableLabel(value) {
+  return value
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function buildPrefillProjectDetails(lead) {
+  const lines = [
+    "Service Explorer Recommendation:",
+    lead.recommendedService && `Recommended Service: ${lead.recommendedService}`,
+    lead.pillar && `Service Pillar: ${lead.pillar}`,
+    lead.readiness && `Readiness Level: ${lead.readiness}`,
+    lead.supporting && `Supporting Services: ${lead.supporting}`,
+    lead.answers && "",
+    lead.answers && "Selected Answers:",
+    lead.answers,
+    "",
+    "Additional project details:",
+  ];
+
+  return lines.filter(Boolean).join("\n");
+}
+
+function buildContactWhatsAppMessage(form, lead) {
+  const lines = [
+    "Hello MKETICS, I would like to request assistance.",
+    "",
+    "Client Details:",
+    `Name: ${form.fullName || "Not provided"}`,
+    `Phone: ${form.phone || "Not provided"}`,
+    `Email: ${form.email || "Not provided"}`,
+    `Business / Organisation: ${form.organisation || "Not provided"}`,
+    "",
+    "Project Direction:",
+    `Service Needed: ${
+      form.serviceNeeded || lead.recommendedService || "Not sure yet"
+    }`,
+    `Budget Direction: ${form.budget || "Not provided"}`,
+    `Timeline: ${form.timeline || "Not provided"}`,
+    `Preferred Contact: ${form.preferredContact || "WhatsApp"}`,
+  ];
+
+  if (lead.exists) {
+    lines.push(
+      "",
+      "Service Explorer Recommendation:",
+      `Recommended Service: ${lead.recommendedService || "Not provided"}`,
+      `Service Pillar: ${lead.pillar || "Not provided"}`,
+      `Readiness Level: ${lead.readiness || "Not provided"}`,
+      `Supporting Services: ${lead.supporting || "Not provided"}`
+    );
+
+    if (lead.answers) {
+      lines.push("", "Selected Answers:", lead.answers);
+    }
+  }
+
+  lines.push(
+    "",
+    "Project Details:",
+    form.projectDetails || "I need guidance on the right next step."
+  );
+
+  return lines.join("\n");
+}
+
+function buildEmailLink(form, lead) {
+  const subject = `MKETICS Request - ${
+    form.serviceNeeded || lead.recommendedService || "General Enquiry"
+  }`;
+
+  const body = buildContactWhatsAppMessage(form, lead);
+
+  return `mailto:${contactDetails.email}?subject=${encodeURIComponent(
     subject
   )}&body=${encodeURIComponent(body)}`;
 }

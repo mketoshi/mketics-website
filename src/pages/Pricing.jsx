@@ -1,8 +1,10 @@
 import {
   ArrowRight,
   CheckCircle2,
-  HelpCircle,
-  Info,
+  Code2,
+  FileText,
+  Globe2,
+  Headphones,
   MessageCircle,
   ShieldCheck,
   Sparkles,
@@ -10,108 +12,186 @@ import {
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
 import Button from "../components/ui/Button";
-import TrustCredibility from "../components/sections/TrustCredibility";
-import { pricingNotes, pricingPackages } from "../data/pricing";
-import { createWhatsAppLink } from "../utils/whatsapp";
-import QuoteFlow from "../components/sections/QuoteFlow";
 import { seoPages } from "../data/seo";
+import { createWhatsAppLink } from "../utils/whatsapp";
+
+const pricingOptions = [
+  {
+    title: "Business Readiness",
+    price: "From R750",
+    text: "For small admin, compliance direction, business documents or readiness support.",
+    icon: FileText,
+    points: ["Business guidance", "Document support", "Next-step advice"],
+  },
+  {
+    title: "Website Launch",
+    price: "From R2,500",
+    text: "For a simple professional website or online presence.",
+    icon: Globe2,
+    points: ["Mobile-friendly layout", "Basic online presence", "Quote based on scope"],
+  },
+  {
+    title: "Business Website / Store",
+    price: "From R5,000",
+    text: "For a stronger website, product catalogue, online store or lead-capture flow.",
+    icon: WalletCards,
+    points: ["More sections", "Product or service presentation", "Enquiry flow"],
+  },
+  {
+    title: "Custom System",
+    price: "Scoped Quote",
+    text: "For dashboards, portals, booking systems, invoice systems and custom tools.",
+    icon: Code2,
+    points: ["Requirements discovery", "System planning", "Development roadmap"],
+  },
+];
+
+const pricingModels = [
+  "Once-off project",
+  "Monthly support",
+  "Phased build",
+];
+
+const pricingFactors = [
+  "Number of pages, screens or system modules",
+  "Content, images and branding readiness",
+  "Payment, email, WhatsApp or third-party integrations",
+  "Urgency and support level",
+  "Hosting, domain, email or third-party costs",
+  "Once-off, monthly or phased project structure",
+];
 
 export default function Pricing() {
   return (
-    <>
+    <main className="bg-white text-[#061A33]">
       <SEO {...seoPages.pricing} />
 
-      <section className="relative isolate overflow-hidden bg-[#020B1F] px-5 py-16 text-white lg:py-24">
+      <section className="relative isolate overflow-hidden bg-[#EAF6FF] px-5 py-10 lg:py-14">
         <div className="absolute inset-0 -z-10">
-          <img
-            src="/assets/mketics-bg5.png"
-            alt=""
-            aria-hidden="true"
-            className="h-full w-full object-cover object-center opacity-35"
-          />
-          <div className="absolute inset-0 bg-[#020B1F]/78" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/85 to-[#020B1F]/45" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#020B1F]/20 via-transparent to-[#020B1F]" />
-          <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/15 blur-[140px]" />
-          <div className="absolute right-0 top-24 h-[430px] w-[430px] rounded-full bg-blue-600/15 blur-[120px]" />
+          <div className="absolute left-[-12rem] top-[-12rem] h-[34rem] w-[34rem] rounded-full bg-cyan-300/40 blur-[140px]" />
+          <div className="absolute right-[-14rem] top-10 h-[36rem] w-[36rem] rounded-full bg-blue-500/20 blur-[150px]" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white/80 to-transparent" />
         </div>
 
-        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
-            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-300/20 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200 shadow-[0_0_40px_rgba(25,217,255,0.12)]">
+            <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-[#0B7CFF] shadow-sm">
               <WalletCards size={16} />
               MKETICS Pricing
             </div>
 
-            <h1 className="mt-7 max-w-5xl text-4xl font-black leading-[1.06] tracking-tight sm:text-5xl lg:text-6xl">
-              Clear starting prices for{" "}
-              <span className="bg-gradient-to-r from-cyan-200 via-white to-cyan-300 bg-clip-text text-transparent">
-                serious digital solutions.
+            <h1 className="mt-6 max-w-5xl text-4xl font-black leading-[1.05] tracking-tight text-[#020B1F] sm:text-5xl lg:text-6xl">
+              Clear pricing direction before the{" "}
+              <span className="bg-gradient-to-r from-[#0B7CFF] via-[#00AEEF] to-[#061A33] bg-clip-text text-transparent">
+                final quote.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300">
-              MKETICS pricing is designed to help clients understand the
-              starting investment before requesting a formal quotation. Final
-              pricing depends on the real scope, complexity, timeline, content,
-              integrations and support required.
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-700">
+              Use these starting points to plan your budget. Final pricing is
+              confirmed after MKETICS understands the real scope, timeline and
+              support required.
             </p>
 
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-7 flex flex-col gap-4 sm:flex-row">
               <Button to="/contact">
-                Request a Custom Quote
+                Request a Quote
                 <ArrowRight size={18} className="ml-2" />
               </Button>
 
-              <Button
+              <a
                 href={createWhatsAppLink(
-                  "Hello MKETICS, I would like help choosing the right service package and pricing option. Please guide me on the next steps."
+                  "Hello MKETICS, I would like help choosing the right pricing option. Please guide me on the next step."
                 )}
-                variant="secondary"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/20 bg-white px-6 py-3 font-black text-[#061A33] shadow-sm transition hover:border-cyan-300 hover:bg-cyan-300"
               >
                 <MessageCircle size={18} className="mr-2" />
-                WhatsApp MKETICS
-              </Button>
+                WhatsApp
+              </a>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-cyan-300/20 bg-white/[0.05] p-6 shadow-2xl backdrop-blur-xl">
-            <div className="flex items-start gap-4">
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                <Sparkles size={28} />
-              </div>
+          <div className="rounded-[2.5rem] border border-white bg-white p-5 shadow-2xl">
+            <div className="rounded-[2rem] bg-[#020B1F] p-6 text-white">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">
+                Pricing Principle
+              </p>
 
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.25em] text-cyan-300">
-                  Pricing Principle
-                </p>
-                <h2 className="mt-3 text-2xl font-black text-white">
-                  Start clear. Scale when ready.
-                </h2>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  Not every client needs a large project immediately. MKETICS
-                  can start with a focused solution and grow it in phases as the
-                  business becomes ready.
-                </p>
+              <h2 className="mt-3 text-3xl font-black">
+                Start simple. Quote properly.
+              </h2>
+
+              <p className="mt-4 text-sm leading-7 text-slate-300">
+                A serious quote should be based on clear requirements, not
+                guessing. MKETICS can start small, support monthly or phase
+                larger work.
+              </p>
+
+              <div className="mt-6 grid gap-3">
+                <MiniCheck text="Starting prices guide planning" />
+                <MiniCheck text="Final quotes follow confirmed scope" />
+                <MiniCheck text="Large projects can be phased" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="mt-6 grid gap-3">
-              {[
-                "Starting prices guide planning.",
-                "Final quotes follow confirmed scope.",
-                "Projects can be phased where suitable.",
-                "Third-party costs are confirmed separately.",
-              ].map((item) => (
+      <section className="px-5 py-14 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              Starting Points
+            </p>
+
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Choose a pricing direction.
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-700">
+              These are not fixed quotes for every situation. They help you
+              understand where your project may start.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {pricingOptions.map((item) => (
+              <PricingCard key={item.title} item={item} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#EAF6FF] px-5 py-12 lg:py-14">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+                Payment Structure
+              </p>
+
+              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                Once-off, monthly or phased.
+              </h2>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {pricingModels.map((model) => (
                 <div
-                  key={item}
-                  className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                  key={model}
+                  className="rounded-2xl border border-cyan-100 bg-white p-4 shadow-sm"
                 >
-                  <CheckCircle2
-                    className="mt-0.5 shrink-0 text-cyan-300"
-                    size={18}
-                  />
-                  <p className="text-sm leading-6 text-slate-300">{item}</p>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2
+                      className="shrink-0 text-[#0B7CFF]"
+                      size={18}
+                    />
+                    <p className="text-sm font-black text-[#061A33]">
+                      {model}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -119,257 +199,141 @@ export default function Pricing() {
         </div>
       </section>
 
-      <section className="bg-[#EAF6FF] px-5 py-16 text-[#061A33] lg:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
-                Starting Packages
-              </p>
-              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-                Choose a starting point that matches your current need.
-              </h2>
-            </div>
-
-            <p className="text-lg leading-8 text-slate-700">
-              These packages help you understand the typical entry point for
-              MKETICS services. A final quotation is prepared after confirming
-              the deliverables, timeline and requirements.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {pricingPackages.map((item) => (
-              <PricingCard key={item.name} item={item} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <QuoteFlow
-      variant="light"
-      title="From starting price to final quotation."
-      description="MKETICS uses starting prices to guide planning, then confirms a final quote after understanding the real scope, timeline and deliverables."
-      />
-
-      <TrustCredibility
-        variant="dark"
-        title="Pricing should feel clear, professional and safe."
-        description="MKETICS uses starting prices to help clients understand the investment range, while final quotations are based on scope, complexity, timelines and required deliverables."
-      />
-
-      <section className="bg-white px-5 py-16 text-[#061A33] lg:py-24">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+      <section className="px-5 py-14 lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF6FF] px-4 py-2 text-sm font-bold text-[#0B7CFF]">
-              <Info size={16} />
-              Important Pricing Notes
-            </div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
+              What Affects Price
+            </p>
 
-            <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
-              Clear scope protects both MKETICS and the client.
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
+              Scope comes before final pricing.
             </h2>
 
             <p className="mt-5 text-lg leading-8 text-slate-700">
-              Starting prices are useful for planning, but custom digital work
-              must be confirmed in writing. Scope, content, integrations,
-              urgency, support requirements and third-party costs can change the
-              final price.
+              Two projects can sound similar but require different work.
+              MKETICS confirms the final price after checking what must be
+              delivered.
             </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-7">
               <Button to="/contact">
                 Request Formal Quote
                 <ArrowRight size={18} className="ml-2" />
               </Button>
-
-              <Button to="/services" variant="secondary">
-                View Services
-              </Button>
             </div>
           </div>
 
-          <div className="grid gap-4">
-            {pricingNotes.map((note) => (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pricingFactors.map((factor) => (
               <div
-                key={note}
-                className="flex gap-4 rounded-3xl border border-slate-200 bg-[#F8FCFF] p-5 shadow-sm"
+                key={factor}
+                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4"
               >
                 <CheckCircle2
-                  className="mt-1 shrink-0 text-[#0B7CFF]"
-                  size={20}
+                  className="mt-0.5 shrink-0 text-[#0B7CFF]"
+                  size={18}
                 />
-                <p className="leading-7 text-slate-700">{note}</p>
+                <p className="text-sm font-semibold leading-6 text-slate-700">
+                  {factor}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-[#EAF6FF] px-5 py-16 text-[#061A33] lg:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-10 max-w-3xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#0B7CFF]">
-              How to Choose
+      <section className="bg-[#020B1F] px-5 py-14 text-white lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-6 rounded-[2rem] border border-cyan-300/20 bg-white/[0.05] p-6 lg:grid-cols-[0.85fr_1.15fr] lg:p-8">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+              Need Help Choosing?
             </p>
-            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-              Not sure which package is right?
+
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+              Tell MKETICS your budget direction and goal.
             </h2>
-            <p className="mt-5 text-lg leading-8 text-slate-700">
-              The right package depends on your business stage, urgency, budget
-              and the problem you are trying to solve.
+          </div>
+
+          <div>
+            <p className="text-lg leading-8 text-slate-300">
+              Share what you want to build, improve or fix, and MKETICS will
+              recommend the right pricing path.
             </p>
-          </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <ChoiceCard
-              icon={HelpCircle}
-              title="You are still planning"
-              text="Start with a consultation, readiness check or basic package so MKETICS can help you define the real scope."
-            />
-            <ChoiceCard
-              icon={ShieldCheck}
-              title="You need trust quickly"
-              text="Choose website, company profile, documents or compliance readiness support to improve professional presentation."
-            />
-            <ChoiceCard
-              icon={WalletCards}
-              title="You need a full system"
-              text="Start with scope planning first. Custom systems, portals and dashboards should be quoted after requirements are clear."
-            />
-          </div>
-        </div>
-      </section>
+            <div className="mt-7 flex flex-col gap-4 sm:flex-row">
+              <Button to="/contact">
+                Start Request
+                <ArrowRight size={18} className="ml-2" />
+              </Button>
 
-      <section className="bg-[#020B1F] px-5 pb-20 text-white lg:pb-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="relative isolate overflow-hidden rounded-[2.5rem] border border-cyan-300/20 bg-cyan-400/10 p-8 md:p-14">
-            <div className="absolute inset-0 -z-10">
-              <img
-                src="/assets/mketics-bg1.png"
-                alt=""
-                aria-hidden="true"
-                className="h-full w-full object-cover object-center opacity-25"
-              />
-              <div className="absolute inset-0 bg-[#020B1F]/80" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#020B1F] via-[#020B1F]/75 to-transparent" />
-            </div>
-
-            <div className="relative max-w-3xl">
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-200">
-                Need help choosing?
-              </p>
-
-              <h2 className="mt-4 text-3xl font-black leading-tight sm:text-5xl">
-                Tell MKETICS what you want to achieve.
-              </h2>
-
-              <p className="mt-5 text-lg leading-8 text-slate-200">
-                You do not need to know the exact technical solution. Share your
-                business need, budget direction and timeline, and MKETICS will
-                guide you toward the right package, scope or phased plan.
-              </p>
-
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Button to="/contact">
-                  Request a Custom Quote
-                  <ArrowRight size={18} className="ml-2" />
-                </Button>
-
-                <Button
-                  href={createWhatsAppLink(
-                    "Hello MKETICS, I need help choosing the right package or custom quote. Please guide me on the next steps."
-                  )}
-                  variant="secondary"
-                >
-                  <MessageCircle size={18} className="mr-2" />
-                  WhatsApp for Guidance
-                </Button>
-              </div>
+              <a
+                href={createWhatsAppLink(
+                  "Hello MKETICS, I need help choosing the right package or custom quote. Please guide me on the next step."
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-cyan-300 bg-white px-6 py-3 font-black text-[#061A33] transition hover:bg-cyan-300"
+              >
+                <MessageCircle size={18} className="mr-2" />
+                WhatsApp Guidance
+              </a>
             </div>
           </div>
         </div>
       </section>
-    </>
+    </main>
   );
 }
 
 function PricingCard({ item }) {
   const Icon = item.icon;
 
-  const packageMessage = `Hello MKETICS, I would like to request a quote for the ${item.name} package. My estimated budget/timeline may depend on the final scope. Please guide me on the next steps.`;
-
   return (
-    <article className="group flex h-full flex-col rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl">
-      <div className="flex items-start justify-between gap-4">
-        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300 shadow-[0_0_30px_rgba(0,174,239,0.18)]">
-          <Icon size={28} />
-        </div>
-
-        <span className="rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-bold text-[#0B7CFF]">
-          {item.timeline}
-        </span>
+    <article className="flex h-full flex-col rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl">
+      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+        <Icon size={28} />
       </div>
 
-      <h3 className="mt-6 text-2xl font-black text-[#020B1F]">{item.name}</h3>
+      <h3 className="mt-6 text-2xl font-black text-[#020B1F]">
+        {item.title}
+      </h3>
 
-      <p className="mt-3 text-3xl font-black text-[#0B7CFF]">{item.price}</p>
-
-      <p className="mt-3 text-sm leading-7 text-slate-600">
-        {item.description}
+      <p className="mt-3 text-3xl font-black text-[#0B7CFF]">
+        {item.price}
       </p>
 
-      <div className="mt-5 rounded-2xl bg-[#EAF6FF] p-4">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
-          Best for
-        </p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{item.bestFor}</p>
-      </div>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
 
       <div className="mt-5 grid gap-3">
-        {item.features.map((feature) => (
-          <div key={feature} className="flex gap-3">
+        {item.points.map((point) => (
+          <div key={point} className="flex items-start gap-3">
             <CheckCircle2
               className="mt-0.5 shrink-0 text-[#0B7CFF]"
               size={18}
             />
-            <p className="text-sm leading-6 text-slate-700">{feature}</p>
+            <p className="text-sm font-semibold leading-6 text-slate-700">
+              {point}
+            </p>
           </div>
         ))}
       </div>
 
       <div className="mt-auto pt-6">
-        <div className="grid gap-3">
-          <Button to="/contact" className="w-full justify-center">
-            Request This Package
-            <ArrowRight size={16} className="ml-2" />
-          </Button>
-
-          <a
-            href={createWhatsAppLink(packageMessage)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-300 bg-white px-5 py-3 text-sm font-black text-[#061A33] transition hover:bg-[#061A33] hover:text-cyan-200"
-          >
-            <MessageCircle size={16} />
-            WhatsApp Package
-          </a>
-        </div>
+        <Button to="/contact" className="w-full justify-center">
+          Request This
+          <ArrowRight size={16} className="ml-2" />
+        </Button>
       </div>
     </article>
   );
 }
 
-function ChoiceCard({ icon: Icon, title, text }) {
+function MiniCheck({ text }) {
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-xl">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
-        <Icon size={28} />
-      </div>
-
-      <h3 className="mt-5 text-xl font-black text-[#020B1F]">{title}</h3>
-
-      <p className="mt-3 text-sm leading-7 text-slate-600">{text}</p>
-    </article>
+    <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+      <CheckCircle2 className="mt-0.5 shrink-0 text-cyan-300" size={18} />
+      <p className="text-sm font-semibold leading-6 text-slate-300">{text}</p>
+    </div>
   );
 }

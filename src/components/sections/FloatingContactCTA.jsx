@@ -7,9 +7,9 @@ export default function FloatingContactCTA() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 sm:bottom-5 sm:right-5">
+    <div className="fixed bottom-5 right-5 z-50 hidden md:block">
       {isOpen && (
-        <div className="mb-4 w-[min(310px,calc(100vw-2rem))] overflow-hidden rounded-[1.5rem] border border-cyan-300/25 bg-[#020B1F]/95 text-white shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+        <div className="mb-4 w-[310px] overflow-hidden rounded-[1.5rem] border border-cyan-300/25 bg-[#020B1F]/95 text-white shadow-[0_20px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           <div className="relative overflow-hidden p-5">
             <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-cyan-300/15 blur-3xl" />
 
@@ -18,9 +18,11 @@ export default function FloatingContactCTA() {
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
                   Need Help?
                 </p>
+
                 <h3 className="mt-2 text-xl font-black text-white">
                   Talk to MKETICS
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-slate-300">
                   Request a quote, ask a question or start a WhatsApp
                   conversation.
@@ -60,7 +62,7 @@ export default function FloatingContactCTA() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="group flex h-16 w-16 items-center justify-center rounded-full border border-cyan-300/40 bg-cyan-300 text-[#020B1F] shadow-[0_0_45px_rgba(25,217,255,0.45)] transition hover:scale-105 hover:bg-white"
+        className="group grid h-16 w-16 place-items-center rounded-full border border-cyan-300/40 bg-cyan-300 text-[#020B1F] shadow-[0_0_45px_rgba(25,217,255,0.45)] transition hover:scale-105 hover:bg-white"
         aria-label="Open MKETICS contact menu"
       >
         {isOpen ? (
