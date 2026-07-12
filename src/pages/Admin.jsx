@@ -3,20 +3,34 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  ClipboardList,
   Eye,
+  FileText,
   Loader2,
   Lock,
   LogOut,
   Mail,
   Phone,
   RefreshCw,
+  Save,
   Search,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
+
+const leadStatusOptions = [
+  "new",
+  "reviewed",
+  "contacted",
+  "quoted",
+  "won",
+  "lost",
+  "archived",
+];
 
 export default function Admin() {
   const [authState, setAuthState] = useState({
@@ -44,12 +58,28 @@ export default function Admin() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedLeadId, setSelectedLeadId] = useState(null);
+
+  const [detailForm, setDetailForm] = useState({
+    status: "new",
+    internalNotes: "",
+  });
+
+  const [detailSaveState, setDetailSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
 
   const isAdmin = Boolean(
     authState.session &&
       authState.profile &&
       allowedRoles.includes(authState.profile.role)
   );
+
+  const selectedLead = useMemo(() => {
+    return leadsState.leads.find((lead) => lead.id === selectedLeadId) || null;
+  }, [leadsState.leads, selectedLeadId]);
 
   const filteredLeads = useMemo(() => {
     return leadsState.leads.filter((lead) => {
@@ -111,6 +141,21 @@ export default function Admin() {
       fetchLeads();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!selectedLead) return;
+
+    setDetailForm({
+      status: selectedLead.status || "new",
+      internalNotes: selectedLead.internal_notes || "",
+    });
+
+    setDetailSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
+  }, [selectedLeadId, selectedLead?.status, selectedLead?.internal_notes]);
 
   async function loadInitialSession() {
     if (!isSupabaseConfigured || !supabase) {
@@ -191,7 +236,9 @@ export default function Admin() {
           loading: false,
           session: null,
           profile: null,
-          error: `This account does not have MKETICS admin access. Current role: ${profile.role || "none"}.`,
+          error: `This account does not have MKETICS admin access. Current role: ${
+            profile.role || "none"
+          }.`,
         });
         return;
       }
@@ -278,6 +325,8 @@ export default function Admin() {
       error: "",
       leads: [],
     });
+
+    setSelectedLeadId(null);
   }
 
   async function fetchLeads() {
@@ -313,7 +362,8 @@ export default function Admin() {
           readiness_level,
           supporting_services,
           selected_answers,
-          page_url
+          page_url,
+          internal_notes
         `
         )
         .order("created_at", { ascending: false });
@@ -336,6 +386,84 @@ export default function Admin() {
     }
   }
 
+  async function handleSaveLeadDetails(event) {
+    event.preventDefault();
+
+    if (!selectedLead || !supabase) return;
+
+    if (!leadStatusOptions.includes(detailForm.status)) {
+      setDetailSaveState({
+        loading: false,
+        error: "Choose a valid lead status.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setDetailSaveState({
+        loading: true,
+        error: "",
+        success: "",
+      });
+
+      const updatedLead = {
+        status: detailForm.status,
+        internal_notes: detailForm.internalNotes.trim() || null,
+      };
+
+      const { error } = await supabase
+        .from("leads")
+        .update(updatedLead)
+        .eq("id", selectedLead.id);
+
+      if (error) throw error;
+
+      const updatedAt = new Date().toISOString();
+
+      setLeadsState((current) => ({
+        ...current,
+        leads: current.leads.map((lead) =>
+          lead.id === selectedLead.id
+            ? {
+                ...lead,
+                ...updatedLead,
+                updated_at: updatedAt,
+              }
+            : lead
+        ),
+      }));
+
+      setDetailSaveState({
+        loading: false,
+        error: "",
+        success: "Lead updated successfully.",
+      });
+    } catch (error) {
+      setDetailSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to update this lead. Check Supabase update policy.",
+        success: "",
+      });
+    }
+  }
+
+  function handleOpenLead(lead) {
+    setSelectedLeadId(lead.id);
+  }
+
+  function handleCloseLead() {
+    setSelectedLeadId(null);
+
+    setDetailSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
+  }
+
   function updateLoginField(event) {
     const { name, value } = event.target;
 
@@ -346,6 +474,23 @@ export default function Admin() {
 
     if (loginStatus.error) {
       setLoginStatus({ loading: false, error: "" });
+    }
+  }
+
+  function updateDetailField(event) {
+    const { name, value } = event.target;
+
+    setDetailForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    if (detailSaveState.error || detailSaveState.success) {
+      setDetailSaveState({
+        loading: false,
+        error: "",
+        success: "",
+      });
     }
   }
 
@@ -389,7 +534,7 @@ export default function Admin() {
               <p className="text-sm font-bold leading-7 text-slate-700">
                 This page is protected by Supabase authentication and database
                 Row Level Security. Only users with an admin or staff profile
-                role can view leads.
+                role can view and update leads.
               </p>
             </div>
           </div>
@@ -566,13 +711,11 @@ export default function Admin() {
                 className="rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               >
                 <option value="all">All statuses</option>
-                <option value="new">New</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="contacted">Contacted</option>
-                <option value="quoted">Quoted</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
-                <option value="archived">Archived</option>
+                {leadStatusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {toReadableLabel(status)}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -582,7 +725,7 @@ export default function Admin() {
 
             <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
               <div className="overflow-x-auto">
-                <table className="min-w-[1050px] w-full border-collapse bg-white text-left">
+                <table className="min-w-[1150px] w-full border-collapse bg-white text-left">
                   <thead className="bg-[#F8FCFF]">
                     <tr>
                       <Th>Date</Th>
@@ -593,13 +736,14 @@ export default function Admin() {
                       <Th>Timeline</Th>
                       <Th>Status</Th>
                       <Th>Source</Th>
+                      <Th>Action</Th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {leadsState.loading && (
                       <tr>
-                        <td colSpan="8" className="px-5 py-10 text-center">
+                        <td colSpan="9" className="px-5 py-10 text-center">
                           <Loader2
                             className="mx-auto animate-spin text-[#0B7CFF]"
                             size={28}
@@ -613,7 +757,7 @@ export default function Admin() {
 
                     {!leadsState.loading && filteredLeads.length === 0 && (
                       <tr>
-                        <td colSpan="8" className="px-5 py-10 text-center">
+                        <td colSpan="9" className="px-5 py-10 text-center">
                           <Eye className="mx-auto text-slate-400" size={28} />
                           <p className="mt-3 text-sm font-black text-slate-500">
                             No leads found.
@@ -624,7 +768,11 @@ export default function Admin() {
 
                     {!leadsState.loading &&
                       filteredLeads.map((lead) => (
-                        <LeadRow key={lead.id} lead={lead} />
+                        <LeadRow
+                          key={lead.id}
+                          lead={lead}
+                          onView={() => handleOpenLead(lead)}
+                        />
                       ))}
                   </tbody>
                 </table>
@@ -632,32 +780,42 @@ export default function Admin() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
-                <ShieldCheck size={21} />
-              </div>
+          {selectedLead ? (
+            <LeadDetailPanel
+              lead={selectedLead}
+              form={detailForm}
+              saveState={detailSaveState}
+              onChange={updateDetailField}
+              onClose={handleCloseLead}
+              onSave={handleSaveLeadDetails}
+            />
+          ) : (
+            <div className="mt-6 rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+                  <ShieldCheck size={21} />
+                </div>
 
-              <div>
-                <h3 className="text-lg font-black text-[#020B1F]">
-                  Skeleton complete.
-                </h3>
+                <div>
+                  <h3 className="text-lg font-black text-[#020B1F]">
+                    Lead detail ready.
+                  </h3>
 
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  This dashboard currently reads leads only. The next step is to
-                  add lead detail view, status updates, internal notes and quote
-                  draft actions.
-                </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    Click View on any lead to open the detail panel, update the
+                    status and add internal MKETICS notes.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </main>
   );
 }
 
-function LeadRow({ lead }) {
+function LeadRow({ lead, onView }) {
   return (
     <tr className="border-t border-slate-200 align-top transition hover:bg-[#F8FCFF]">
       <Td>
@@ -709,9 +867,7 @@ function LeadRow({ lead }) {
       <Td>{lead.timeline || "Not provided"}</Td>
 
       <Td>
-        <span className="inline-flex rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
-          {toReadableLabel(lead.status)}
-        </span>
+        <StatusBadge status={lead.status} />
       </Td>
 
       <Td>
@@ -727,7 +883,241 @@ function LeadRow({ lead }) {
           </a>
         )}
       </Td>
+
+      <Td>
+        <button
+          type="button"
+          onClick={onView}
+          className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+        >
+          <Eye size={14} className="mr-2" />
+          View
+        </button>
+      </Td>
     </tr>
+  );
+}
+
+function LeadDetailPanel({
+  lead,
+  form,
+  saveState,
+  onChange,
+  onClose,
+  onSave,
+}) {
+  return (
+    <section className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0B7CFF]">
+            Lead Detail
+          </p>
+
+          <h2 className="mt-2 text-2xl font-black text-[#020B1F]">
+            {lead.full_name}
+          </h2>
+
+          <p className="mt-2 text-sm font-semibold text-slate-600">
+            Submitted {formatFullDate(lead.created_at)}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-[#F8FCFF] px-5 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+        >
+          <X size={17} className="mr-2" />
+          Close
+        </button>
+      </div>
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-5">
+          <DetailCard title="Client Details" icon={Mail}>
+            <DetailLine label="Full Name" value={lead.full_name} />
+            <DetailLine label="Email" value={lead.email} />
+            <DetailLine label="Phone" value={lead.phone} />
+            <DetailLine label="Organisation" value={lead.organisation} />
+            <DetailLine
+              label="Preferred Contact"
+              value={lead.preferred_contact}
+            />
+          </DetailCard>
+
+          <DetailCard title="Project Request" icon={ClipboardList}>
+            <DetailLine label="Service Needed" value={lead.service_needed} />
+            <DetailLine label="Budget" value={lead.budget} />
+            <DetailLine label="Timeline" value={lead.timeline} />
+            <DetailLine label="Lead Source" value={toReadableLabel(lead.lead_source)} />
+
+            <div className="mt-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                Project Details
+              </p>
+              <p className="mt-2 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4 text-sm font-semibold leading-7 text-slate-700">
+                {lead.project_details || "Not provided"}
+              </p>
+            </div>
+          </DetailCard>
+
+          {(lead.recommended_service ||
+            lead.service_pillar ||
+            lead.readiness_level ||
+            lead.supporting_services ||
+            lead.selected_answers) && (
+            <DetailCard title="Service Explorer Data" icon={FileText}>
+              <DetailLine
+                label="Recommended Service"
+                value={lead.recommended_service}
+              />
+              <DetailLine label="Service Pillar" value={lead.service_pillar} />
+              <DetailLine
+                label="Readiness Level"
+                value={lead.readiness_level}
+              />
+              <DetailLine
+                label="Supporting Services"
+                value={lead.supporting_services}
+              />
+
+              {lead.selected_answers && (
+                <div className="mt-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                    Selected Answers
+                  </p>
+                  <pre className="mt-2 whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4 text-sm font-semibold leading-7 text-slate-700">
+                    {lead.selected_answers}
+                  </pre>
+                </div>
+              )}
+            </DetailCard>
+          )}
+        </div>
+
+        <form
+          onSubmit={onSave}
+          className="rounded-[1.5rem] border border-cyan-200 bg-[#F8FCFF] p-5"
+        >
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+            <ShieldCheck size={22} />
+          </div>
+
+          <h3 className="mt-4 text-xl font-black text-[#020B1F]">
+            Manage this lead
+          </h3>
+
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            Update the status and keep internal notes for MKETICS follow-up.
+          </p>
+
+          {saveState.error && (
+            <StatusMessage type="error" message={saveState.error} />
+          )}
+
+          {saveState.success && (
+            <StatusMessage type="success" message={saveState.success} />
+          )}
+
+          <label className="mt-5 block">
+            <span className="text-sm font-black text-[#061A33]">
+              Lead Status
+            </span>
+
+            <select
+              name="status"
+              value={form.status}
+              onChange={onChange}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+            >
+              {leadStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {toReadableLabel(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="mt-4 block">
+            <span className="text-sm font-black text-[#061A33]">
+              Internal Notes
+            </span>
+
+            <textarea
+              name="internalNotes"
+              value={form.internalNotes}
+              onChange={onChange}
+              rows={9}
+              placeholder="Example: Contacted client on WhatsApp. Waiting for content and logo."
+              className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-7 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={saveState.loading}
+            className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {saveState.loading ? (
+              <>
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                Saving
+              </>
+            ) : (
+              <>
+                <Save size={18} className="mr-2" />
+                Save Lead Update
+              </>
+            )}
+          </button>
+
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+            <DetailLine label="Current Status" value={toReadableLabel(lead.status)} />
+            <DetailLine label="Last Updated" value={formatFullDate(lead.updated_at)} />
+          </div>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+function DetailCard({ title, icon: Icon, children }) {
+  return (
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <Icon size={19} />
+        </div>
+
+        <h3 className="text-lg font-black text-[#020B1F]">{title}</h3>
+      </div>
+
+      <div className="mt-5 grid gap-3">{children}</div>
+    </article>
+  );
+}
+
+function DetailLine({ label, value }) {
+  if (!value) return null;
+
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span className="inline-flex rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
+      {toReadableLabel(status)}
+    </span>
   );
 }
 
@@ -794,6 +1184,18 @@ function formatTime(value) {
   if (!value) return "";
 
   return new Intl.DateTimeFormat("en-ZA", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatFullDate(value) {
+  if (!value) return "Not available";
+
+  return new Intl.DateTimeFormat("en-ZA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
