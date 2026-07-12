@@ -2,9 +2,46 @@ import { MessageCircle, X, Send } from "lucide-react";
 import { useState } from "react";
 import Button from "../ui/Button";
 import { createWhatsAppLink, whatsappMessages } from "../../utils/whatsapp";
+import { trackEvent } from "../../utils/analytics";
 
 export default function FloatingContactCTA() {
   const [isOpen, setIsOpen] = useState(false);
+
+  function handleToggle() {
+    setIsOpen((current) => {
+      trackEvent("floating_contact_toggle", {
+        action: current ? "close" : "open",
+        location: "floating_contact_widget",
+      });
+
+      return !current;
+    });
+  }
+
+  function handleClose() {
+    trackEvent("floating_contact_toggle", {
+      action: "close",
+      location: "floating_contact_widget",
+    });
+
+    setIsOpen(false);
+  }
+
+  function handleWhatsAppClick() {
+    trackEvent("whatsapp_click", {
+      location: "floating_contact_widget",
+      lead_source: "floating_contact_widget",
+    });
+  }
+
+  function handleQuoteClick() {
+    trackEvent("quote_cta_click", {
+      location: "floating_contact_widget",
+      lead_source: "floating_contact_widget",
+    });
+
+    setIsOpen(false);
+  }
 
   return (
     <div className="fixed bottom-5 right-5 z-50 hidden md:block">
@@ -31,9 +68,9 @@ export default function FloatingContactCTA() {
 
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-slate-300 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close contact menu"
+                onClick={handleClose}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.05] text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                aria-label="Close MKETICS contact menu"
               >
                 <X size={18} />
               </button>
@@ -44,13 +81,18 @@ export default function FloatingContactCTA() {
                 href={createWhatsAppLink(whatsappMessages.general)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-[#061A33] transition hover:bg-white"
+                onClick={handleWhatsAppClick}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-[#061A33] transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-[#020B1F]"
               >
                 <MessageCircle size={17} />
                 WhatsApp MKETICS
               </a>
 
-              <Button to="/contact" className="justify-center">
+              <Button
+                to="/contact"
+                onClick={handleQuoteClick}
+                className="justify-center"
+              >
                 Request Quote
                 <Send size={17} className="ml-2" />
               </Button>
@@ -61,9 +103,12 @@ export default function FloatingContactCTA() {
 
       <button
         type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className="group grid h-16 w-16 place-items-center rounded-full border border-cyan-300/40 bg-cyan-300 text-[#020B1F] shadow-[0_0_45px_rgba(25,217,255,0.45)] transition hover:scale-105 hover:bg-white"
-        aria-label="Open MKETICS contact menu"
+        onClick={handleToggle}
+        className="group grid h-16 w-16 place-items-center rounded-full border border-cyan-300/40 bg-cyan-300 text-[#020B1F] shadow-[0_0_45px_rgba(25,217,255,0.45)] transition hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-[#020B1F]"
+        aria-label={
+          isOpen ? "Close MKETICS contact menu" : "Open MKETICS contact menu"
+        }
+        aria-expanded={isOpen}
       >
         {isOpen ? (
           <X size={28} />
