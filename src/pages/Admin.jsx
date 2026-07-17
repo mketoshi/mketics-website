@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
+import QuoteDraftBuilder from "../components/admin/QuoteDraftBuilder";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -71,6 +72,12 @@ export default function Admin() {
     loading: false,
     error: "",
     notes: [],
+  });
+
+  const [quotesState, setQuotesState] = useState({
+    loading: false,
+    error: "",
+    quotes: [],
   });
 
   const [noteForm, setNoteForm] = useState({
@@ -197,6 +204,7 @@ export default function Admin() {
     });
 
     fetchLeadNotes(selectedLead.id);
+    fetchLeadQuotes(selectedLead.id);
   }, [selectedLeadId, selectedLead?.status, selectedLead?.internal_notes]);
 
   async function loadInitialSession() {
@@ -374,6 +382,12 @@ export default function Admin() {
       notes: [],
     });
 
+    setQuotesState({
+      loading: false,
+      error: "",
+      quotes: [],
+    });
+
     setSelectedLeadId(null);
   }
 
@@ -464,6 +478,54 @@ export default function Admin() {
           error?.message ||
           "Unable to load lead notes. Check Supabase lead_notes policy.",
         notes: [],
+      });
+    }
+  }
+
+  async function fetchLeadQuotes(leadId) {
+    if (!supabase || !leadId) return;
+
+    try {
+      setQuotesState({
+        loading: true,
+        error: "",
+        quotes: [],
+      });
+
+      const { data, error } = await supabase
+        .from("quotes")
+        .select(
+          `
+          id,
+          lead_id,
+          quote_number,
+          title,
+          scope_summary,
+          exclusions,
+          amount,
+          currency,
+          status,
+          valid_until,
+          created_at
+        `
+        )
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setQuotesState({
+        loading: false,
+        error: "",
+        quotes: data || [],
+      });
+    } catch (error) {
+      setQuotesState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to load quote history. Check Supabase quote permissions.",
+        quotes: [],
       });
     }
   }
@@ -588,6 +650,33 @@ export default function Admin() {
         success: "",
       });
     }
+  }
+
+  function handleQuoteCreated(quote, markLeadAsQuoted) {
+    setQuotesState((current) => ({
+      ...current,
+      quotes: quote ? [quote, ...current.quotes] : current.quotes,
+    }));
+
+    if (!selectedLead || !markLeadAsQuoted) return;
+
+    setLeadsState((current) => ({
+      ...current,
+      leads: current.leads.map((lead) =>
+        lead.id === selectedLead.id
+          ? {
+              ...lead,
+              status: "quoted",
+              updated_at: new Date().toISOString(),
+            }
+          : lead
+      ),
+    }));
+
+    setDetailForm((current) => ({
+      ...current,
+      status: "quoted",
+    }));
   }
 
   function handleOpenLead(lead) {
@@ -960,6 +1049,7 @@ export default function Admin() {
               form={detailForm}
               saveState={detailSaveState}
               notesState={notesState}
+              quotesState={quotesState}
               noteForm={noteForm}
               noteSaveState={noteSaveState}
               profile={authState.profile}
@@ -970,6 +1060,8 @@ export default function Admin() {
               onSave={handleSaveLeadDetails}
               onAddNote={handleAddLeadNote}
               onRefreshNotes={() => fetchLeadNotes(selectedLead.id)}
+              onRefreshQuotes={() => fetchLeadQuotes(selectedLead.id)}
+              onQuoteCreated={handleQuoteCreated}
             />
           ) : (
             <div className="mt-6 rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
@@ -1085,6 +1177,7 @@ function LeadDetailPanel({
   form,
   saveState,
   notesState,
+  quotesState,
   noteForm,
   noteSaveState,
   profile,
@@ -1095,6 +1188,8 @@ function LeadDetailPanel({
   onSave,
   onAddNote,
   onRefreshNotes,
+  onRefreshQuotes,
+  onQuoteCreated,
 }) {
   const whatsappLink = createClientWhatsAppLink(
     lead.phone,
@@ -1391,6 +1486,13 @@ function LeadDetailPanel({
               )}
             </button>
           </form>
+
+          <QuoteDraftBuilder
+            lead={lead}
+            quotesState={quotesState}
+            onRefreshQuotes={onRefreshQuotes}
+            onQuoteCreated={onQuoteCreated}
+          />
         </div>
       </div>
     </section>
