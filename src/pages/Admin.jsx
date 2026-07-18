@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertCircle,
+  Bell,
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
@@ -26,6 +27,7 @@ import SEO from "../components/seo/SEO";
 import AdminOverviewDashboard from "../components/admin/AdminOverviewDashboard";
 import QuoteDraftBuilder from "../components/admin/QuoteDraftBuilder";
 import ProjectsClientsDashboard from "../components/admin/ProjectsClientsDashboard";
+import BusinessNotificationsDashboard from "../components/admin/BusinessNotificationsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -979,6 +981,14 @@ export default function Admin() {
                 setSelectedLeadId(null);
               }}
             />
+          ) : activeConsoleTab === "notifications" ? (
+            <BusinessNotificationsDashboard
+              isActive={activeConsoleTab === "notifications"}
+              onGoToTab={(tab) => {
+                setActiveConsoleTab(tab);
+                setSelectedLeadId(null);
+              }}
+            />
           ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -1168,6 +1178,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: Activity,
     },
     {
+      id: "notifications",
+      label: "Notifications",
+      description: "Track reminders, overdue work and business follow-ups.",
+      icon: Bell,
+    },
+    {
       id: "leads",
       label: "Leads & Quotes",
       description: "Manage enquiries, quote drafts and follow-ups.",
@@ -1182,7 +1198,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-2">
+    <div className="mb-6 grid gap-3 lg:grid-cols-4">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
