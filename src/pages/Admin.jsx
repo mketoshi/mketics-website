@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
+  BriefcaseBusiness,
   CheckCircle2,
   ClipboardList,
   Clock,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
 import QuoteDraftBuilder from "../components/admin/QuoteDraftBuilder";
+import ProjectsClientsDashboard from "../components/admin/ProjectsClientsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -93,6 +95,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
+  const [activeConsoleTab, setActiveConsoleTab] = useState("leads");
 
   const [detailForm, setDetailForm] = useState({
     status: "new",
@@ -958,7 +961,17 @@ export default function Admin() {
 
       <section className="px-5 py-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <AdminConsoleTabs
+            activeTab={activeConsoleTab}
+            onChange={(tab) => {
+              setActiveConsoleTab(tab);
+              setSelectedLeadId(null);
+            }}
+          />
+
+          {activeConsoleTab === "leads" ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
             <StatCard label="Total Leads" value={leadStats.total} />
             <StatCard label="New" value={leadStats.newLeads} />
             <StatCard label="Reviewed" value={leadStats.reviewed} />
@@ -1126,9 +1139,73 @@ export default function Admin() {
               </div>
             </div>
           )}
+            </>
+          ) : (
+            <ProjectsClientsDashboard isActive={activeConsoleTab === "projects"} />
+          )}
         </div>
       </section>
     </main>
+  );
+}
+
+function AdminConsoleTabs({ activeTab, onChange }) {
+  const tabs = [
+    {
+      id: "leads",
+      label: "Leads & Quotes",
+      description: "Manage enquiries, quote drafts and follow-ups.",
+      icon: ClipboardList,
+    },
+    {
+      id: "projects",
+      label: "Projects & Clients",
+      description: "View converted client records and active projects.",
+      icon: BriefcaseBusiness,
+    },
+  ];
+
+  return (
+    <div className="mb-6 grid gap-3 lg:grid-cols-2">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={`rounded-[1.5rem] border p-5 text-left transition ${
+              isActive
+                ? "border-cyan-300 bg-[#061A33] text-white shadow-[0_18px_45px_rgba(6,26,51,0.22)]"
+                : "border-slate-200 bg-white text-[#061A33] hover:border-cyan-300 hover:bg-[#F8FCFF]"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${
+                  isActive ? "bg-cyan-300 text-[#061A33]" : "bg-[#EAF6FF] text-[#0B7CFF]"
+                }`}
+              >
+                <Icon size={21} />
+              </div>
+
+              <div>
+                <p className="text-lg font-black">{tab.label}</p>
+                <p
+                  className={`mt-1 text-sm font-semibold leading-6 ${
+                    isActive ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
+                  {tab.description}
+                </p>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
