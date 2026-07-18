@@ -18,6 +18,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import SupportTicketsDashboard from "./SupportTicketsDashboard";
 
 const projectStatusOptions = [
   "new",
@@ -355,6 +356,37 @@ export default function ProjectsClientsDashboard({ isActive }) {
     return data;
   }
 
+
+  async function updateSupportTicket(ticketId, updates) {
+    if (!supabase || !ticketId) {
+      throw new Error("Supabase support ticket update is not available.");
+    }
+
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .update(updates)
+      .eq("id", ticketId)
+      .select(
+        "id, client_id, project_id, ticket_type, priority, subject, description, status, assigned_to, resolution_notes, closed_at, created_at, updated_at"
+      )
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error("The ticket update completed but no ticket row was returned.");
+    }
+
+    setDashboardState((current) => ({
+      ...current,
+      supportTickets: current.supportTickets.map((ticket) =>
+        ticket.id === ticketId ? data : ticket
+      ),
+    }));
+
+    return data;
+  }
+
   function handleProjectView(project) {
     setSelectedProjectId(project.id);
     setSelectedClientId(null);
@@ -385,7 +417,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              View converted clients, update project progress and log client communication notes.
+              View converted clients, update project progress, manage support tickets and log client communication notes.
             </p>
           </div>
 
@@ -405,7 +437,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[auto_1fr_220px]">
-          <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-1">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-1">
             <button
               type="button"
               onClick={() => setActiveView("projects")}
@@ -428,6 +460,18 @@ export default function ProjectsClientsDashboard({ isActive }) {
               }`}
             >
               Clients
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveView("tickets")}
+              className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+                activeView === "tickets"
+                  ? "bg-[#061A33] text-white"
+                  : "text-slate-600 hover:bg-white"
+              }`}
+            >
+              Tickets
             </button>
           </div>
 
@@ -464,7 +508,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
           <StatusMessage type="error" message={dashboardState.error} />
         )}
 
-        {activeView === "projects" ? (
+        {activeView === "projects" && (
           <ProjectsTable
             loading={dashboardState.loading}
             projects={filteredProjects}
@@ -472,12 +516,28 @@ export default function ProjectsClientsDashboard({ isActive }) {
             ticketCountsByProject={ticketCountsByProject}
             onView={handleProjectView}
           />
-        ) : (
+        )}
+
+        {activeView === "clients" && (
           <ClientsTable
             loading={dashboardState.loading}
             clients={filteredClients}
             projectCountsByClient={projectCountsByClient}
             onView={handleClientView}
+          />
+        )}
+
+        {activeView === "tickets" && (
+          <SupportTicketsDashboard
+            loading={dashboardState.loading}
+            tickets={dashboardState.supportTickets}
+            projects={dashboardState.projects}
+            clients={dashboardState.clients}
+            searchTerm={searchTerm}
+            onTicketUpdate={updateSupportTicket}
+            onOpenProject={handleProjectView}
+            onOpenClient={handleClientView}
+            onRefresh={fetchDashboardRecords}
           />
         )}
       </div>
