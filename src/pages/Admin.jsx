@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
@@ -22,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
+import AdminOverviewDashboard from "../components/admin/AdminOverviewDashboard";
 import QuoteDraftBuilder from "../components/admin/QuoteDraftBuilder";
 import ProjectsClientsDashboard from "../components/admin/ProjectsClientsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
@@ -95,7 +97,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedLeadId, setSelectedLeadId] = useState(null);
-  const [activeConsoleTab, setActiveConsoleTab] = useState("leads");
+  const [activeConsoleTab, setActiveConsoleTab] = useState("overview");
 
   const [detailForm, setDetailForm] = useState({
     status: "new",
@@ -969,7 +971,15 @@ export default function Admin() {
             }}
           />
 
-          {activeConsoleTab === "leads" ? (
+          {activeConsoleTab === "overview" ? (
+            <AdminOverviewDashboard
+              isActive={activeConsoleTab === "overview"}
+              onGoToTab={(tab) => {
+                setActiveConsoleTab(tab);
+                setSelectedLeadId(null);
+              }}
+            />
+          ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
             <StatCard label="Total Leads" value={leadStats.total} />
@@ -1151,6 +1161,12 @@ export default function Admin() {
 
 function AdminConsoleTabs({ activeTab, onChange }) {
   const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      description: "View pipeline stats and recent business activity.",
+      icon: Activity,
+    },
     {
       id: "leads",
       label: "Leads & Quotes",
