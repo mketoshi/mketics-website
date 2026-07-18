@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  Sparkles,
   ShieldCheck,
   StickyNote,
   X,
@@ -29,6 +30,7 @@ import QuoteDraftBuilder from "../components/admin/QuoteDraftBuilder";
 import ProjectsClientsDashboard from "../components/admin/ProjectsClientsDashboard";
 import BusinessNotificationsDashboard from "../components/admin/BusinessNotificationsDashboard";
 import DocumentsDashboard from "../components/admin/DocumentsDashboard";
+import AIProposalAssistant from "../components/admin/AIProposalAssistant";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -992,6 +994,8 @@ export default function Admin() {
             />
           ) : activeConsoleTab === "documents" ? (
             <DocumentsDashboard isActive={activeConsoleTab === "documents"} />
+          ) : activeConsoleTab === "ai" ? (
+            <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -1193,6 +1197,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: ClipboardList,
     },
     {
+      id: "ai",
+      label: "AI Assistant",
+      description: "Generate proposal drafts, quote support and client-ready follow-up text.",
+      icon: Sparkles,
+    },
+    {
       id: "documents",
       label: "Documents",
       description: "Track client files, project records and quote documents.",
@@ -1207,7 +1217,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-5">
+    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-6">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
