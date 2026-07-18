@@ -38,6 +38,24 @@ const clientNoteTemplates = [
   "General communication logged for MKETICS project tracking.",
 ];
 
+const ticketStatusOptions = [
+  "open",
+  "in_progress",
+  "waiting_for_client",
+  "resolved",
+  "closed",
+];
+
+const ticketPriorityOptions = ["low", "normal", "high", "urgent"];
+
+const supportTicketTemplates = [
+  "Client reported an issue that needs technical support.",
+  "Project requires follow-up support before the next delivery stage.",
+  "Access details, hosting, email or system issue needs to be checked.",
+  "Client requested changes that must be reviewed before implementation.",
+  "Post-delivery support request logged for tracking and resolution.",
+];
+
 export default function ProjectsClientsDashboard({ isActive }) {
   const [activeView, setActiveView] = useState("projects");
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,6 +68,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
     error: "",
     clients: [],
     projects: [],
+    supportTickets: [],
   });
 
   const clientMap = useMemo(() => {
@@ -64,6 +83,23 @@ export default function ProjectsClientsDashboard({ isActive }) {
       return counts;
     }, {});
   }, [dashboardState.projects]);
+
+  const ticketCountsByProject = useMemo(() => {
+    return dashboardState.supportTickets.reduce((counts, ticket) => {
+      if (!ticket.project_id) return counts;
+
+      counts[ticket.project_id] = (counts[ticket.project_id] || 0) + 1;
+      return counts;
+    }, {});
+  }, [dashboardState.supportTickets]);
+
+  const selectedProjectTickets = useMemo(() => {
+    if (!selectedProjectId) return [];
+
+    return dashboardState.supportTickets.filter(
+      (ticket) => ticket.project_id === selectedProjectId
+    );
+  }, [dashboardState.supportTickets, selectedProjectId]);
 
   const selectedProject = useMemo(() => {
     return (
@@ -149,6 +185,9 @@ export default function ProjectsClientsDashboard({ isActive }) {
     const supportProjects = dashboardState.projects.filter(
       (project) => project.status === "support"
     ).length;
+    const openTickets = dashboardState.supportTickets.filter(
+      (ticket) => !["resolved", "closed"].includes(ticket.status)
+    ).length;
 
     return {
       clients: dashboardState.clients.length,
@@ -157,8 +196,9 @@ export default function ProjectsClientsDashboard({ isActive }) {
       awaitingClient,
       completedProjects,
       supportProjects,
+      openTickets,
     };
-  }, [dashboardState.clients.length, dashboardState.projects]);
+  }, [dashboardState.clients.length, dashboardState.projects, dashboardState.supportTickets]);
 
   useEffect(() => {
     if (isActive) {
@@ -176,7 +216,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
         error: "",
       }));
 
-      const [clientsResponse, projectsResponse] = await Promise.all([
+      const [clientsResponse, projectsResponse, ticketsResponse] = await Promise.all([
         supabase
           .from("clients")
           .select(
@@ -189,16 +229,24 @@ export default function ProjectsClientsDashboard({ isActive }) {
             "id, client_id, lead_id, title, description, service_type, status, start_date, due_date, completed_at, created_at, updated_at"
           )
           .order("created_at", { ascending: false }),
+        supabase
+          .from("support_tickets")
+          .select(
+            "id, client_id, project_id, ticket_type, priority, subject, description, status, assigned_to, resolution_notes, closed_at, created_at, updated_at"
+          )
+          .order("created_at", { ascending: false }),
       ]);
 
       if (clientsResponse.error) throw clientsResponse.error;
       if (projectsResponse.error) throw projectsResponse.error;
+      if (ticketsResponse.error) throw ticketsResponse.error;
 
       setDashboardState({
         loading: false,
         error: "",
         clients: clientsResponse.data || [],
         projects: projectsResponse.data || [],
+        supportTickets: ticketsResponse.data || [],
       });
     } catch (error) {
       setDashboardState({
@@ -208,6 +256,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
           "Unable to load clients and projects. Check Supabase permissions.",
         clients: [],
         projects: [],
+        supportTickets: [],
       });
     }
   }
@@ -283,6 +332,29 @@ export default function ProjectsClientsDashboard({ isActive }) {
     return data;
   }
 
+  async function createSupportTicket(ticketPayload) {
+    if (!supabase) {
+      throw new Error("Supabase support ticket creation is not available.");
+    }
+
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .insert(ticketPayload)
+      .select(
+        "id, client_id, project_id, ticket_type, priority, subject, description, status, assigned_to, resolution_notes, closed_at, created_at, updated_at"
+      )
+      .single();
+
+    if (error) throw error;
+
+    setDashboardState((current) => ({
+      ...current,
+      supportTickets: [data, ...current.supportTickets],
+    }));
+
+    return data;
+  }
+
   function handleProjectView(project) {
     setSelectedProjectId(project.id);
     setSelectedClientId(null);
@@ -295,13 +367,14 @@ export default function ProjectsClientsDashboard({ isActive }) {
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-7">
         <StatCard label="Clients" value={stats.clients} />
         <StatCard label="Projects" value={stats.totalProjects} />
         <StatCard label="Active" value={stats.activeProjects} />
         <StatCard label="Awaiting" value={stats.awaitingClient} />
         <StatCard label="Completed" value={stats.completedProjects} />
         <StatCard label="Support" value={stats.supportProjects} />
+        <StatCard label="Open Tickets" value={stats.openTickets} />
       </div>
 
       <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -396,6 +469,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
             loading={dashboardState.loading}
             projects={filteredProjects}
             clientMap={clientMap}
+            ticketCountsByProject={ticketCountsByProject}
             onView={handleProjectView}
           />
         ) : (
@@ -412,8 +486,10 @@ export default function ProjectsClientsDashboard({ isActive }) {
         <ProjectDetailPanel
           project={selectedProject}
           client={clientMap.get(selectedProject.client_id)}
+          tickets={selectedProjectTickets}
           onClose={() => setSelectedProjectId(null)}
           onProjectUpdate={updateProjectRecord}
+          onTicketCreate={createSupportTicket}
           onOpenClient={handleClientView}
           onClientNoteAdd={saveClientCommunicationNote}
         />
@@ -432,7 +508,7 @@ export default function ProjectsClientsDashboard({ isActive }) {
   );
 }
 
-function ProjectsTable({ loading, projects, clientMap, onView }) {
+function ProjectsTable({ loading, projects, clientMap, ticketCountsByProject, onView }) {
   return (
     <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
       <div className="overflow-x-auto">
@@ -445,6 +521,7 @@ function ProjectsTable({ loading, projects, clientMap, onView }) {
               <Th>Service</Th>
               <Th>Due Date</Th>
               <Th>Status</Th>
+              <Th>Tickets</Th>
               <Th>Action</Th>
             </tr>
           </thead>
@@ -452,7 +529,7 @@ function ProjectsTable({ loading, projects, clientMap, onView }) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan="7" className="px-5 py-10 text-center">
+                <td colSpan="8" className="px-5 py-10 text-center">
                   <Loader2 className="mx-auto animate-spin text-[#0B7CFF]" size={28} />
                   <p className="mt-3 text-sm font-black text-slate-500">
                     Loading projects...
@@ -463,7 +540,7 @@ function ProjectsTable({ loading, projects, clientMap, onView }) {
 
             {!loading && projects.length === 0 && (
               <tr>
-                <td colSpan="7" className="px-5 py-10 text-center">
+                <td colSpan="8" className="px-5 py-10 text-center">
                   <BriefcaseBusiness className="mx-auto text-slate-400" size={28} />
                   <p className="mt-3 text-sm font-black text-slate-500">
                     No projects found.
@@ -514,6 +591,11 @@ function ProjectsTable({ loading, projects, clientMap, onView }) {
                     <Td>{formatDate(project.due_date)}</Td>
                     <Td>
                       <StatusBadge status={project.status} />
+                    </Td>
+                    <Td>
+                      <span className="inline-flex rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
+                        {ticketCountsByProject[project.id] || 0}
+                      </span>
                     </Td>
                     <Td>
                       <button
@@ -643,8 +725,10 @@ function ClientsTable({ loading, clients, projectCountsByClient, onView }) {
 function ProjectDetailPanel({
   project,
   client,
+  tickets,
   onClose,
   onProjectUpdate,
+  onTicketCreate,
   onOpenClient,
   onClientNoteAdd,
 }) {
@@ -896,6 +980,14 @@ function ProjectDetailPanel({
             </div>
           </form>
 
+          <ProjectSupportTicketPanel
+            project={project}
+            client={client}
+            tickets={tickets}
+            onTicketCreate={onTicketCreate}
+            onProjectUpdate={onProjectUpdate}
+          />
+
           {client && (
             <ClientCommunicationPanel
               client={client}
@@ -904,6 +996,298 @@ function ProjectDetailPanel({
             />
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectSupportTicketPanel({
+  project,
+  client,
+  tickets = [],
+  onTicketCreate,
+  onProjectUpdate,
+}) {
+  const [form, setForm] = useState(() => buildTicketForm(project));
+  const [moveProjectToSupport, setMoveProjectToSupport] = useState(true);
+  const [saveState, setSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+
+  useEffect(() => {
+    setForm(buildTicketForm(project));
+    setMoveProjectToSupport(true);
+    setSaveState({ loading: false, error: "", success: "" });
+  }, [project?.id]);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    if (saveState.error || saveState.success) {
+      setSaveState({ loading: false, error: "", success: "" });
+    }
+  }
+
+  function useTemplate(template) {
+    setForm((current) => ({
+      ...current,
+      description: [
+        `Project: ${project?.title || "Project"}`,
+        client?.full_name ? `Client: ${client.full_name}` : "",
+        "",
+        template,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    }));
+
+    setSaveState({ loading: false, error: "", success: "" });
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!project?.id) return;
+
+    if (!form.subject.trim()) {
+      setSaveState({
+        loading: false,
+        error: "Support ticket subject is required.",
+        success: "",
+      });
+      return;
+    }
+
+    if (!form.description.trim()) {
+      setSaveState({
+        loading: false,
+        error: "Support ticket description is required.",
+        success: "",
+      });
+      return;
+    }
+
+    if (!ticketPriorityOptions.includes(form.priority)) {
+      setSaveState({
+        loading: false,
+        error: "Choose a valid ticket priority.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setSaveState({ loading: true, error: "", success: "" });
+
+      await onTicketCreate({
+        client_id: client?.id || project.client_id || null,
+        project_id: project.id,
+        ticket_type: form.ticketType.trim() || "project_support",
+        priority: form.priority,
+        subject: form.subject.trim(),
+        description: form.description.trim(),
+        status: "open",
+      });
+
+      if (moveProjectToSupport && project.status !== "support") {
+        await onProjectUpdate(project.id, {
+          status: "support",
+        });
+      }
+
+      setForm(buildTicketForm(project));
+      setSaveState({
+        loading: false,
+        error: "",
+        success: "Support ticket created successfully.",
+      });
+    } catch (error) {
+      setSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to create support ticket. Check Supabase support_tickets permissions.",
+        success: "",
+      });
+    }
+  }
+
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+        <AlertCircle size={22} />
+      </div>
+
+      <h3 className="mt-4 text-xl font-black text-[#020B1F]">
+        Support ticket
+      </h3>
+
+      <p className="mt-2 text-sm leading-7 text-slate-600">
+        Create a support ticket linked to this project so issues and follow-up work are tracked clearly.
+      </p>
+
+      {saveState.error && (
+        <StatusMessage type="error" message={saveState.error} />
+      )}
+
+      {saveState.success && (
+        <StatusMessage type="success" message={saveState.success} />
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
+        <label className="block">
+          <span className="text-sm font-black text-[#061A33]">
+            Ticket Subject
+          </span>
+
+          <input
+            name="subject"
+            value={form.subject}
+            onChange={handleChange}
+            placeholder="Project support request"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+          />
+        </label>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-black text-[#061A33]">
+              Ticket Type
+            </span>
+
+            <input
+              name="ticketType"
+              value={form.ticketType}
+              onChange={handleChange}
+              placeholder="project_support"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-black text-[#061A33]">
+              Priority
+            </span>
+
+            <select
+              name="priority"
+              value={form.priority}
+              onChange={handleChange}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+            >
+              {ticketPriorityOptions.map((priority) => (
+                <option key={priority} value={priority}>
+                  {toReadableLabel(priority)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="block">
+          <span className="text-sm font-black text-[#061A33]">
+            Ticket Description
+          </span>
+
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            rows={7}
+            placeholder="Describe the issue, client request or support action needed."
+            className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold leading-7 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+          />
+        </label>
+
+        <div className="grid gap-2">
+          {supportTicketTemplates.map((template) => (
+            <button
+              type="button"
+              key={template}
+              onClick={() => useTemplate(template)}
+              className="rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-left text-xs font-bold leading-5 text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50"
+            >
+              {template}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+          <input
+            type="checkbox"
+            checked={moveProjectToSupport}
+            onChange={(event) => setMoveProjectToSupport(event.target.checked)}
+            className="mt-1 h-4 w-4 accent-[#0B7CFF]"
+          />
+
+          <span className="text-sm font-bold leading-6 text-slate-700">
+            Move this project to Support after creating the ticket.
+          </span>
+        </label>
+
+        <button
+          type="submit"
+          disabled={saveState.loading}
+          className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {saveState.loading ? (
+            <>
+              <Loader2 size={18} className="mr-2 animate-spin" />
+              Creating Ticket
+            </>
+          ) : (
+            <>
+              <Save size={18} className="mr-2" />
+              Create Support Ticket
+            </>
+          )}
+        </button>
+      </form>
+
+      <div className="mt-6 rounded-[1.25rem] border border-slate-200 bg-[#F8FCFF] p-4">
+        <h4 className="text-sm font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+          Project Tickets
+        </h4>
+
+        {tickets.length === 0 && (
+          <p className="mt-4 text-sm font-bold leading-6 text-slate-600">
+            No support tickets have been created for this project yet.
+          </p>
+        )}
+
+        {tickets.map((ticket) => (
+          <article
+            key={ticket.id}
+            className="mt-4 rounded-2xl border border-slate-200 bg-white p-4"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-[#020B1F]">
+                  {ticket.subject}
+                </p>
+                <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-slate-600">
+                  {ticket.description}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <TicketBadge label={ticket.priority} />
+                <TicketBadge label={ticket.status} />
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#0B7CFF]">
+              {toReadableLabel(ticket.ticket_type)} • {formatFullDate(ticket.created_at)}
+            </p>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -1250,6 +1634,14 @@ function StatCard({ label, value }) {
   );
 }
 
+function TicketBadge({ label }) {
+  return (
+    <span className="inline-flex rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
+      {toReadableLabel(label)}
+    </span>
+  );
+}
+
 function StatusBadge({ status }) {
   return (
     <span className="inline-flex rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
@@ -1294,6 +1686,15 @@ function Td({ children }) {
       {children}
     </td>
   );
+}
+
+function buildTicketForm(project) {
+  return {
+    ticketType: "project_support",
+    priority: "normal",
+    subject: project?.title ? `${project.title} support request` : "Project support request",
+    description: "",
+  };
 }
 
 function buildProjectForm(project) {
