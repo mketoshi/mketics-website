@@ -498,6 +498,8 @@ export default function Admin() {
           `
           id,
           lead_id,
+          client_id,
+          project_id,
           quote_number,
           title,
           scope_summary,
@@ -506,7 +508,11 @@ export default function Admin() {
           currency,
           status,
           valid_until,
-          created_at
+          sent_at,
+          accepted_at,
+          rejected_at,
+          created_at,
+          updated_at
         `
         )
         .eq("lead_id", leadId)
@@ -676,6 +682,42 @@ export default function Admin() {
     setDetailForm((current) => ({
       ...current,
       status: "quoted",
+    }));
+  }
+
+  function handleQuoteConverted(conversion) {
+    if (conversion?.quote) {
+      setQuotesState((current) => ({
+        ...current,
+        quotes: current.quotes.map((quote) =>
+          quote.id === conversion.quote.id
+            ? {
+                ...quote,
+                ...conversion.quote,
+              }
+            : quote
+        ),
+      }));
+    }
+
+    if (!selectedLead || conversion?.leadStatus !== "won") return;
+
+    setLeadsState((current) => ({
+      ...current,
+      leads: current.leads.map((lead) =>
+        lead.id === selectedLead.id
+          ? {
+              ...lead,
+              status: "won",
+              updated_at: new Date().toISOString(),
+            }
+          : lead
+      ),
+    }));
+
+    setDetailForm((current) => ({
+      ...current,
+      status: "won",
     }));
   }
 
@@ -1062,6 +1104,7 @@ export default function Admin() {
               onRefreshNotes={() => fetchLeadNotes(selectedLead.id)}
               onRefreshQuotes={() => fetchLeadQuotes(selectedLead.id)}
               onQuoteCreated={handleQuoteCreated}
+              onQuoteConverted={handleQuoteConverted}
             />
           ) : (
             <div className="mt-6 rounded-[2rem] border border-cyan-200 bg-white p-5 shadow-sm">
@@ -1190,6 +1233,7 @@ function LeadDetailPanel({
   onRefreshNotes,
   onRefreshQuotes,
   onQuoteCreated,
+  onQuoteConverted,
 }) {
   const whatsappLink = createClientWhatsAppLink(
     lead.phone,
@@ -1492,6 +1536,7 @@ function LeadDetailPanel({
             quotesState={quotesState}
             onRefreshQuotes={onRefreshQuotes}
             onQuoteCreated={onQuoteCreated}
+            onQuoteConverted={onQuoteConverted}
           />
         </div>
       </div>

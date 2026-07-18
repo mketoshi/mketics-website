@@ -30,6 +30,7 @@ export default function QuoteDraftBuilder({
   quotesState,
   onRefreshQuotes,
   onQuoteCreated,
+  onQuoteConverted,
 }) {
   const [form, setForm] = useState(() => buildDefaultQuoteForm(lead));
   const [saveState, setSaveState] = useState({
@@ -136,7 +137,7 @@ export default function QuoteDraftBuilder({
         .from("quotes")
         .insert(quoteRow)
         .select(
-          "id, lead_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
+          "id, lead_id, client_id, project_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
         )
         .single();
 
@@ -203,7 +204,7 @@ export default function QuoteDraftBuilder({
         .update(updatePayload)
         .eq("id", quote.id)
         .select(
-          "id, lead_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
+          "id, lead_id, client_id, project_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
         )
         .single();
 
@@ -236,6 +237,16 @@ export default function QuoteDraftBuilder({
       success: "",
     });
   }
+
+  async function handleQuoteConverted(conversion) {
+    if (conversion?.quote) {
+      setSelectedQuote(conversion.quote);
+    }
+
+    await onRefreshQuotes?.();
+    onQuoteConverted?.(conversion);
+  }
+
 
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -483,6 +494,7 @@ export default function QuoteDraftBuilder({
           lead={lead}
           statusSaveState={statusSaveState}
           onStatusChange={handleQuoteStatusChange}
+          onQuoteConverted={handleQuoteConverted}
           onClose={() => setSelectedQuote(null)}
         />
       )}

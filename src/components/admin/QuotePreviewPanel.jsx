@@ -13,6 +13,7 @@ import {
   Send,
   X,
 } from "lucide-react";
+import ClientProjectConversionPanel from "./ClientProjectConversionPanel";
 
 const companyDetails = {
   name: "MKETICS (PTY) LTD",
@@ -32,6 +33,7 @@ export default function QuotePreviewPanel({
   onClose,
   onStatusChange,
   statusSaveState,
+  onQuoteConverted,
 }) {
   const [statusForm, setStatusForm] = useState(quote?.status || "draft");
   const [copyState, setCopyState] = useState({ error: "", success: "" });
@@ -273,6 +275,12 @@ export default function QuotePreviewPanel({
               <PreviewLine label="Rejected At" value={formatFullDate(quote.rejected_at)} />
             </div>
           </form>
+
+          <ClientProjectConversionPanel
+            quote={quote}
+            lead={lead}
+            onConverted={onQuoteConverted}
+          />
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
