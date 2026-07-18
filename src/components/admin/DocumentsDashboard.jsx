@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Link as LinkIcon,
   Loader2,
+  UploadCloud,
   Plus,
   RefreshCw,
   Save,
@@ -31,6 +32,15 @@ const documentTypes = [
   "support_document",
   "other",
 ];
+
+const storageBucketName = "mketics-documents";
+const maxUploadSizeBytes = 10 * 1024 * 1024;
+
+const emptyUploadState = {
+  file: null,
+  error: "",
+  success: "",
+};
 
 const emptyDocumentForm = {
   title: "",
@@ -59,6 +69,8 @@ export default function DocumentsDashboard({ isActive }) {
     error: "",
     success: "",
   });
+
+  const [uploadState, setUploadState] = useState(emptyUploadState);
 
   const [deleteState, setDeleteState] = useState({
     loadingId: "",
@@ -158,8 +170,18 @@ export default function DocumentsDashboard({ isActive }) {
     const withLink = recordsState.documents.filter(
       (documentRecord) => documentRecord.public_url || documentRecord.storage_path
     ).length;
+    const storageFiles = recordsState.documents.filter(
+      (documentRecord) => documentRecord.storage_path
+    ).length;
 
-    return { total, linkedToClients, linkedToProjects, linkedToQuotes, withLink };
+    return {
+      total,
+      linkedToClients,
+      linkedToProjects,
+      linkedToQuotes,
+      withLink,
+      storageFiles,
+    };
   }, [recordsState.documents]);
 
   useEffect(() => {
@@ -274,6 +296,10 @@ export default function DocumentsDashboard({ isActive }) {
         success: "",
       });
 
+      const uploadedStoragePath = uploadState.file
+        ? await uploadDocumentFile(uploadState.file)
+        : "";
+
       const documentRow = {
         title: form.title.trim(),
         document_type: form.documentType,
@@ -281,7 +307,7 @@ export default function DocumentsDashboard({ isActive }) {
         project_id: form.projectId || null,
         quote_id: form.quoteId || null,
         public_url: form.publicUrl.trim() || null,
-        storage_path: form.storagePath.trim() || null,
+        storage_path: uploadedStoragePath || form.storagePath.trim() || null,
         notes: form.notes.trim() || null,
       };
 
@@ -313,6 +339,7 @@ export default function DocumentsDashboard({ isActive }) {
       }));
 
       setForm(emptyDocumentForm);
+      setUploadState(emptyUploadState);
       setSaveState({
         loading: false,
         error: "",
@@ -327,6 +354,124 @@ export default function DocumentsDashboard({ isActive }) {
         success: "",
       });
     }
+  }
+
+  async function uploadDocumentFile(file) {
+    const filePath = buildStoragePath({
+      file,
+      form,
+      client: recordsState.clients.find((client) => client.id === form.clientId),
+      project: recordsState.projects.find((project) => project.id === form.projectId),
+      quote: recordsState.quotes.find((quote) => quote.id === form.quoteId),
+    });
+
+    const { error } = await supabase.storage
+      .from(storageBucketName)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    return filePath;
+  }
+
+  async function createTemporaryStorageUrl(storagePath) {
+    if (!supabase || !storagePath) return "";
+
+    const { data, error } = await supabase.storage
+      .from(storageBucketName)
+      .createSignedUrl(storagePath, 60 * 10);
+
+    if (error) throw error;
+
+    return data?.signedUrl || "";
+  }
+
+  async function openStorageFile(storagePath) {
+    if (!storagePath) return;
+
+    try {
+      const signedUrl = await createTemporaryStorageUrl(storagePath);
+
+      if (signedUrl) {
+        window.open(signedUrl, "_blank", "noreferrer");
+      }
+    } catch (error) {
+      setCopyStatus(
+        error?.message ||
+          "Unable to open stored file. Check Supabase Storage policy and bucket setup."
+      );
+      window.setTimeout(() => setCopyStatus(""), 3500);
+    }
+  }
+
+  async function copyDocumentLocation(documentRecord) {
+    if (!documentRecord) return;
+
+    if (documentRecord.public_url) {
+      await copyText(documentRecord.public_url, "Document URL");
+      return;
+    }
+
+    if (documentRecord.storage_path) {
+      try {
+        const signedUrl = await createTemporaryStorageUrl(documentRecord.storage_path);
+        await copyText(signedUrl || documentRecord.storage_path, "Temporary storage link");
+      } catch (error) {
+        setCopyStatus(
+          error?.message ||
+            "Unable to create a temporary storage link. Check Supabase Storage policy."
+        );
+        window.setTimeout(() => setCopyStatus(""), 3500);
+      }
+    }
+  }
+
+  function handleFileSelect(event) {
+    const file = event.target.files?.[0] || null;
+
+    if (!file) {
+      setUploadState(emptyUploadState);
+      return;
+    }
+
+    if (file.size > maxUploadSizeBytes) {
+      setUploadState({
+        file: null,
+        error: "File is too large. Upload a file smaller than 10 MB.",
+        success: "",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setUploadState({
+      file,
+      error: "",
+      success: `${file.name} selected for upload.`,
+    });
+
+    if (!form.title.trim()) {
+      setForm((current) => ({
+        ...current,
+        title: removeFileExtension(file.name),
+      }));
+    }
+
+    if (saveState.error || saveState.success) {
+      setSaveState({
+        loading: false,
+        error: "",
+        success: "",
+      });
+    }
+  }
+
+  function clearSelectedUpload() {
+    setUploadState(emptyUploadState);
   }
 
   async function handleDeleteDocument(documentId) {
@@ -428,12 +573,13 @@ export default function DocumentsDashboard({ isActive }) {
 
   return (
     <section>
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Documents" value={stats.total} />
         <StatCard label="Client Files" value={stats.linkedToClients} />
         <StatCard label="Project Files" value={stats.linkedToProjects} />
         <StatCard label="Quote Files" value={stats.linkedToQuotes} />
         <StatCard label="With Link" value={stats.withLink} />
+        <StatCard label="Stored Files" value={stats.storageFiles} />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -451,9 +597,8 @@ export default function DocumentsDashboard({ isActive }) {
 
           <p className="mt-2 text-sm leading-7 text-slate-600">
             Register client files, project briefs, quote PDFs, invoices,
-            agreements and handover documents. This stores the file record and
-            link; the actual file may live in Google Drive, Supabase Storage or
-            another secure folder.
+            agreements and handover documents. Upload a file to Supabase Storage
+            or save an external link such as Google Drive.
           </p>
 
           {saveState.error && (
@@ -462,6 +607,14 @@ export default function DocumentsDashboard({ isActive }) {
 
           {saveState.success && (
             <StatusMessage type="success" message={saveState.success} />
+          )}
+
+          {uploadState.error && (
+            <StatusMessage type="error" message={uploadState.error} />
+          )}
+
+          {uploadState.success && (
+            <StatusMessage type="success" message={uploadState.success} />
           )}
 
           <div className="mt-5 grid gap-4">
@@ -574,6 +727,53 @@ export default function DocumentsDashboard({ isActive }) {
               />
             </label>
 
+            <div className="rounded-2xl border border-cyan-200 bg-[#F8FCFF] p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+                  <UploadCloud size={19} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-black text-[#061A33]">
+                    Supabase Storage Upload
+                  </p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+                    Upload a PDF, image, document, spreadsheet or project file.
+                    A private storage path will be saved and opened with a
+                    temporary secure link. Maximum size: 10 MB.
+                  </p>
+                </div>
+              </div>
+
+              <input
+                type="file"
+                onChange={handleFileSelect}
+                className="mt-4 w-full rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-4 text-sm font-semibold text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-[#061A33] file:px-4 file:py-2 file:text-sm file:font-black file:text-white hover:border-cyan-300"
+              />
+
+              {uploadState.file && (
+                <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-[#020B1F]">
+                      {uploadState.file.name}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      {formatFileSize(uploadState.file.size)} • Ready to upload
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={clearSelectedUpload}
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-[#F8FCFF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                  >
+                    <X size={14} className="mr-2" />
+                    Remove File
+                  </button>
+                </div>
+              )}
+            </div>
+
             <label className="block">
               <span className="text-sm font-black text-[#061A33]">
                 Storage Path / Folder Reference
@@ -583,7 +783,7 @@ export default function DocumentsDashboard({ isActive }) {
                 name="storagePath"
                 value={form.storagePath}
                 onChange={updateFormField}
-                placeholder="clients/client-name/project-folder/file.pdf"
+                placeholder="Auto-filled after upload, or manually enter a folder/path reference"
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
             </label>
@@ -610,12 +810,12 @@ export default function DocumentsDashboard({ isActive }) {
             {saveState.loading ? (
               <>
                 <Loader2 size={18} className="mr-2 animate-spin" />
-                Saving Record
+                Uploading / Saving
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                Save Document Record
+                Save / Upload Document
               </>
             )}
           </button>
@@ -747,12 +947,8 @@ export default function DocumentsDashboard({ isActive }) {
                         project={projectMap.get(documentRecord.project_id)}
                         quote={quoteMap.get(documentRecord.quote_id)}
                         onView={() => setSelectedDocumentId(documentRecord.id)}
-                        onCopy={() =>
-                          copyText(
-                            documentRecord.public_url || documentRecord.storage_path,
-                            "Document location"
-                          )
-                        }
+                        onCopy={() => copyDocumentLocation(documentRecord)}
+                        onOpenStorage={() => openStorageFile(documentRecord.storage_path)}
                         onDelete={() => handleDeleteDocument(documentRecord.id)}
                         deleteLoading={deleteState.loadingId === documentRecord.id}
                       />
@@ -771,12 +967,8 @@ export default function DocumentsDashboard({ isActive }) {
           project={projectMap.get(selectedDocument.project_id)}
           quote={quoteMap.get(selectedDocument.quote_id)}
           onClose={() => setSelectedDocumentId(null)}
-          onCopy={() =>
-            copyText(
-              selectedDocument.public_url || selectedDocument.storage_path,
-              "Document location"
-            )
-          }
+          onCopy={() => copyDocumentLocation(selectedDocument)}
+          onOpenStorage={() => openStorageFile(selectedDocument.storage_path)}
           onDelete={() => handleDeleteDocument(selectedDocument.id)}
           deleteLoading={deleteState.loadingId === selectedDocument.id}
         />
@@ -792,6 +984,7 @@ function DocumentRow({
   quote,
   onView,
   onCopy,
+  onOpenStorage,
   onDelete,
   deleteLoading,
 }) {
@@ -825,9 +1018,19 @@ function DocumentRow({
               </a>
             )}
             {documentRecord.storage_path && (
-              <p className="break-all text-xs font-semibold text-slate-500">
-                {documentRecord.storage_path}
-              </p>
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenStorage}
+                  className="inline-flex items-center gap-2 text-xs font-black text-[#0B7CFF] hover:underline"
+                >
+                  <FolderOpen size={13} />
+                  Open Stored File
+                </button>
+                <p className="break-all text-xs font-semibold text-slate-500">
+                  {documentRecord.storage_path}
+                </p>
+              </>
             )}
           </div>
         ) : (
@@ -871,6 +1074,7 @@ function DocumentDetailPanel({
   quote,
   onClose,
   onCopy,
+  onOpenStorage,
   onDelete,
   deleteLoading,
 }) {
@@ -951,6 +1155,17 @@ function DocumentDetailPanel({
                 <LinkIcon size={17} className="mr-2" />
                 Open File
               </a>
+            )}
+
+            {documentRecord.storage_path && (
+              <button
+                type="button"
+                onClick={onOpenStorage}
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-5 py-3 text-sm font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.22)] transition hover:-translate-y-0.5"
+              >
+                <FolderOpen size={17} className="mr-2" />
+                Open Stored File
+              </button>
             )}
 
             <button
@@ -1116,6 +1331,75 @@ function Td({ children }) {
       {children}
     </td>
   );
+}
+
+function buildStoragePath({ file, form, client, project, quote }) {
+  const date = new Date();
+  const dateFolder = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+
+  const clientPart = safePathSegment(
+    client?.organisation || client?.full_name || form.clientId || "unlinked-client"
+  );
+  const projectPart = safePathSegment(project?.title || form.projectId || "general");
+  const quotePart = safePathSegment(quote?.quote_number || form.quoteId || "no-quote");
+  const typePart = safePathSegment(form.documentType || "document");
+  const uniquePart = `${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  const fileName = safeFileName(file.name || "uploaded-file");
+
+  return [
+    "clients",
+    clientPart,
+    "projects",
+    projectPart,
+    "quotes",
+    quotePart,
+    typePart,
+    dateFolder,
+    `${uniquePart}-${fileName}`,
+  ].join("/");
+}
+
+function safePathSegment(value) {
+  return String(value || "item")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 70) || "item";
+}
+
+function safeFileName(value) {
+  const cleanName = String(value || "uploaded-file")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return cleanName || "uploaded-file";
+}
+
+function removeFileExtension(fileName) {
+  return String(fileName || "")
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return "Unknown size";
+
+  if (bytes < 1024) return `${bytes} B`;
+
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+
+  return `${(kb / 1024).toFixed(2)} MB`;
 }
 
 function buildRecordMap(records) {
