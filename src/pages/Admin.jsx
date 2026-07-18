@@ -13,6 +13,7 @@ import {
   Loader2,
   Lock,
   LogOut,
+  ListChecks,
   Mail,
   MessageCircle,
   Phone,
@@ -31,6 +32,7 @@ import ProjectsClientsDashboard from "../components/admin/ProjectsClientsDashboa
 import BusinessNotificationsDashboard from "../components/admin/BusinessNotificationsDashboard";
 import DocumentsDashboard from "../components/admin/DocumentsDashboard";
 import AIProposalAssistant from "../components/admin/AIProposalAssistant";
+import AIProjectPlanner from "../components/admin/AIProjectPlanner";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -996,6 +998,8 @@ export default function Admin() {
             <DocumentsDashboard isActive={activeConsoleTab === "documents"} />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
+          ) : activeConsoleTab === "planner" ? (
+            <AIProjectPlanner isActive={activeConsoleTab === "planner"} />
           ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -1203,6 +1207,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: Sparkles,
     },
     {
+      id: "planner",
+      label: "Project Planner",
+      description: "Generate project phases, tasks, milestones and client checklists.",
+      icon: ListChecks,
+    },
+    {
       id: "documents",
       label: "Documents",
       description: "Track client files, project records and quote documents.",
@@ -1217,7 +1227,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-6">
+    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-7">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
