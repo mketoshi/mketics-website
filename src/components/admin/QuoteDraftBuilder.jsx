@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Download,
+  Eye,
   FileText,
   Loader2,
   RefreshCw,
@@ -9,6 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import QuotePreviewPanel, { openQuotePdfExport } from "./QuotePreviewPanel";
 
 const defaultExclusions = [
   "Domain registration, hosting, third-party subscriptions and paid plugins are excluded unless stated otherwise.",
@@ -29,6 +32,7 @@ export default function QuoteDraftBuilder({
     success: "",
   });
   const [markLeadAsQuoted, setMarkLeadAsQuoted] = useState(true);
+  const [selectedQuote, setSelectedQuote] = useState(null);
 
   useEffect(() => {
     setForm(buildDefaultQuoteForm(lead));
@@ -38,6 +42,7 @@ export default function QuoteDraftBuilder({
       success: "",
     });
     setMarkLeadAsQuoted(true);
+    setSelectedQuote(null);
   }, [lead?.id]);
 
   function handleChange(event) {
@@ -119,6 +124,7 @@ export default function QuoteDraftBuilder({
       }
 
       onQuoteCreated?.(quote, markLeadAsQuoted);
+      setSelectedQuote(quote);
 
       setSaveState({
         loading: false,
@@ -325,29 +331,59 @@ export default function QuoteDraftBuilder({
               key={quote.id}
               className="mt-4 rounded-2xl border border-slate-200 bg-white p-4"
             >
-              <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
-                  <FileText size={18} />
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+                    <FileText size={18} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-black text-[#020B1F]">
+                      {quote.quote_number || "Draft Quote"}
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-slate-700">
+                      {quote.title}
+                    </p>
+
+                    <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#0B7CFF]">
+                      {formatCurrency(quote.amount, quote.currency)} •{" "}
+                      {toReadableLabel(quote.status)} • {formatDate(quote.created_at)}
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-sm font-black text-[#020B1F]">
-                    {quote.quote_number || "Draft Quote"}
-                  </p>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQuote(quote)}
+                    className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                  >
+                    <Eye size={14} className="mr-2" />
+                    View
+                  </button>
 
-                  <p className="mt-1 text-sm font-bold text-slate-700">
-                    {quote.title}
-                  </p>
-
-                  <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#0B7CFF]">
-                    {formatCurrency(quote.amount, quote.currency)} •{" "}
-                    {toReadableLabel(quote.status)} • {formatDate(quote.created_at)}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openQuotePdfExport(quote, lead)}
+                    className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-white px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                  >
+                    <Download size={14} className="mr-2" />
+                    PDF
+                  </button>
                 </div>
               </div>
             </article>
           ))}
       </div>
+
+      {selectedQuote && (
+        <QuotePreviewPanel
+          quote={selectedQuote}
+          lead={lead}
+          onClose={() => setSelectedQuote(null)}
+        />
+      )}
     </section>
   );
 }
