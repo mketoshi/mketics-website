@@ -1,10 +1,16 @@
+import { useEffect, useState } from "react";
 import {
+  AlertCircle,
   Building2,
+  CheckCircle2,
+  Clipboard,
   Download,
   FileText,
   Mail,
   Phone,
   Printer,
+  Save,
+  Send,
   X,
 } from "lucide-react";
 
@@ -18,11 +24,57 @@ const companyDetails = {
   logo: "/assets/mketics-logo.webp",
 };
 
-export default function QuotePreviewPanel({ quote, lead, onClose }) {
+const quoteStatusOptions = ["draft", "sent", "accepted", "rejected", "expired"];
+
+export default function QuotePreviewPanel({
+  quote,
+  lead,
+  onClose,
+  onStatusChange,
+  statusSaveState,
+}) {
+  const [statusForm, setStatusForm] = useState(quote?.status || "draft");
+  const [copyState, setCopyState] = useState({ error: "", success: "" });
+
+  useEffect(() => {
+    setStatusForm(quote?.status || "draft");
+    setCopyState({ error: "", success: "" });
+  }, [quote?.id, quote?.status]);
+
   if (!quote) return null;
+
+  const emailLink = createQuoteEmailLink(quote, lead);
+  const emailBody = buildQuoteEmailBody(quote, lead);
 
   function handleExportPdf() {
     openQuotePdfExport(quote, lead);
+  }
+
+  function handleStatusSubmit(event) {
+    event.preventDefault();
+    onStatusChange?.(quote, statusForm);
+  }
+
+  async function handleCopyEmailText() {
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error("Clipboard access is not available in this browser.");
+      }
+
+      await navigator.clipboard.writeText(emailBody);
+
+      setCopyState({
+        error: "",
+        success: "Client-ready email text copied.",
+      });
+    } catch (error) {
+      setCopyState({
+        error:
+          error?.message ||
+          "Unable to copy email text. Select and copy it manually instead.",
+        success: "",
+      });
+    }
   }
 
   return (
@@ -38,7 +90,7 @@ export default function QuotePreviewPanel({ quote, lead, onClose }) {
           </h3>
 
           <p className="mt-2 text-sm font-semibold text-slate-600">
-            Preview the quotation before sharing it with the client.
+            Preview, manage status and prepare a client-ready email.
           </p>
         </div>
 
@@ -52,6 +104,14 @@ export default function QuotePreviewPanel({ quote, lead, onClose }) {
             Export PDF
           </button>
 
+          <a
+            href={emailLink}
+            className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-5 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+          >
+            <Send size={17} className="mr-2" />
+            Email Client
+          </a>
+
           <button
             type="button"
             onClick={onClose}
@@ -63,89 +123,207 @@ export default function QuotePreviewPanel({ quote, lead, onClose }) {
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
-        <div className="bg-[#061A33] p-6 text-white">
-          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div>
-              <img
-                src={companyDetails.logo}
-                alt="MKETICS logo"
-                className="h-14 w-auto object-contain"
-              />
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+          <div className="bg-[#061A33] p-6 text-white">
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div>
+                <img
+                  src={companyDetails.logo}
+                  alt="MKETICS logo"
+                  className="h-14 w-auto object-contain"
+                />
 
-              <h4 className="mt-4 text-2xl font-black">
-                {companyDetails.name}
-              </h4>
+                <h4 className="mt-4 text-2xl font-black">
+                  {companyDetails.name}
+                </h4>
 
-              <p className="mt-1 text-sm font-semibold text-cyan-200">
-                {companyDetails.tagline}
-              </p>
-            </div>
+                <p className="mt-1 text-sm font-semibold text-cyan-200">
+                  {companyDetails.tagline}
+                </p>
+              </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-slate-200 md:text-right">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">
-                Quotation
-              </p>
-              <p className="mt-2 text-lg font-black text-white">
-                {quote.quote_number || "Draft Quote"}
-              </p>
-              <p>{formatDate(quote.created_at)}</p>
-              {quote.valid_until && <p>Valid until {formatDate(quote.valid_until)}</p>}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 text-sm font-semibold leading-7 text-slate-200 md:text-right">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">
+                  Quotation
+                </p>
+                <p className="mt-2 text-lg font-black text-white">
+                  {quote.quote_number || "Draft Quote"}
+                </p>
+                <p>{formatDate(quote.created_at)}</p>
+                {quote.valid_until && <p>Valid until {formatDate(quote.valid_until)}</p>}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-0 lg:grid-cols-2">
-          <PreviewCard title="Prepared For" icon={Building2}>
-            <PreviewLine label="Client" value={lead?.full_name} />
-            <PreviewLine label="Organisation" value={lead?.organisation} />
-            <PreviewLine label="Email" value={lead?.email} />
-            <PreviewLine label="Phone" value={lead?.phone} />
-          </PreviewCard>
+          <div className="grid gap-0 lg:grid-cols-2">
+            <PreviewCard title="Prepared For" icon={Building2}>
+              <PreviewLine label="Client" value={lead?.full_name} />
+              <PreviewLine label="Organisation" value={lead?.organisation} />
+              <PreviewLine label="Email" value={lead?.email} />
+              <PreviewLine label="Phone" value={lead?.phone} />
+            </PreviewCard>
 
-          <PreviewCard title="Quote Summary" icon={FileText}>
-            <PreviewLine label="Title" value={quote.title} />
-            <PreviewLine label="Status" value={toReadableLabel(quote.status)} />
-            <PreviewLine
-              label="Amount"
-              value={formatCurrency(quote.amount, quote.currency)}
-            />
-            <PreviewLine label="Currency" value={quote.currency || "ZAR"} />
-          </PreviewCard>
-        </div>
+            <PreviewCard title="Quote Summary" icon={FileText}>
+              <PreviewLine label="Title" value={quote.title} />
+              <PreviewLine label="Status" value={toReadableLabel(quote.status)} />
+              <PreviewLine
+                label="Amount"
+                value={formatCurrency(quote.amount, quote.currency)}
+              />
+              <PreviewLine label="Currency" value={quote.currency || "ZAR"} />
+            </PreviewCard>
+          </div>
 
-        <div className="border-t border-slate-200 p-6">
-          <h4 className="text-sm font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
-            Scope Summary
-          </h4>
-
-          <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
-            {quote.scope_summary || "No scope summary provided."}
-          </p>
-        </div>
-
-        {quote.exclusions && (
-          <div className="border-t border-slate-200 bg-[#F8FCFF] p-6">
+          <div className="border-t border-slate-200 p-6">
             <h4 className="text-sm font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
-              Exclusions / Notes
+              Scope Summary
             </h4>
 
             <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
-              {quote.exclusions}
+              {quote.scope_summary || "No scope summary provided."}
             </p>
           </div>
-        )}
 
-        <div className="grid gap-0 border-t border-slate-200 lg:grid-cols-3">
-          <ContactBlock icon={Mail} label="Email" value={companyDetails.email} />
-          <ContactBlock icon={Phone} label="Phone" value={companyDetails.phone} />
-          <ContactBlock icon={Printer} label="Website" value={companyDetails.website} />
+          {quote.exclusions && (
+            <div className="border-t border-slate-200 bg-[#F8FCFF] p-6">
+              <h4 className="text-sm font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                Exclusions / Notes
+              </h4>
+
+              <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
+                {quote.exclusions}
+              </p>
+            </div>
+          )}
+
+          <div className="grid gap-0 border-t border-slate-200 lg:grid-cols-3">
+            <ContactBlock icon={Mail} label="Email" value={companyDetails.email} />
+            <ContactBlock icon={Phone} label="Phone" value={companyDetails.phone} />
+            <ContactBlock icon={Printer} label="Website" value={companyDetails.website} />
+          </div>
+        </div>
+
+        <div className="grid content-start gap-5">
+          <form
+            onSubmit={handleStatusSubmit}
+            className="rounded-[1.5rem] border border-cyan-200 bg-[#F8FCFF] p-5"
+          >
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+              <Save size={22} />
+            </div>
+
+            <h4 className="mt-4 text-xl font-black text-[#020B1F]">
+              Quote Status Management
+            </h4>
+
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              Keep track of whether the quote is still a draft, already sent, accepted,
+              rejected or expired.
+            </p>
+
+            {statusSaveState?.error && (
+              <StatusMessage type="error" message={statusSaveState.error} />
+            )}
+
+            {statusSaveState?.success && (
+              <StatusMessage type="success" message={statusSaveState.success} />
+            )}
+
+            <label className="mt-5 block">
+              <span className="text-sm font-black text-[#061A33]">
+                Quote Status
+              </span>
+
+              <select
+                value={statusForm}
+                onChange={(event) => setStatusForm(event.target.value)}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+              >
+                {quoteStatusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {toReadableLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="submit"
+              disabled={statusSaveState?.loading || statusForm === quote.status}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#061A33] px-6 py-3 font-black text-white transition hover:bg-[#0B7CFF] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {statusSaveState?.loading ? (
+                <>
+                  <Save size={18} className="mr-2 animate-pulse" />
+                  Updating Status
+                </>
+              ) : (
+                <>
+                  <Save size={18} className="mr-2" />
+                  Save Quote Status
+                </>
+              )}
+            </button>
+
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <PreviewLine label="Current Status" value={toReadableLabel(quote.status)} />
+              <PreviewLine label="Sent At" value={formatFullDate(quote.sent_at)} />
+              <PreviewLine label="Accepted At" value={formatFullDate(quote.accepted_at)} />
+              <PreviewLine label="Rejected At" value={formatFullDate(quote.rejected_at)} />
+            </div>
+          </form>
+
+          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+              <Mail size={22} />
+            </div>
+
+            <h4 className="mt-4 text-xl font-black text-[#020B1F]">
+              Client-ready Email
+            </h4>
+
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              Export the PDF first, then use this email text when sending the quote to the client.
+            </p>
+
+            {copyState.error && <StatusMessage type="error" message={copyState.error} />}
+            {copyState.success && <StatusMessage type="success" message={copyState.success} />}
+
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                Email Preview
+              </p>
+              <pre className="mt-3 max-h-[310px] overflow-auto whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
+                {emailBody}
+              </pre>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleCopyEmailText}
+                className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-5 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+              >
+                <Clipboard size={17} className="mr-2" />
+                Copy Text
+              </button>
+
+              <a
+                href={emailLink}
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-5 py-3 text-sm font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.22)] transition hover:-translate-y-0.5"
+              >
+                <Send size={17} className="mr-2" />
+                Open Email
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
       <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">
         The Export PDF button opens the browser print window. Choose Save as PDF
-        as the destination to download the quotation.
+        as the destination to download the quotation, then attach it manually to the email.
       </p>
     </section>
   );
@@ -219,6 +397,41 @@ export function openQuotePdfExport(quote, lead) {
     popup.focus();
     popup.print();
   };
+}
+
+export function createQuoteEmailLink(quote, lead) {
+  const subject = `MKETICS Quotation - ${quote.quote_number || quote.title || "Your enquiry"}`;
+  const body = buildQuoteEmailBody(quote, lead);
+  const recipient = lead?.email || "";
+
+  return `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+export function buildQuoteEmailBody(quote, lead) {
+  return [
+    `Hello ${lead?.full_name || ""},`,
+    "",
+    "Thank you for contacting MKETICS (PTY) LTD.",
+    "",
+    "Please find your quotation details below:",
+    "",
+    `Quote Number: ${quote.quote_number || "Draft Quote"}`,
+    `Service: ${quote.title || lead?.service_needed || "MKETICS service"}`,
+    `Amount: ${formatCurrency(quote.amount, quote.currency)}`,
+    quote.valid_until && `Valid Until: ${formatDate(quote.valid_until)}`,
+    "",
+    "I have attached the quotation PDF for your review.",
+    "",
+    "Kindly review the quotation and let us know if you would like to proceed, request changes, or schedule a quick consultation.",
+    "",
+    "Regards,",
+    "MKETICS (PTY) LTD",
+    "Speak Innovation. Deliver Value.",
+    companyDetails.email,
+    companyDetails.phone,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function buildPrintableQuoteHtml(quote, lead) {
@@ -431,6 +644,18 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatFullDate(value) {
+  if (!value) return "";
+
+  return new Intl.DateTimeFormat("en-ZA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function toReadableLabel(value) {
   if (!value) return "Not provided";
 
@@ -438,6 +663,28 @@ function toReadableLabel(value) {
     .replace(/[_-]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function StatusMessage({ type, message }) {
+  const isError = type === "error";
+
+  return (
+    <div
+      className={`mt-5 flex items-start gap-3 rounded-2xl border p-4 ${
+        isError
+          ? "border-red-200 bg-red-50 text-red-900"
+          : "border-emerald-200 bg-emerald-50 text-emerald-900"
+      }`}
+    >
+      {isError ? (
+        <AlertCircle size={20} className="mt-0.5 shrink-0" />
+      ) : (
+        <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+      )}
+
+      <p className="text-sm font-bold leading-6">{message}</p>
+    </div>
+  );
 }
 
 function escapeHtml(value) {

@@ -6,18 +6,24 @@ import {
   Eye,
   FileText,
   Loader2,
+  Mail,
   RefreshCw,
   Save,
   WalletCards,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
-import QuotePreviewPanel, { openQuotePdfExport } from "./QuotePreviewPanel";
+import QuotePreviewPanel, {
+  createQuoteEmailLink,
+  openQuotePdfExport,
+} from "./QuotePreviewPanel";
 
 const defaultExclusions = [
   "Domain registration, hosting, third-party subscriptions and paid plugins are excluded unless stated otherwise.",
   "Content writing, product photography and brand identity design are excluded unless added to the scope.",
   "Additional pages, integrations or major revisions may require a revised quotation.",
 ].join("\n");
+
+const quoteStatusOptions = ["draft", "sent", "accepted", "rejected", "expired"];
 
 export default function QuoteDraftBuilder({
   lead,
@@ -27,6 +33,11 @@ export default function QuoteDraftBuilder({
 }) {
   const [form, setForm] = useState(() => buildDefaultQuoteForm(lead));
   const [saveState, setSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+  const [statusSaveState, setStatusSaveState] = useState({
     loading: false,
     error: "",
     success: "",
@@ -41,9 +52,26 @@ export default function QuoteDraftBuilder({
       error: "",
       success: "",
     });
+    setStatusSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
     setMarkLeadAsQuoted(true);
     setSelectedQuote(null);
   }, [lead?.id]);
+
+  useEffect(() => {
+    if (!selectedQuote) return;
+
+    const refreshedQuote = quotesState.quotes.find(
+      (quote) => quote.id === selectedQuote.id
+    );
+
+    if (refreshedQuote) {
+      setSelectedQuote(refreshedQuote);
+    }
+  }, [quotesState.quotes, selectedQuote?.id]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -108,7 +136,7 @@ export default function QuoteDraftBuilder({
         .from("quotes")
         .insert(quoteRow)
         .select(
-          "id, lead_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, created_at"
+          "id, lead_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
         )
         .single();
 
@@ -148,6 +176,67 @@ export default function QuoteDraftBuilder({
     }
   }
 
+  async function handleQuoteStatusChange(quote, nextStatus) {
+    if (!quote?.id || !supabase) return;
+
+    if (!quoteStatusOptions.includes(nextStatus)) {
+      setStatusSaveState({
+        loading: false,
+        error: "Choose a valid quote status.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setStatusSaveState({
+        loading: true,
+        error: "",
+        success: "",
+      });
+
+      const now = new Date().toISOString();
+      const updatePayload = buildQuoteStatusPayload(nextStatus, now);
+
+      const { data, error } = await supabase
+        .from("quotes")
+        .update(updatePayload)
+        .eq("id", quote.id)
+        .select(
+          "id, lead_id, quote_number, title, scope_summary, exclusions, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
+        )
+        .single();
+
+      if (error) throw error;
+
+      setSelectedQuote(data);
+      await onRefreshQuotes?.();
+
+      setStatusSaveState({
+        loading: false,
+        error: "",
+        success: `Quote marked as ${toReadableLabel(nextStatus)}.`,
+      });
+    } catch (error) {
+      setStatusSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to update quote status. Check Supabase quote update permissions.",
+        success: "",
+      });
+    }
+  }
+
+  function handleSelectQuote(quote) {
+    setSelectedQuote(quote);
+    setStatusSaveState({
+      loading: false,
+      error: "",
+      success: "",
+    });
+  }
+
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
@@ -159,8 +248,7 @@ export default function QuoteDraftBuilder({
       </h3>
 
       <p className="mt-2 text-sm leading-7 text-slate-600">
-        Create a draft quote from this lead. It will be saved in Supabase and
-        can be improved in the next step.
+        Create a quote from this lead, manage its status and prepare a client-ready email.
       </p>
 
       {saveState.error && (
@@ -329,7 +417,11 @@ export default function QuoteDraftBuilder({
           quotesState.quotes.map((quote) => (
             <article
               key={quote.id}
-              className="mt-4 rounded-2xl border border-slate-200 bg-white p-4"
+              className={`mt-4 rounded-2xl border bg-white p-4 ${
+                selectedQuote?.id === quote.id
+                  ? "border-cyan-300 ring-4 ring-cyan-100"
+                  : "border-slate-200"
+              }`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
@@ -356,7 +448,7 @@ export default function QuoteDraftBuilder({
                 <div className="flex flex-wrap gap-2 sm:justify-end">
                   <button
                     type="button"
-                    onClick={() => setSelectedQuote(quote)}
+                    onClick={() => handleSelectQuote(quote)}
                     className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
                   >
                     <Eye size={14} className="mr-2" />
@@ -371,6 +463,14 @@ export default function QuoteDraftBuilder({
                     <Download size={14} className="mr-2" />
                     PDF
                   </button>
+
+                  <a
+                    href={createQuoteEmailLink(quote, lead)}
+                    className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-white px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                  >
+                    <Mail size={14} className="mr-2" />
+                    Email
+                  </a>
                 </div>
               </div>
             </article>
@@ -381,6 +481,8 @@ export default function QuoteDraftBuilder({
         <QuotePreviewPanel
           quote={selectedQuote}
           lead={lead}
+          statusSaveState={statusSaveState}
+          onStatusChange={handleQuoteStatusChange}
           onClose={() => setSelectedQuote(null)}
         />
       )}
@@ -419,6 +521,24 @@ function buildScopeSummary(lead) {
     .join("\n");
 }
 
+function buildQuoteStatusPayload(status, timestamp) {
+  const payload = { status };
+
+  if (status === "sent") {
+    payload.sent_at = timestamp;
+  }
+
+  if (status === "accepted") {
+    payload.accepted_at = timestamp;
+  }
+
+  if (status === "rejected") {
+    payload.rejected_at = timestamp;
+  }
+
+  return payload;
+}
+
 function generateQuoteNumber() {
   const now = new Date();
   const datePart = [
@@ -454,7 +574,9 @@ function pad(value) {
 }
 
 function formatCurrency(amount, currency = "ZAR") {
-  if (!amount) return "Amount not set";
+  if (amount === null || amount === undefined || amount === "") {
+    return "Amount not set";
+  }
 
   return new Intl.NumberFormat("en-ZA", {
     style: "currency",
