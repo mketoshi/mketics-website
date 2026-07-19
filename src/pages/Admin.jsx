@@ -24,6 +24,7 @@ import {
   Search,
   Sparkles,
   ShieldCheck,
+  SlidersHorizontal,
   StickyNote,
   Timer,
   WalletCards,
@@ -42,6 +43,7 @@ import ProjectTimeReports from "../components/admin/ProjectTimeReports";
 import BusinessReportsDashboard from "../components/admin/BusinessReportsDashboard";
 import BusinessKPIInsightsDashboard from "../components/admin/BusinessKPIInsightsDashboard";
 import ExecutiveDashboardExport from "../components/admin/ExecutiveDashboardExport";
+import AdminSettingsDashboard from "../components/admin/AdminSettingsDashboard";
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
@@ -1025,6 +1027,11 @@ export default function Admin() {
             <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "invoices" ? (
             <BusinessInvoicesDashboard isActive={activeConsoleTab === "invoices"} />
+          ) : activeConsoleTab === "settings" ? (
+            <AdminSettingsDashboard
+              isActive={activeConsoleTab === "settings"}
+              profile={authState.profile}
+            />
           ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -1284,6 +1291,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       label: "Documents",
       description: "Track client files, project records and quote documents.",
       icon: FileText,
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      description: "Manage company profile, admin preferences and document defaults.",
+      icon: SlidersHorizontal,
     },
     {
       id: "projects",
