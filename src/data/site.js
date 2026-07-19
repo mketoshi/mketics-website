@@ -21,6 +21,7 @@ export const mainNav = [
   { label: "Projects", href: "/projects" },
   { label: "Resources", href: "/resources" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Client Portal", href: "/client-portal" },
   { label: "Contact", href: "/contact" },
 ];
 

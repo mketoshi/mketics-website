@@ -3,6 +3,7 @@ import {
   AlertCircle,
   BriefcaseBusiness,
   CheckCircle2,
+  Clipboard,
   ClipboardList,
   Download,
   Eye,
@@ -13,6 +14,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Printer,
   RefreshCw,
   Send,
   ShieldCheck,
@@ -39,6 +41,11 @@ const portalTabs = [
     icon: WalletCards,
   },
   {
+    id: "invoices",
+    label: "Invoices",
+    icon: FileText,
+  },
+  {
     id: "support",
     label: "Support",
     icon: LifeBuoy,
@@ -63,6 +70,7 @@ export default function ClientPortalDashboard({ profile }) {
     clients: [],
     projects: [],
     quotes: [],
+    invoices: [],
     tickets: [],
     documents: [],
   });
@@ -84,6 +92,12 @@ export default function ClientPortalDashboard({ profile }) {
   const [documentActionState, setDocumentActionState] = useState({
     loadingId: "",
     error: "",
+  });
+
+  const [receiptActionState, setReceiptActionState] = useState({
+    loadingId: "",
+    error: "",
+    success: "",
   });
 
   const primaryClient = portalState.clients[0] || null;
@@ -111,17 +125,42 @@ export default function ClientPortalDashboard({ profile }) {
       0
     );
 
+    const paidInvoices = portalState.invoices.filter(
+      (invoice) => getInvoiceDisplayStatus(invoice) === "paid"
+    ).length;
+
+    const totalInvoiceValue = portalState.invoices.reduce(
+      (sum, invoice) => sum + parseAmount(invoice.amount),
+      0
+    );
+
+    const totalInvoicePaid = portalState.invoices.reduce(
+      (sum, invoice) => sum + parseAmount(invoice.paidAmount),
+      0
+    );
+
+    const receiptCount = portalState.invoices.reduce(
+      (total, invoice) => total + getInvoiceReceipts(invoice).length,
+      0
+    );
+
     return {
       clients: portalState.clients.length,
       projects: portalState.projects.length,
       activeProjects,
       quotes: portalState.quotes.length,
       acceptedQuotes,
+      invoices: portalState.invoices.length,
+      paidInvoices,
+      totalInvoiceValue,
+      totalInvoicePaid,
+      invoiceOutstanding: Math.max(totalInvoiceValue - totalInvoicePaid, 0),
+      receiptCount,
       openTickets,
       documents: portalState.documents.length,
       totalQuoteValue,
     };
-  }, [portalState.projects, portalState.quotes, portalState.tickets, portalState.documents, portalState.clients]);
+  }, [portalState.projects, portalState.quotes, portalState.invoices, portalState.tickets, portalState.documents, portalState.clients]);
 
   useEffect(() => {
     fetchPortalData();
@@ -156,13 +195,14 @@ export default function ClientPortalDashboard({ profile }) {
           clients: [],
           projects: [],
           quotes: [],
+          invoices: [],
           tickets: [],
           documents: [],
         });
         return;
       }
 
-      const [projectsResult, quotesResult, ticketsResult, documentsResult] =
+      const [projectsResult, quotesResult, ticketsResult, documentsResult, invoicesResult] =
         await Promise.all([
           supabase
             .from("projects")
@@ -192,13 +232,15 @@ export default function ClientPortalDashboard({ profile }) {
             )
             .in("client_id", ids)
             .order("created_at", { ascending: false }),
+          fetchClientPortalInvoices(),
         ]);
 
       const firstError =
         projectsResult.error ||
         quotesResult.error ||
         ticketsResult.error ||
-        documentsResult.error;
+        documentsResult.error ||
+        invoicesResult.error;
 
       if (firstError) throw firstError;
 
@@ -208,6 +250,7 @@ export default function ClientPortalDashboard({ profile }) {
         clients,
         projects: projectsResult.data || [],
         quotes: quotesResult.data || [],
+        invoices: invoicesResult.invoices || [],
         tickets: ticketsResult.data || [],
         documents: documentsResult.data || [],
       });
@@ -220,6 +263,7 @@ export default function ClientPortalDashboard({ profile }) {
         clients: [],
         projects: [],
         quotes: [],
+        invoices: [],
         tickets: [],
         documents: [],
       });
@@ -259,6 +303,23 @@ export default function ClientPortalDashboard({ profile }) {
 
     return Array.from(clientsById.values());
   }
+
+  async function fetchClientPortalInvoices() {
+    const { data, error } = await supabase.rpc("get_client_portal_invoice_records");
+
+    if (error) {
+      return {
+        invoices: [],
+        error,
+      };
+    }
+
+    return {
+      invoices: normaliseClientInvoices(data || []),
+      error: null,
+    };
+  }
+
 
   async function handleCreateSupportTicket(event) {
     event.preventDefault();
@@ -378,6 +439,70 @@ export default function ClientPortalDashboard({ profile }) {
     }
   }
 
+
+
+  async function handleOpenReceiptProof(receipt) {
+    const location = receipt?.proofUrl || receipt?.proofStoragePath;
+
+    if (!location) {
+      setReceiptActionState({
+        loadingId: "",
+        error: "This receipt does not have proof of payment attached.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setReceiptActionState({ loadingId: receipt.id, error: "", success: "" });
+
+      if (receipt.proofUrl) {
+        window.open(receipt.proofUrl, "_blank", "noopener,noreferrer");
+        setReceiptActionState({ loadingId: "", error: "", success: "" });
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from("mketics-documents")
+        .createSignedUrl(receipt.proofStoragePath, 60 * 10);
+
+      if (error) throw error;
+
+      window.open(data?.signedUrl, "_blank", "noopener,noreferrer");
+      setReceiptActionState({ loadingId: "", error: "", success: "" });
+    } catch (error) {
+      setReceiptActionState({
+        loadingId: "",
+        error:
+          error?.message ||
+          "Unable to open payment proof. Check client portal storage permissions.",
+        success: "",
+      });
+    }
+  }
+
+  async function handleCopyReceipt(receipt, invoice) {
+    try {
+      await navigator.clipboard.writeText(buildClientReceiptText(receipt, invoice));
+      setReceiptActionState({
+        loadingId: "",
+        error: "",
+        success: "Receipt text copied to clipboard.",
+      });
+    } catch (error) {
+      setReceiptActionState({
+        loadingId: "",
+        error: "Unable to copy receipt text.",
+        success: "",
+      });
+    }
+  }
+
+  function handlePrintInvoice(invoice) {
+    printClientInvoice(invoice, portalState);
+  }
+
+
   function updateSupportForm(event) {
     const { name, value } = event.target;
 
@@ -398,7 +523,7 @@ export default function ClientPortalDashboard({ profile }) {
   return (
     <section className="px-5 py-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-7">
           {portalTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -471,11 +596,22 @@ export default function ClientPortalDashboard({ profile }) {
             </p>
           </div>
         ) : activeTab === "overview" ? (
-          <OverviewTab stats={stats} projects={portalState.projects} tickets={portalState.tickets} quotes={portalState.quotes} documents={portalState.documents} />
+          <OverviewTab stats={stats} projects={portalState.projects} tickets={portalState.tickets} quotes={portalState.quotes} invoices={portalState.invoices} documents={portalState.documents} />
         ) : activeTab === "projects" ? (
           <ProjectsTab projects={portalState.projects} />
         ) : activeTab === "quotes" ? (
           <QuotesTab quotes={portalState.quotes} />
+        ) : activeTab === "invoices" ? (
+          <InvoicesTab
+            invoices={portalState.invoices}
+            clients={portalState.clients}
+            projects={portalState.projects}
+            quotes={portalState.quotes}
+            actionState={receiptActionState}
+            onOpenProof={handleOpenReceiptProof}
+            onCopyReceipt={handleCopyReceipt}
+            onPrintInvoice={handlePrintInvoice}
+          />
         ) : activeTab === "support" ? (
           <SupportTab
             tickets={portalState.tickets}
@@ -502,10 +638,11 @@ export default function ClientPortalDashboard({ profile }) {
   );
 }
 
-function OverviewTab({ stats, projects, tickets, quotes, documents }) {
+function OverviewTab({ stats, projects, tickets, quotes, invoices, documents }) {
   const recentProjects = projects.slice(0, 3);
   const recentTickets = tickets.slice(0, 3);
   const recentQuotes = quotes.slice(0, 3);
+  const recentInvoices = invoices.slice(0, 3);
   const recentDocuments = documents.slice(0, 3);
 
   return (
@@ -513,6 +650,7 @@ function OverviewTab({ stats, projects, tickets, quotes, documents }) {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Active Projects" value={stats.activeProjects} />
         <StatCard label="Quotes" value={stats.quotes} />
+        <StatCard label="Invoices" value={stats.invoices} />
         <StatCard label="Open Support" value={stats.openTickets} />
         <StatCard label="Documents" value={stats.documents} />
       </div>
@@ -524,6 +662,10 @@ function OverviewTab({ stats, projects, tickets, quotes, documents }) {
 
         <SummaryCard title="Recent Quotes" icon={WalletCards} items={recentQuotes} empty="No quotes available yet." renderItem={(quote) => (
           <MiniRecord title={quote.quote_number || quote.title} meta={`${formatCurrency(quote.amount, quote.currency)} • ${toReadableLabel(quote.status)}`} />
+        )} />
+
+        <SummaryCard title="Recent Invoices" icon={FileText} items={recentInvoices} empty="No invoices available yet." renderItem={(invoice) => (
+          <MiniRecord title={invoice.invoiceNumber || invoice.title} meta={`${formatCurrency(invoice.amount, invoice.currency)} • ${toReadableLabel(getInvoiceDisplayStatus(invoice))}`} />
         )} />
 
         <SummaryCard title="Recent Support" icon={LifeBuoy} items={recentTickets} empty="No support tickets available yet." renderItem={(ticket) => (
@@ -615,6 +757,201 @@ function QuotesTab({ quotes }) {
               </div>
             </article>
           ))}
+        </div>
+      )}
+    </RecordSection>
+  );
+}
+
+
+function InvoicesTab({
+  invoices,
+  clients,
+  projects,
+  quotes,
+  actionState,
+  onOpenProof,
+  onCopyReceipt,
+  onPrintInvoice,
+}) {
+  const clientById = new Map(clients.map((client) => [client.id, client]));
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const quoteById = new Map(quotes.map((quote) => [quote.id, quote]));
+
+  const stats = useMemo(() => {
+    const totalBilled = invoices.reduce((sum, invoice) => sum + parseAmount(invoice.amount), 0);
+    const totalPaid = invoices.reduce((sum, invoice) => sum + parseAmount(invoice.paidAmount), 0);
+    const receiptCount = invoices.reduce((total, invoice) => total + getInvoiceReceipts(invoice).length, 0);
+    const outstanding = Math.max(totalBilled - totalPaid, 0);
+
+    return {
+      totalBilled,
+      totalPaid,
+      outstanding,
+      receiptCount,
+      invoiceCount: invoices.length,
+    };
+  }, [invoices]);
+
+  return (
+    <RecordSection
+      title="Invoices & Receipts"
+      description="View MKETICS invoices, payment progress and receipt records linked to your client account."
+    >
+      {actionState.error && <StatusMessage type="error" message={actionState.error} />}
+      {actionState.success && <StatusMessage type="success" message={actionState.success} />}
+
+      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Invoices" value={stats.invoiceCount} />
+        <StatCard label="Total Billed" value={formatCurrency(stats.totalBilled)} />
+        <StatCard label="Paid" value={formatCurrency(stats.totalPaid)} />
+        <StatCard label="Outstanding" value={formatCurrency(stats.outstanding)} />
+      </div>
+
+      {invoices.length === 0 ? (
+        <EmptyState message="No invoice records have been linked to your portal yet." />
+      ) : (
+        <div className="grid gap-5">
+          {invoices.map((invoice) => {
+            const client = clientById.get(invoice.clientId);
+            const project = projectById.get(invoice.projectId);
+            const quote = quoteById.get(invoice.quoteId);
+            const receipts = getInvoiceReceipts(invoice);
+            const status = getInvoiceDisplayStatus(invoice);
+            const outstanding = getInvoiceOutstanding(invoice);
+
+            return (
+              <article
+                key={invoice.id}
+                className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                      {invoice.invoiceNumber || "Invoice"}
+                    </p>
+                    <h3 className="mt-2 text-xl font-black text-[#020B1F]">
+                      {invoice.title}
+                    </h3>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                      {project ? `Project: ${project.title}` : "General MKETICS service"}
+                      {quote ? ` • Quote: ${quote.quote_number || quote.title}` : ""}
+                    </p>
+                  </div>
+
+                  <div className="text-left lg:text-right">
+                    <p className="text-2xl font-black text-[#020B1F]">
+                      {formatCurrency(invoice.amount, invoice.currency)}
+                    </p>
+                    <div className="mt-2 flex lg:justify-end">
+                      <StatusBadge status={status} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <DetailPill label="Issued" value={formatDate(invoice.issueDate)} />
+                  <DetailPill label="Due" value={formatDate(invoice.dueDate)} />
+                  <DetailPill label="Paid" value={formatCurrency(invoice.paidAmount, invoice.currency)} />
+                  <DetailPill label="Outstanding" value={formatCurrency(outstanding, invoice.currency)} />
+                </div>
+
+                {invoice.lineItems && (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0B7CFF]">
+                      Scope / Line Items
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
+                      {invoice.lineItems}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onPrintInvoice(invoice)}
+                    className="inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                  >
+                    <Printer size={14} className="mr-2" />
+                    Print / Save PDF
+                  </button>
+                </div>
+
+                <div className="mt-6 rounded-[1.25rem] border border-slate-200 bg-[#F8FCFF] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-[#020B1F]">Receipt History</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {receipts.length} receipt record{receipts.length === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <Clipboard size={18} className="text-[#0B7CFF]" />
+                  </div>
+
+                  {receipts.length === 0 ? (
+                    <p className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold leading-6 text-slate-600">
+                      No receipt records have been added for this invoice yet.
+                    </p>
+                  ) : (
+                    <div className="mt-4 grid gap-3">
+                      {receipts.map((receipt) => (
+                        <div key={receipt.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="text-sm font-black text-[#020B1F]">
+                                {receipt.receiptNumber || "Receipt"}
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-slate-600">
+                                {formatCurrency(receipt.amount, invoice.currency)} • {receipt.paymentMethod || "Payment"}
+                              </p>
+                              <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#0B7CFF]">
+                                {formatDate(receipt.paymentDate)}
+                                {receipt.reference ? ` • Ref: ${receipt.reference}` : ""}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onCopyReceipt(receipt, invoice)}
+                                className="inline-flex items-center rounded-full border border-slate-200 bg-[#F8FCFF] px-3 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                              >
+                                <Clipboard size={13} className="mr-2" />
+                                Copy
+                              </button>
+
+                              {(receipt.proofUrl || receipt.proofStoragePath) && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenProof(receipt)}
+                                  disabled={actionState.loadingId === receipt.id}
+                                  className="inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-3 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300 disabled:opacity-70"
+                                >
+                                  {actionState.loadingId === receipt.id ? (
+                                    <Loader2 size={13} className="mr-2 animate-spin" />
+                                  ) : (
+                                    <Download size={13} className="mr-2" />
+                                  )}
+                                  Open Proof
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {receipt.notes && (
+                            <p className="mt-3 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-[#F8FCFF] p-3 text-sm font-semibold leading-6 text-slate-600">
+                              {receipt.notes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </RecordSection>
@@ -986,6 +1323,271 @@ function createWhatsAppLink(profile) {
   ].join("\n");
 
   return `https://wa.me/27722864367?text=${encodeURIComponent(message)}`;
+}
+
+
+function normaliseClientInvoices(invoices) {
+  if (!Array.isArray(invoices)) return [];
+
+  return invoices
+    .filter((invoice) => invoice && invoice.id)
+    .map((invoice) => ({
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber || "Invoice",
+      title: invoice.title || "MKETICS Invoice",
+      clientId: invoice.clientId || "",
+      projectId: invoice.projectId || "",
+      quoteId: invoice.quoteId || "",
+      amount: Number(invoice.amount) || 0,
+      paidAmount: Number(invoice.paidAmount) || getReceiptTotal(invoice.receipts || []),
+      currency: invoice.currency || "ZAR",
+      issueDate: invoice.issueDate || invoice.createdAt || "",
+      dueDate: invoice.dueDate || "",
+      paymentStatus: invoice.paymentStatus || "draft",
+      paymentMethod: invoice.paymentMethod || "Not Set",
+      paymentDate: invoice.paymentDate || "",
+      lineItems: invoice.lineItems || "",
+      terms: invoice.terms || "",
+      reference: invoice.reference || "",
+      notes: invoice.notes || "",
+      receipts: normaliseClientReceipts(invoice.receipts || []),
+      sentAt: invoice.sentAt || "",
+      paidAt: invoice.paidAt || "",
+      createdAt: invoice.createdAt || new Date().toISOString(),
+      updatedAt: invoice.updatedAt || invoice.createdAt || new Date().toISOString(),
+    }))
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+}
+
+function normaliseClientReceipts(receipts) {
+  if (!Array.isArray(receipts)) return [];
+
+  return receipts
+    .filter((receipt) => receipt && receipt.id)
+    .map((receipt) => ({
+      id: receipt.id,
+      receiptNumber: receipt.receiptNumber || "Receipt",
+      amount: Number(receipt.amount) || 0,
+      paymentMethod: receipt.paymentMethod || "EFT",
+      paymentDate: receipt.paymentDate || "",
+      reference: receipt.reference || "",
+      proofUrl: receipt.proofUrl || "",
+      proofStoragePath: receipt.proofStoragePath || "",
+      notes: receipt.notes || "",
+      createdAt: receipt.createdAt || new Date().toISOString(),
+      updatedAt: receipt.updatedAt || receipt.createdAt || new Date().toISOString(),
+    }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function getInvoiceReceipts(invoice) {
+  return normaliseClientReceipts(invoice?.receipts || []);
+}
+
+function getReceiptTotal(receipts) {
+  return normaliseClientReceipts(receipts).reduce(
+    (total, receipt) => total + parseAmount(receipt.amount),
+    0
+  );
+}
+
+function getInvoiceOutstanding(invoice) {
+  const amount = parseAmount(invoice?.amount);
+  const paid = parseAmount(invoice?.paidAmount) || getReceiptTotal(invoice?.receipts || []);
+
+  return Math.max(amount - paid, 0);
+}
+
+function getInvoiceDisplayStatus(invoice) {
+  const amount = parseAmount(invoice?.amount);
+  const paid = parseAmount(invoice?.paidAmount) || getReceiptTotal(invoice?.receipts || []);
+  const status = invoice?.paymentStatus || "draft";
+
+  if (status === "cancelled") return "cancelled";
+  if (paid >= amount && amount > 0) return "paid";
+  if (paid > 0) return "partial";
+  if (invoice?.dueDate && startOfDay(new Date(invoice.dueDate)) < startOfDay(new Date())) {
+    return "overdue";
+  }
+
+  return status;
+}
+
+function startOfDay(date) {
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
+}
+
+function buildClientReceiptText(receipt, invoice) {
+  return [
+    `Receipt: ${receipt.receiptNumber || "Receipt"}`,
+    `Invoice: ${invoice.invoiceNumber || "Invoice"}`,
+    `Amount received: ${formatCurrency(receipt.amount, invoice.currency)}`,
+    `Payment method: ${receipt.paymentMethod || "EFT"}`,
+    `Payment date: ${formatDate(receipt.paymentDate)}`,
+    receipt.reference ? `Reference: ${receipt.reference}` : "",
+    receipt.notes ? `Notes: ${receipt.notes}` : "",
+    "",
+    "MKETICS (PTY) LTD",
+    "Speak Innovation. Deliver Value.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function printClientInvoice(invoice, portalState) {
+  const html = buildClientInvoicePrintHtml(invoice, portalState);
+  const frame = document.createElement("iframe");
+
+  frame.style.position = "fixed";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.setAttribute("aria-hidden", "true");
+
+  document.body.appendChild(frame);
+
+  const printDocument = frame.contentWindow?.document;
+
+  if (!printDocument) {
+    document.body.removeChild(frame);
+    return;
+  }
+
+  printDocument.open();
+  printDocument.write(html);
+  printDocument.close();
+
+  frame.onload = () => {
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+    window.setTimeout(() => {
+      document.body.removeChild(frame);
+    }, 1000);
+  };
+}
+
+function buildClientInvoicePrintHtml(invoice, portalState) {
+  const client = portalState.clients.find((item) => item.id === invoice.clientId);
+  const project = portalState.projects.find((item) => item.id === invoice.projectId);
+  const quote = portalState.quotes.find((item) => item.id === invoice.quoteId);
+  const receipts = getInvoiceReceipts(invoice);
+  const outstanding = getInvoiceOutstanding(invoice);
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(invoice.invoiceNumber || "MKETICS Invoice")}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px; font-family: Arial, sans-serif; color: #061A33; background: #ffffff; }
+    .page { max-width: 900px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; gap: 24px; border-bottom: 4px solid #00AEEF; padding-bottom: 24px; }
+    .brand h1 { margin: 0; font-size: 28px; letter-spacing: 0.05em; }
+    .brand p { margin: 6px 0; color: #475569; font-size: 13px; line-height: 1.6; }
+    .badge { border: 1px solid #dbeafe; background: #EAF6FF; border-radius: 18px; padding: 18px; text-align: right; min-width: 240px; }
+    .badge p { margin: 0; font-size: 11px; font-weight: 800; color: #0B7CFF; text-transform: uppercase; letter-spacing: 0.14em; }
+    .badge h2 { margin: 8px 0 0; font-size: 22px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 18px; padding: 18px; background: #F8FCFF; }
+    .card h3 { margin: 0 0 10px; font-size: 12px; color: #0B7CFF; text-transform: uppercase; letter-spacing: 0.14em; }
+    .card p { margin: 4px 0; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+    .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
+    .money { border: 1px solid #e2e8f0; border-radius: 18px; padding: 16px; }
+    .money p { margin: 0; font-size: 11px; color: #0B7CFF; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; }
+    .money h3 { margin: 8px 0 0; font-size: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 10px; text-align: left; font-size: 12px; }
+    th { color: #0B7CFF; text-transform: uppercase; letter-spacing: 0.12em; font-size: 10px; }
+    .footer { margin-top: 32px; padding-top: 18px; border-top: 1px solid #e2e8f0; color: #475569; font-size: 12px; line-height: 1.7; }
+    @media print { body { padding: 18px; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="header">
+      <div class="brand">
+        <h1>MKETICS (PTY) LTD</h1>
+        <p>Speak Innovation. Deliver Value.</p>
+        <p>Reg No: 2026/290708/07<br />Email: services@mketics.co.za<br />Phone: +27 72 286 4367</p>
+      </div>
+      <div class="badge">
+        <p>Invoice</p>
+        <h2>${escapeHtml(invoice.invoiceNumber || "Invoice")}</h2>
+        <p>${escapeHtml(toReadableLabel(getInvoiceDisplayStatus(invoice)))}</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3>Bill To</h3>
+        <p><strong>${escapeHtml(client?.full_name || "Client")}</strong></p>
+        <p>${escapeHtml(client?.email || "")}</p>
+        <p>${escapeHtml(client?.phone || "")}</p>
+        <p>${escapeHtml(client?.organisation || "")}</p>
+      </div>
+      <div class="card">
+        <h3>Invoice Details</h3>
+        <p>Issue date: ${escapeHtml(formatDate(invoice.issueDate))}</p>
+        <p>Due date: ${escapeHtml(formatDate(invoice.dueDate))}</p>
+        <p>Project: ${escapeHtml(project?.title || "Not linked")}</p>
+        <p>Quote: ${escapeHtml(quote?.quote_number || quote?.title || "Not linked")}</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <h3>Scope / Line Items</h3>
+      <p>${escapeHtml(invoice.lineItems || invoice.title || "MKETICS service")}</p>
+    </section>
+
+    <section class="summary">
+      <div class="money"><p>Invoice Amount</p><h3>${escapeHtml(formatCurrency(invoice.amount, invoice.currency))}</h3></div>
+      <div class="money"><p>Paid</p><h3>${escapeHtml(formatCurrency(invoice.paidAmount, invoice.currency))}</h3></div>
+      <div class="money"><p>Outstanding</p><h3>${escapeHtml(formatCurrency(outstanding, invoice.currency))}</h3></div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <h3>Receipt History</h3>
+      ${receipts.length === 0 ? "<p>No receipt records available yet.</p>" : `
+        <table>
+          <thead><tr><th>Receipt</th><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${receipts.map((receipt) => `
+              <tr>
+                <td>${escapeHtml(receipt.receiptNumber || "Receipt")}</td>
+                <td>${escapeHtml(formatDate(receipt.paymentDate))}</td>
+                <td>${escapeHtml(receipt.paymentMethod || "EFT")}</td>
+                <td>${escapeHtml(receipt.reference || "")}</td>
+                <td>${escapeHtml(formatCurrency(receipt.amount, invoice.currency))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `}
+    </section>
+
+    ${invoice.terms ? `<section class="card" style="margin-top: 24px;"><h3>Terms</h3><p>${escapeHtml(invoice.terms)}</p></section>` : ""}
+
+    <section class="footer">
+      <strong>MKETICS (PTY) LTD</strong><br />
+      This invoice is provided through the MKETICS Client Portal for record visibility and payment tracking.
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function parseAmount(value) {
