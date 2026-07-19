@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertCircle,
+  BarChart3,
   Bell,
   ArrowRight,
   BriefcaseBusiness,
@@ -37,6 +38,7 @@ import AIProposalAssistant from "../components/admin/AIProposalAssistant";
 import AIProjectPlanner from "../components/admin/AIProjectPlanner";
 import ProjectTaskBoard from "../components/admin/ProjectTaskBoard";
 import ProjectTimeReports from "../components/admin/ProjectTimeReports";
+import BusinessReportsDashboard from "../components/admin/BusinessReportsDashboard";
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
@@ -1010,6 +1012,8 @@ export default function Admin() {
             <ProjectTaskBoard isActive={activeConsoleTab === "tasks"} />
           ) : activeConsoleTab === "time" ? (
             <ProjectTimeReports isActive={activeConsoleTab === "time"} />
+          ) : activeConsoleTab === "reports" ? (
+            <BusinessReportsDashboard isActive={activeConsoleTab === "reports"} />
           ) : activeConsoleTab === "finance" ? (
             <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "invoices" ? (
@@ -1237,6 +1241,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       label: "Time & Reports",
       description: "Log delivery hours and generate client-ready project reports.",
       icon: Timer,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      description: "Generate business reports, monthly summaries and PDF-ready snapshots.",
+      icon: BarChart3,
     },
     {
       id: "finance",
