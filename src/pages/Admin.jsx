@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   StickyNote,
   Timer,
+  WalletCards,
   X,
 } from "lucide-react";
 import SEO from "../components/seo/SEO";
@@ -36,6 +37,7 @@ import AIProposalAssistant from "../components/admin/AIProposalAssistant";
 import AIProjectPlanner from "../components/admin/AIProjectPlanner";
 import ProjectTaskBoard from "../components/admin/ProjectTaskBoard";
 import ProjectTimeReports from "../components/admin/ProjectTimeReports";
+import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1007,6 +1009,8 @@ export default function Admin() {
             <ProjectTaskBoard isActive={activeConsoleTab === "tasks"} />
           ) : activeConsoleTab === "time" ? (
             <ProjectTimeReports isActive={activeConsoleTab === "time"} />
+          ) : activeConsoleTab === "finance" ? (
+            <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "leads" ? (
             <>
               <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -1232,6 +1236,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: Timer,
     },
     {
+      id: "finance",
+      label: "Finance",
+      description: "Track income, payments, expenses and business cash position.",
+      icon: WalletCards,
+    },
+    {
       id: "documents",
       label: "Documents",
       description: "Track client files, project records and quote documents.",
@@ -1246,7 +1256,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-9">
+    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-10">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
