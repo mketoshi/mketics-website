@@ -22,6 +22,7 @@ const RefundCancellationPolicy = lazy(() =>
 );
 const WebsiteDisclaimer = lazy(() => import("../pages/WebsiteDisclaimer"));
 const Admin = lazy(() => import("../pages/Admin"));
+const ClientPortal = lazy(() => import("../pages/ClientPortal"));
 
 export default function AppRoutes() {
   return (
@@ -43,6 +44,7 @@ export default function AppRoutes() {
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/popia-notice" element={<PopiaNotice />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/client-portal" element={<ClientPortal />} />
             <Route path="/cookie-notice" element={<CookieNotice />} />
             <Route path="/payment-terms" element={<PaymentTerms />} />
             <Route

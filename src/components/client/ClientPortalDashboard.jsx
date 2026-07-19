@@ -1,0 +1,1020 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ClipboardList,
+  Download,
+  Eye,
+  FileText,
+  FolderOpen,
+  LifeBuoy,
+  Loader2,
+  Mail,
+  MessageCircle,
+  Phone,
+  RefreshCw,
+  Send,
+  ShieldCheck,
+  WalletCards,
+} from "lucide-react";
+import { supabase } from "../../lib/supabaseClient";
+
+const supportPriorities = ["low", "normal", "high", "urgent"];
+
+const portalTabs = [
+  {
+    id: "overview",
+    label: "Overview",
+    icon: ShieldCheck,
+  },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: BriefcaseBusiness,
+  },
+  {
+    id: "quotes",
+    label: "Quotes",
+    icon: WalletCards,
+  },
+  {
+    id: "support",
+    label: "Support",
+    icon: LifeBuoy,
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    icon: FileText,
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    icon: ClipboardList,
+  },
+];
+
+export default function ClientPortalDashboard({ profile }) {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [portalState, setPortalState] = useState({
+    loading: false,
+    error: "",
+    clients: [],
+    projects: [],
+    quotes: [],
+    tickets: [],
+    documents: [],
+  });
+
+  const [supportForm, setSupportForm] = useState({
+    clientId: "",
+    projectId: "",
+    priority: "normal",
+    subject: "",
+    description: "",
+  });
+
+  const [supportSaveState, setSupportSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+
+  const [documentActionState, setDocumentActionState] = useState({
+    loadingId: "",
+    error: "",
+  });
+
+  const primaryClient = portalState.clients[0] || null;
+
+  const clientIds = useMemo(
+    () => portalState.clients.map((client) => client.id).filter(Boolean),
+    [portalState.clients]
+  );
+
+  const stats = useMemo(() => {
+    const activeProjects = portalState.projects.filter(
+      (project) => !["completed", "cancelled"].includes(project.status)
+    ).length;
+
+    const openTickets = portalState.tickets.filter(
+      (ticket) => !["resolved", "closed"].includes(ticket.status)
+    ).length;
+
+    const acceptedQuotes = portalState.quotes.filter(
+      (quote) => quote.status === "accepted"
+    ).length;
+
+    const totalQuoteValue = portalState.quotes.reduce(
+      (sum, quote) => sum + parseAmount(quote.amount),
+      0
+    );
+
+    return {
+      clients: portalState.clients.length,
+      projects: portalState.projects.length,
+      activeProjects,
+      quotes: portalState.quotes.length,
+      acceptedQuotes,
+      openTickets,
+      documents: portalState.documents.length,
+      totalQuoteValue,
+    };
+  }, [portalState.projects, portalState.quotes, portalState.tickets, portalState.documents, portalState.clients]);
+
+  useEffect(() => {
+    fetchPortalData();
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (!supportForm.clientId && primaryClient?.id) {
+      setSupportForm((current) => ({
+        ...current,
+        clientId: primaryClient.id,
+      }));
+    }
+  }, [primaryClient?.id, supportForm.clientId]);
+
+  async function fetchPortalData() {
+    if (!supabase || !profile?.id) return;
+
+    try {
+      setPortalState((current) => ({
+        ...current,
+        loading: true,
+        error: "",
+      }));
+
+      const clients = await fetchLinkedClients(profile);
+      const ids = clients.map((client) => client.id).filter(Boolean);
+
+      if (ids.length === 0) {
+        setPortalState({
+          loading: false,
+          error: "",
+          clients: [],
+          projects: [],
+          quotes: [],
+          tickets: [],
+          documents: [],
+        });
+        return;
+      }
+
+      const [projectsResult, quotesResult, ticketsResult, documentsResult] =
+        await Promise.all([
+          supabase
+            .from("projects")
+            .select(
+              "id, client_id, lead_id, title, description, service_type, status, start_date, due_date, completed_at, created_at, updated_at"
+            )
+            .in("client_id", ids)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("quotes")
+            .select(
+              "id, client_id, project_id, quote_number, title, scope_summary, amount, currency, status, valid_until, sent_at, accepted_at, rejected_at, created_at, updated_at"
+            )
+            .in("client_id", ids)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("support_tickets")
+            .select(
+              "id, client_id, project_id, ticket_type, priority, subject, description, status, resolution_notes, closed_at, created_at, updated_at"
+            )
+            .in("client_id", ids)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("documents")
+            .select(
+              "id, client_id, project_id, quote_id, title, document_type, storage_path, public_url, notes, created_at, updated_at"
+            )
+            .in("client_id", ids)
+            .order("created_at", { ascending: false }),
+        ]);
+
+      const firstError =
+        projectsResult.error ||
+        quotesResult.error ||
+        ticketsResult.error ||
+        documentsResult.error;
+
+      if (firstError) throw firstError;
+
+      setPortalState({
+        loading: false,
+        error: "",
+        clients,
+        projects: projectsResult.data || [],
+        quotes: quotesResult.data || [],
+        tickets: ticketsResult.data || [],
+        documents: documentsResult.data || [],
+      });
+    } catch (error) {
+      setPortalState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to load portal records. Check client portal permissions.",
+        clients: [],
+        projects: [],
+        quotes: [],
+        tickets: [],
+        documents: [],
+      });
+    }
+  }
+
+  async function fetchLinkedClients(currentProfile) {
+    const { data: profileClients, error: profileError } = await supabase
+      .from("clients")
+      .select("id, profile_id, full_name, email, phone, organisation, notes, created_at, updated_at")
+      .eq("profile_id", currentProfile.id)
+      .order("created_at", { ascending: false });
+
+    if (profileError) throw profileError;
+
+    const clientsById = new Map();
+
+    (profileClients || []).forEach((client) => {
+      clientsById.set(client.id, client);
+    });
+
+    const email = currentProfile.email?.trim();
+
+    if (email) {
+      const { data: emailClients, error: emailError } = await supabase
+        .from("clients")
+        .select("id, profile_id, full_name, email, phone, organisation, notes, created_at, updated_at")
+        .ilike("email", email)
+        .order("created_at", { ascending: false });
+
+      if (emailError) throw emailError;
+
+      (emailClients || []).forEach((client) => {
+        clientsById.set(client.id, client);
+      });
+    }
+
+    return Array.from(clientsById.values());
+  }
+
+  async function handleCreateSupportTicket(event) {
+    event.preventDefault();
+
+    if (!supabase) return;
+
+    if (!supportForm.clientId) {
+      setSupportSaveState({
+        loading: false,
+        error: "No linked client record was found for this account.",
+        success: "",
+      });
+      return;
+    }
+
+    if (!supportForm.subject.trim() || !supportForm.description.trim()) {
+      setSupportSaveState({
+        loading: false,
+        error: "Enter a subject and description before sending support request.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setSupportSaveState({
+        loading: true,
+        error: "",
+        success: "",
+      });
+
+      const ticketRow = {
+        client_id: supportForm.clientId,
+        project_id: supportForm.projectId || null,
+        ticket_type: "client_portal_request",
+        priority: supportForm.priority,
+        subject: supportForm.subject.trim(),
+        description: supportForm.description.trim(),
+        status: "open",
+      };
+
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .insert(ticketRow)
+        .select(
+          "id, client_id, project_id, ticket_type, priority, subject, description, status, resolution_notes, closed_at, created_at, updated_at"
+        )
+        .single();
+
+      if (error) throw error;
+
+      setPortalState((current) => ({
+        ...current,
+        tickets: [data, ...current.tickets],
+      }));
+
+      setSupportForm((current) => ({
+        clientId: current.clientId,
+        projectId: "",
+        priority: "normal",
+        subject: "",
+        description: "",
+      }));
+
+      setSupportSaveState({
+        loading: false,
+        error: "",
+        success: "Support request sent to MKETICS.",
+      });
+    } catch (error) {
+      setSupportSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to send support request. Check support ticket permissions.",
+        success: "",
+      });
+    }
+  }
+
+  async function handleOpenDocument(document) {
+    if (!document?.id) return;
+
+    try {
+      setDocumentActionState({ loadingId: document.id, error: "" });
+
+      if (document.public_url) {
+        window.open(document.public_url, "_blank", "noopener,noreferrer");
+        setDocumentActionState({ loadingId: "", error: "" });
+        return;
+      }
+
+      if (!document.storage_path) {
+        setDocumentActionState({
+          loadingId: "",
+          error: "This document record does not have a file link yet.",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from("mketics-documents")
+        .createSignedUrl(document.storage_path, 60 * 10);
+
+      if (error) throw error;
+
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+
+      setDocumentActionState({ loadingId: "", error: "" });
+    } catch (error) {
+      setDocumentActionState({
+        loadingId: "",
+        error:
+          error?.message ||
+          "Unable to open this document. Check storage permissions.",
+      });
+    }
+  }
+
+  function updateSupportForm(event) {
+    const { name, value } = event.target;
+
+    setSupportForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    if (supportSaveState.error || supportSaveState.success) {
+      setSupportSaveState({
+        loading: false,
+        error: "",
+        success: "",
+      });
+    }
+  }
+
+  return (
+    <section className="px-5 py-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          {portalTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`rounded-[1.35rem] border p-4 text-left transition ${
+                  isActive
+                    ? "border-cyan-300 bg-[#061A33] text-white shadow-[0_18px_45px_rgba(6,26,51,0.22)]"
+                    : "border-slate-200 bg-white text-[#061A33] hover:border-cyan-300 hover:bg-[#F8FCFF]"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`grid h-10 w-10 place-items-center rounded-2xl ${
+                      isActive
+                        ? "bg-cyan-300 text-[#061A33]"
+                        : "bg-[#EAF6FF] text-[#0B7CFF]"
+                    }`}
+                  >
+                    <Icon size={19} />
+                  </div>
+
+                  <p className="text-sm font-black">{tab.label}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mb-6 flex flex-col gap-3 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-[#020B1F]">
+              Welcome, {profile?.full_name || profile?.email}
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+              This portal shows MKETICS records linked to your client account.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchPortalData}
+            disabled={portalState.loading}
+            className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-5 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300 disabled:opacity-70"
+          >
+            {portalState.loading ? (
+              <Loader2 size={17} className="mr-2 animate-spin" />
+            ) : (
+              <RefreshCw size={17} className="mr-2" />
+            )}
+            Refresh Portal
+          </button>
+        </div>
+
+        {portalState.error && (
+          <StatusMessage type="error" message={portalState.error} />
+        )}
+
+        {!portalState.loading && clientIds.length === 0 ? (
+          <NoClientRecord profile={profile} />
+        ) : portalState.loading ? (
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <Loader2 className="mx-auto animate-spin text-[#0B7CFF]" size={30} />
+            <p className="mt-3 text-sm font-black text-slate-500">
+              Loading portal records...
+            </p>
+          </div>
+        ) : activeTab === "overview" ? (
+          <OverviewTab stats={stats} projects={portalState.projects} tickets={portalState.tickets} quotes={portalState.quotes} documents={portalState.documents} />
+        ) : activeTab === "projects" ? (
+          <ProjectsTab projects={portalState.projects} />
+        ) : activeTab === "quotes" ? (
+          <QuotesTab quotes={portalState.quotes} />
+        ) : activeTab === "support" ? (
+          <SupportTab
+            tickets={portalState.tickets}
+            projects={portalState.projects}
+            clients={portalState.clients}
+            form={supportForm}
+            saveState={supportSaveState}
+            onChange={updateSupportForm}
+            onSubmit={handleCreateSupportTicket}
+          />
+        ) : activeTab === "documents" ? (
+          <DocumentsTab
+            documents={portalState.documents}
+            projects={portalState.projects}
+            quotes={portalState.quotes}
+            actionState={documentActionState}
+            onOpenDocument={handleOpenDocument}
+          />
+        ) : (
+          <ProfileTab profile={profile} clients={portalState.clients} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function OverviewTab({ stats, projects, tickets, quotes, documents }) {
+  const recentProjects = projects.slice(0, 3);
+  const recentTickets = tickets.slice(0, 3);
+  const recentQuotes = quotes.slice(0, 3);
+  const recentDocuments = documents.slice(0, 3);
+
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Active Projects" value={stats.activeProjects} />
+        <StatCard label="Quotes" value={stats.quotes} />
+        <StatCard label="Open Support" value={stats.openTickets} />
+        <StatCard label="Documents" value={stats.documents} />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <SummaryCard title="Recent Projects" icon={BriefcaseBusiness} items={recentProjects} empty="No projects available yet." renderItem={(project) => (
+          <MiniRecord title={project.title} meta={`${toReadableLabel(project.status)} • Due ${formatDate(project.due_date)}`} />
+        )} />
+
+        <SummaryCard title="Recent Quotes" icon={WalletCards} items={recentQuotes} empty="No quotes available yet." renderItem={(quote) => (
+          <MiniRecord title={quote.quote_number || quote.title} meta={`${formatCurrency(quote.amount, quote.currency)} • ${toReadableLabel(quote.status)}`} />
+        )} />
+
+        <SummaryCard title="Recent Support" icon={LifeBuoy} items={recentTickets} empty="No support tickets available yet." renderItem={(ticket) => (
+          <MiniRecord title={ticket.subject} meta={`${toReadableLabel(ticket.status)} • ${toReadableLabel(ticket.priority)}`} />
+        )} />
+
+        <SummaryCard title="Recent Documents" icon={FileText} items={recentDocuments} empty="No documents available yet." renderItem={(document) => (
+          <MiniRecord title={document.title} meta={`${toReadableLabel(document.document_type)} • ${formatDate(document.created_at)}`} />
+        )} />
+      </div>
+    </div>
+  );
+}
+
+function ProjectsTab({ projects }) {
+  return (
+    <RecordSection title="Your Projects" description="Track active and completed MKETICS project records.">
+      {projects.length === 0 ? (
+        <EmptyState message="No project records have been linked to your portal yet." />
+      ) : (
+        <div className="grid gap-4">
+          {projects.map((project) => (
+            <article key={project.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                    {project.service_type || "MKETICS Project"}
+                  </p>
+                  <h3 className="mt-2 text-xl font-black text-[#020B1F]">
+                    {project.title}
+                  </h3>
+                  <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-600">
+                    {project.description || "Project details will appear here when MKETICS updates this record."}
+                  </p>
+                </div>
+
+                <StatusBadge status={project.status} />
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <DetailPill label="Start Date" value={formatDate(project.start_date)} />
+                <DetailPill label="Due Date" value={formatDate(project.due_date)} />
+                <DetailPill label="Last Updated" value={formatDate(project.updated_at)} />
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </RecordSection>
+  );
+}
+
+function QuotesTab({ quotes }) {
+  return (
+    <RecordSection title="Your Quotes" description="View MKETICS quote records linked to your client account.">
+      {quotes.length === 0 ? (
+        <EmptyState message="No quote records have been linked to your portal yet." />
+      ) : (
+        <div className="grid gap-4">
+          {quotes.map((quote) => (
+            <article key={quote.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                    {quote.quote_number || "Quote"}
+                  </p>
+                  <h3 className="mt-2 text-xl font-black text-[#020B1F]">
+                    {quote.title}
+                  </h3>
+                  <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-600">
+                    {quote.scope_summary || "Quote scope will appear here when MKETICS updates this record."}
+                  </p>
+                </div>
+
+                <div className="text-left lg:text-right">
+                  <p className="text-2xl font-black text-[#020B1F]">
+                    {formatCurrency(quote.amount, quote.currency)}
+                  </p>
+                  <div className="mt-2 flex lg:justify-end">
+                    <StatusBadge status={quote.status} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <DetailPill label="Valid Until" value={formatDate(quote.valid_until)} />
+                <DetailPill label="Sent" value={formatDate(quote.sent_at)} />
+                <DetailPill label="Created" value={formatDate(quote.created_at)} />
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </RecordSection>
+  );
+}
+
+function SupportTab({ tickets, projects, clients, form, saveState, onChange, onSubmit }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <form onSubmit={onSubmit} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <LifeBuoy size={22} />
+        </div>
+
+        <h2 className="mt-4 text-2xl font-black text-[#020B1F]">
+          Send support request
+        </h2>
+        <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
+          Send a support request to MKETICS for an active project or general client support.
+        </p>
+
+        {saveState.error && <StatusMessage type="error" message={saveState.error} />}
+        {saveState.success && <StatusMessage type="success" message={saveState.success} />}
+
+        <div className="mt-5 grid gap-4">
+          <label>
+            <span className="text-sm font-black text-[#061A33]">Client Record</span>
+            <select name="clientId" value={form.clientId} onChange={onChange} className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100">
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>{client.full_name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="text-sm font-black text-[#061A33]">Related Project</span>
+            <select name="projectId" value={form.projectId} onChange={onChange} className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100">
+              <option value="">General support</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.title}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="text-sm font-black text-[#061A33]">Priority</span>
+            <select name="priority" value={form.priority} onChange={onChange} className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100">
+              {supportPriorities.map((priority) => (
+                <option key={priority} value={priority}>{toReadableLabel(priority)}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="text-sm font-black text-[#061A33]">Subject</span>
+            <input name="subject" value={form.subject} onChange={onChange} placeholder="Example: Website content update request" className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100" />
+          </label>
+
+          <label>
+            <span className="text-sm font-black text-[#061A33]">Description</span>
+            <textarea name="description" value={form.description} onChange={onChange} rows={7} placeholder="Describe what you need help with." className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold leading-7 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100" />
+          </label>
+        </div>
+
+        <button type="submit" disabled={saveState.loading} className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-6 py-3 font-black text-white shadow-[0_16px_40px_rgba(0,174,239,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70">
+          {saveState.loading ? (
+            <>
+              <Loader2 size={18} className="mr-2 animate-spin" />
+              Sending Request
+            </>
+          ) : (
+            <>
+              <Send size={18} className="mr-2" />
+              Send Support Request
+            </>
+          )}
+        </button>
+      </form>
+
+      <RecordSection title="Support Tickets" description="View current and previous support requests.">
+        {tickets.length === 0 ? (
+          <EmptyState message="No support tickets have been created yet." />
+        ) : (
+          <div className="grid gap-4">
+            {tickets.map((ticket) => (
+              <article key={ticket.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                      {toReadableLabel(ticket.priority)} Priority
+                    </p>
+                    <h3 className="mt-2 text-lg font-black text-[#020B1F]">{ticket.subject}</h3>
+                    <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-600">{ticket.description}</p>
+                  </div>
+                  <StatusBadge status={ticket.status} />
+                </div>
+
+                {ticket.resolution_notes && (
+                  <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-7 text-emerald-900">
+                    {ticket.resolution_notes}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </RecordSection>
+    </div>
+  );
+}
+
+function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument }) {
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const quoteById = new Map(quotes.map((quote) => [quote.id, quote]));
+
+  return (
+    <RecordSection title="Documents" description="Open documents and shared files linked to your MKETICS client record.">
+      {actionState.error && <StatusMessage type="error" message={actionState.error} />}
+
+      {documents.length === 0 ? (
+        <EmptyState message="No documents have been linked to your portal yet." />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {documents.map((document) => (
+            <article key={document.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+                  <FileText size={20} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                    {toReadableLabel(document.document_type)}
+                  </p>
+                  <h3 className="mt-2 text-lg font-black text-[#020B1F]">{document.title}</h3>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                    {document.project_id && projectById.get(document.project_id)
+                      ? `Project: ${projectById.get(document.project_id).title}`
+                      : document.quote_id && quoteById.get(document.quote_id)
+                      ? `Quote: ${quoteById.get(document.quote_id).quote_number || quoteById.get(document.quote_id).title}`
+                      : "General client document"}
+                  </p>
+
+                  {document.notes && (
+                    <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-600">{document.notes}</p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenDocument(document)}
+                    disabled={actionState.loadingId === document.id}
+                    className="mt-4 inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300 disabled:opacity-70"
+                  >
+                    {actionState.loadingId === document.id ? (
+                      <Loader2 size={14} className="mr-2 animate-spin" />
+                    ) : (
+                      <Download size={14} className="mr-2" />
+                    )}
+                    Open Document
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </RecordSection>
+  );
+}
+
+function ProfileTab({ profile, clients }) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <DetailCard title="Portal Profile" icon={ShieldCheck}>
+        <DetailLine label="Name" value={profile?.full_name} />
+        <DetailLine label="Email" value={profile?.email} />
+        <DetailLine label="Phone" value={profile?.phone} />
+        <DetailLine label="Organisation" value={profile?.organisation} />
+        <DetailLine label="Role" value={toReadableLabel(profile?.role)} />
+      </DetailCard>
+
+      <DetailCard title="Linked Client Records" icon={FolderOpen}>
+        {clients.length === 0 ? (
+          <p className="text-sm font-bold leading-6 text-slate-600">
+            No linked client records found.
+          </p>
+        ) : (
+          clients.map((client) => (
+            <div key={client.id} className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+              <DetailLine label="Client" value={client.full_name} />
+              <DetailLine label="Email" value={client.email} />
+              <DetailLine label="Phone" value={client.phone} />
+              <DetailLine label="Organisation" value={client.organisation} />
+            </div>
+          ))
+        )}
+      </DetailCard>
+    </div>
+  );
+}
+
+function NoClientRecord({ profile }) {
+  const emailLink = createEmailLink(profile);
+  const whatsappLink = createWhatsAppLink(profile);
+
+  return (
+    <div className="rounded-[2rem] border border-cyan-200 bg-white p-6 shadow-sm">
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+        <AlertCircle size={23} />
+      </div>
+
+      <h2 className="mt-4 text-2xl font-black text-[#020B1F]">
+        No linked client record yet.
+      </h2>
+
+      <p className="mt-3 max-w-3xl text-sm font-semibold leading-7 text-slate-600">
+        Your account is signed in, but MKETICS has not linked this profile to a
+        client record yet. Ask MKETICS to link your portal profile to your client
+        account using your email address: {profile?.email || "not available"}.
+      </p>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <a href={whatsappLink} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-[#061A33] transition hover:bg-white">
+          <MessageCircle size={17} className="mr-2" />
+          WhatsApp MKETICS
+        </a>
+
+        <a href={emailLink} className="inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-5 py-3 text-sm font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300">
+          <Mail size={17} className="mr-2" />
+          Email MKETICS
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function RecordSection({ title, description, children }) {
+  return (
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-2xl font-black text-[#020B1F]">{title}</h2>
+      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{description}</p>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function DetailCard({ title, icon: Icon, children }) {
+  return (
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <Icon size={19} />
+        </div>
+        <h3 className="text-lg font-black text-[#020B1F]">{title}</h3>
+      </div>
+      <div className="mt-5 grid gap-3">{children}</div>
+    </article>
+  );
+}
+
+function SummaryCard({ title, icon: Icon, items, empty, renderItem }) {
+  return (
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <Icon size={19} />
+        </div>
+        <h3 className="text-lg font-black text-[#020B1F]">{title}</h3>
+      </div>
+      <div className="mt-5 grid gap-3">
+        {items.length === 0 ? (
+          <p className="text-sm font-bold leading-6 text-slate-600">{empty}</p>
+        ) : (
+          items.map((item) => <div key={item.id}>{renderItem(item)}</div>)
+        )}
+      </div>
+    </article>
+  );
+}
+
+function MiniRecord({ title, meta }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+      <p className="text-sm font-black text-[#020B1F]">{title}</p>
+      <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-[#0B7CFF]">{meta}</p>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0B7CFF]">{label}</p>
+      <p className="mt-3 text-4xl font-black text-[#020B1F]">{value}</p>
+    </article>
+  );
+}
+
+function DetailPill({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0B7CFF]">{label}</p>
+      <p className="mt-1 text-sm font-bold text-slate-700">{value || "Not available"}</p>
+    </div>
+  );
+}
+
+function DetailLine({ label, value }) {
+  if (!value) return null;
+
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">{label}</p>
+      <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">{value}</p>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span className="inline-flex w-fit rounded-full bg-[#EAF6FF] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#0B7CFF]">
+      {toReadableLabel(status)}
+    </span>
+  );
+}
+
+function EmptyState({ message }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-6 text-center">
+      <Eye className="mx-auto text-slate-400" size={28} />
+      <p className="mt-3 text-sm font-black text-slate-500">{message}</p>
+    </div>
+  );
+}
+
+function StatusMessage({ type, message }) {
+  const isError = type === "error";
+
+  return (
+    <div className={`mt-5 flex items-start gap-3 rounded-2xl border p-4 ${isError ? "border-red-200 bg-red-50 text-red-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+      {isError ? <AlertCircle size={20} className="mt-0.5 shrink-0" /> : <CheckCircle2 size={20} className="mt-0.5 shrink-0" />}
+      <p className="text-sm font-bold leading-6">{message}</p>
+    </div>
+  );
+}
+
+function createEmailLink(profile) {
+  const subject = "MKETICS Client Portal Access";
+  const body = [
+    "Hello MKETICS,",
+    "",
+    "Please link my client portal account to my MKETICS client record.",
+    "",
+    `Portal email: ${profile?.email || ""}`,
+    "",
+    "Regards,",
+    profile?.full_name || "Client",
+  ].join("\n");
+
+  return `mailto:services@mketics.co.za?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function createWhatsAppLink(profile) {
+  const message = [
+    "Hello MKETICS,",
+    "",
+    "Please link my client portal account to my client record.",
+    `Portal email: ${profile?.email || ""}`,
+  ].join("\n");
+
+  return `https://wa.me/27722864367?text=${encodeURIComponent(message)}`;
+}
+
+function parseAmount(value) {
+  const parsed = Number.parseFloat(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatCurrency(amount, currency = "ZAR") {
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: currency || "ZAR",
+  }).format(parseAmount(amount));
+}
+
+function formatDate(value) {
+  if (!value) return "Not available";
+
+  return new Intl.DateTimeFormat("en-ZA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
+function toReadableLabel(value) {
+  if (!value) return "Not provided";
+
+  return String(value)
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
