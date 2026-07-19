@@ -4,6 +4,7 @@ import {
   AlertCircle,
   BarChart3,
   Bell,
+  TrendingUp,
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
@@ -39,6 +40,8 @@ import AIProjectPlanner from "../components/admin/AIProjectPlanner";
 import ProjectTaskBoard from "../components/admin/ProjectTaskBoard";
 import ProjectTimeReports from "../components/admin/ProjectTimeReports";
 import BusinessReportsDashboard from "../components/admin/BusinessReportsDashboard";
+import BusinessKPIInsightsDashboard from "../components/admin/BusinessKPIInsightsDashboard";
+import ExecutiveDashboardExport from "../components/admin/ExecutiveDashboardExport";
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
@@ -1014,6 +1017,10 @@ export default function Admin() {
             <ProjectTimeReports isActive={activeConsoleTab === "time"} />
           ) : activeConsoleTab === "reports" ? (
             <BusinessReportsDashboard isActive={activeConsoleTab === "reports"} />
+          ) : activeConsoleTab === "kpis" ? (
+            <BusinessKPIInsightsDashboard isActive={activeConsoleTab === "kpis"} />
+          ) : activeConsoleTab === "executive" ? (
+            <ExecutiveDashboardExport isActive={activeConsoleTab === "executive"} />
           ) : activeConsoleTab === "finance" ? (
             <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "invoices" ? (
@@ -1249,6 +1256,18 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: BarChart3,
     },
     {
+      id: "kpis",
+      label: "KPI Insights",
+      description: "View KPI charts, growth signals and business performance insights.",
+      icon: TrendingUp,
+    },
+    {
+      id: "executive",
+      label: "Executive Snapshot",
+      description: "Export investor-ready business snapshots and founder updates.",
+      icon: BarChart3,
+    },
+    {
       id: "finance",
       label: "Finance",
       description: "Track income, payments, expenses and business cash position.",
@@ -1275,7 +1294,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-11">
+    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-12">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
