@@ -12,6 +12,7 @@ import {
   Clock,
   Eye,
   FileText,
+  Inbox,
   Loader2,
   Lock,
   LogOut,
@@ -48,6 +49,7 @@ import AdminSettingsDashboard from "../components/admin/AdminSettingsDashboard";
 import AdminUserManagementDashboard from "../components/admin/AdminUserManagementDashboard";
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
+import ClientPortalResponseInbox from "../components/admin/ClientPortalResponseInbox";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1039,6 +1041,8 @@ export default function Admin() {
             <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "invoices" ? (
             <BusinessInvoicesDashboard isActive={activeConsoleTab === "invoices"} />
+          ) : activeConsoleTab === "portalInbox" ? (
+            <ClientPortalResponseInbox isActive={activeConsoleTab === "portalInbox"} />
           ) : activeConsoleTab === "users" ? (
             <AdminUserManagementDashboard
               isActive={activeConsoleTab === "users"}
@@ -1263,6 +1267,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Notifications",
       description: "Track reminders, overdue work and business follow-ups.",
       icon: Bell,
+    },
+    {
+      id: "portalInbox",
+      label: "Portal Inbox",
+      description: "Review client quote responses, approvals and payment requests.",
+      icon: Inbox,
     },
     {
       id: "leads",
