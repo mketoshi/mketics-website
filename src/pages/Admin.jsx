@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   StickyNote,
   Timer,
+  UsersRound,
   WalletCards,
   X,
 } from "lucide-react";
@@ -44,6 +45,7 @@ import BusinessReportsDashboard from "../components/admin/BusinessReportsDashboa
 import BusinessKPIInsightsDashboard from "../components/admin/BusinessKPIInsightsDashboard";
 import ExecutiveDashboardExport from "../components/admin/ExecutiveDashboardExport";
 import AdminSettingsDashboard from "../components/admin/AdminSettingsDashboard";
+import AdminUserManagementDashboard from "../components/admin/AdminUserManagementDashboard";
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
@@ -206,6 +208,13 @@ export default function Admin() {
       fetchLeads();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && !canAccessConsoleTab(activeConsoleTab, authState.profile)) {
+      setActiveConsoleTab("overview");
+      setSelectedLeadId(null);
+    }
+  }, [isAdmin, activeConsoleTab, authState.profile?.role]);
 
   useEffect(() => {
     if (!selectedLead) return;
@@ -985,7 +994,10 @@ export default function Admin() {
         <div className="mx-auto max-w-7xl">
           <AdminConsoleTabs
             activeTab={activeConsoleTab}
+            profile={authState.profile}
             onChange={(tab) => {
+              if (!canAccessConsoleTab(tab, authState.profile)) return;
+
               setActiveConsoleTab(tab);
               setSelectedLeadId(null);
             }}
@@ -1027,6 +1039,11 @@ export default function Admin() {
             <BusinessFinanceDashboard isActive={activeConsoleTab === "finance"} />
           ) : activeConsoleTab === "invoices" ? (
             <BusinessInvoicesDashboard isActive={activeConsoleTab === "invoices"} />
+          ) : activeConsoleTab === "users" ? (
+            <AdminUserManagementDashboard
+              isActive={activeConsoleTab === "users"}
+              profile={authState.profile}
+            />
           ) : activeConsoleTab === "settings" ? (
             <AdminSettingsDashboard
               isActive={activeConsoleTab === "settings"}
@@ -1212,7 +1229,28 @@ export default function Admin() {
   );
 }
 
-function AdminConsoleTabs({ activeTab, onChange }) {
+function canAccessConsoleTab(tabId, profile) {
+  if (!profile?.role) return false;
+
+  if (profile.role === "admin") return true;
+
+  if (profile.role === "staff") {
+    return [
+      "overview",
+      "notifications",
+      "leads",
+      "projects",
+      "tasks",
+      "time",
+      "reports",
+      "documents",
+    ].includes(tabId);
+  }
+
+  return false;
+}
+
+function AdminConsoleTabs({ activeTab, profile, onChange }) {
   const tabs = [
     {
       id: "overview",
@@ -1293,6 +1331,12 @@ function AdminConsoleTabs({ activeTab, onChange }) {
       icon: FileText,
     },
     {
+      id: "users",
+      label: "Users & Access",
+      description: "Manage admin users, staff roles and access control.",
+      icon: UsersRound,
+    },
+    {
       id: "settings",
       label: "Settings",
       description: "Manage company profile, admin preferences and document defaults.",
@@ -1308,7 +1352,7 @@ function AdminConsoleTabs({ activeTab, onChange }) {
 
   return (
     <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-12">
-      {tabs.map((tab) => {
+      {tabs.filter((tab) => canAccessConsoleTab(tab.id, profile)).map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
 
