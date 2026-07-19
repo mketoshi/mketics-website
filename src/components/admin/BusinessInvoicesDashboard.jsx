@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Banknote,
@@ -8,6 +8,7 @@ import {
   Eye,
   FileText,
   Loader2,
+  Link as LinkIcon,
   Mail,
   Plus,
   Printer,
@@ -16,6 +17,7 @@ import {
   Search,
   Send,
   Trash2,
+  UploadCloud,
   WalletCards,
   X,
 } from "lucide-react";
@@ -23,6 +25,8 @@ import { supabase } from "../../lib/supabaseClient";
 
 const invoiceSettingKey = "business_invoice_records_v1";
 const financeSettingKey = "business_finance_records_v1";
+const storageBucketName = "mketics-documents";
+const maxProofUploadSizeBytes = 10 * 1024 * 1024;
 
 const invoiceStatusOptions = ["draft", "sent", "partial", "paid", "overdue", "cancelled"];
 const paymentMethodOptions = ["Not Set", "EFT", "Cash", "Card", "Mobile Money", "Other"];
@@ -51,6 +55,7 @@ export default function BusinessInvoicesDashboard({ isActive }) {
 
   const [form, setForm] = useState(() => buildDefaultInvoiceForm());
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const detailPanelRef = useRef(null);
   const [paymentForm, setPaymentForm] = useState({
     paidAmount: "",
     paymentStatus: "sent",
@@ -58,6 +63,18 @@ export default function BusinessInvoicesDashboard({ isActive }) {
     paymentDate: getTodayInputValue(),
     paymentNotes: "",
     syncFinance: true,
+  });
+
+  const [receiptForm, setReceiptForm] = useState(() => buildDefaultReceiptForm());
+  const [receiptSaveState, setReceiptSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+  const [proofUploadState, setProofUploadState] = useState({
+    file: null,
+    error: "",
+    success: "",
   });
 
   const [saveState, setSaveState] = useState({
@@ -108,8 +125,13 @@ export default function BusinessInvoicesDashboard({ isActive }) {
     const overdue = dataState.invoices.filter((invoice) => getInvoiceDisplayStatus(invoice) === "overdue").length;
     const sent = dataState.invoices.filter((invoice) => getInvoiceDisplayStatus(invoice) === "sent").length;
     const paid = dataState.invoices.filter((invoice) => getInvoiceDisplayStatus(invoice) === "paid").length;
+    const receiptCount = dataState.invoices.reduce((total, invoice) => total + getInvoiceReceipts(invoice).length, 0);
+    const proofCount = dataState.invoices.reduce(
+      (total, invoice) => total + getInvoiceReceipts(invoice).filter((receipt) => receipt.proofUrl || receipt.proofStoragePath).length,
+      0
+    );
 
-    return { totalBilled, totalPaid, outstanding, overdue, sent, paid };
+    return { totalBilled, totalPaid, outstanding, overdue, sent, paid, receiptCount, proofCount };
   }, [dataState.invoices]);
 
   useEffect(() => {
@@ -129,6 +151,10 @@ export default function BusinessInvoicesDashboard({ isActive }) {
       paymentNotes: selectedInvoice.paymentNotes || "",
       syncFinance: true,
     });
+
+    setReceiptForm(buildDefaultReceiptForm(selectedInvoice));
+    setReceiptSaveState({ loading: false, error: "", success: "" });
+    setProofUploadState({ file: null, error: "", success: "" });
   }, [selectedInvoiceId]);
 
   async function fetchInvoiceData() {
@@ -302,6 +328,214 @@ export default function BusinessInvoicesDashboard({ isActive }) {
     }
   }
 
+  async function handleAddReceipt(event) {
+    event.preventDefault();
+
+    if (!supabase || !selectedInvoice) return;
+
+    const amount = parseMoney(receiptForm.amount);
+    const outstanding = getInvoiceOutstanding(selectedInvoice);
+
+    if (!amount || amount <= 0) {
+      setReceiptSaveState({ loading: false, error: "Enter a valid receipt amount.", success: "" });
+      return;
+    }
+
+    if (amount > outstanding && outstanding > 0) {
+      setReceiptSaveState({
+        loading: false,
+        error: "Receipt amount cannot be greater than the outstanding invoice balance.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setReceiptSaveState({ loading: true, error: "", success: "" });
+
+      const now = new Date().toISOString();
+      const uploadedStoragePath = proofUploadState.file
+        ? await uploadPaymentProofFile(proofUploadState.file, selectedInvoice)
+        : "";
+
+      const receipt = {
+        id: createId("receipt"),
+        receiptNumber: receiptForm.receiptNumber.trim() || generateReceiptNumber(),
+        amount,
+        paymentMethod: receiptForm.paymentMethod || "EFT",
+        paymentDate: receiptForm.paymentDate || getTodayInputValue(),
+        reference: receiptForm.reference.trim(),
+        proofUrl: receiptForm.proofUrl.trim(),
+        proofStoragePath: uploadedStoragePath || receiptForm.proofStoragePath.trim(),
+        notes: receiptForm.notes.trim(),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const nextReceipts = [receipt, ...getInvoiceReceipts(selectedInvoice)];
+      const nextPaidAmount = getReceiptTotal(nextReceipts);
+      const nextStatus = normalisePaymentStatus(
+        receiptForm.markInvoicePaid ? "paid" : selectedInvoice.paymentStatus,
+        Number(selectedInvoice.amount) || 0,
+        nextPaidAmount,
+        selectedInvoice.dueDate
+      );
+
+      const updatedInvoice = {
+        ...selectedInvoice,
+        receipts: nextReceipts,
+        paidAmount: nextPaidAmount,
+        paymentStatus: nextStatus,
+        paymentMethod: receipt.paymentMethod,
+        paymentDate: receipt.paymentDate,
+        paymentNotes: [selectedInvoice.paymentNotes, receipt.notes].filter(Boolean).join("\n"),
+        paidAt: nextStatus === "paid" ? selectedInvoice.paidAt || now : selectedInvoice.paidAt || "",
+        updatedAt: now,
+      };
+
+      const nextInvoices = dataState.invoices.map((invoice) =>
+        invoice.id === selectedInvoice.id ? updatedInvoice : invoice
+      );
+
+      await saveInvoiceRecords(nextInvoices);
+
+      if (receiptForm.syncFinance) {
+        await upsertInvoiceFinanceRecord(updatedInvoice);
+      }
+
+      if (receiptForm.createDocumentRecord && (receipt.proofUrl || receipt.proofStoragePath)) {
+        await createPaymentProofDocumentRecord(updatedInvoice, receipt);
+      }
+
+      setDataState((current) => ({ ...current, invoices: nextInvoices }));
+      setReceiptForm(buildDefaultReceiptForm(updatedInvoice));
+      setProofUploadState({ file: null, error: "", success: uploadedStoragePath ? "Payment proof uploaded." : "" });
+      setReceiptSaveState({ loading: false, error: "", success: "Receipt saved and invoice payment updated." });
+    } catch (error) {
+      setReceiptSaveState({
+        loading: false,
+        error: error?.message || "Unable to save receipt or payment proof.",
+        success: "",
+      });
+    }
+  }
+
+  async function uploadPaymentProofFile(file, invoice) {
+    if (!file) return "";
+
+    if (file.size > maxProofUploadSizeBytes) {
+      throw new Error("Payment proof file must be 10 MB or smaller.");
+    }
+
+    const storagePath = buildProofStoragePath(file, invoice);
+
+    const { error } = await supabase.storage
+      .from(storageBucketName)
+      .upload(storagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    return storagePath;
+  }
+
+  async function createPaymentProofDocumentRecord(invoice, receipt) {
+    const client = dataState.clients.find((item) => item.id === invoice.clientId);
+    const project = dataState.projects.find((item) => item.id === invoice.projectId);
+
+    const { error } = await supabase.from("documents").insert({
+      title: `${receipt.receiptNumber} - Proof of Payment for ${invoice.invoiceNumber}`,
+      document_type: "proof_of_payment",
+      client_id: invoice.clientId || null,
+      project_id: invoice.projectId || null,
+      quote_id: invoice.quoteId || null,
+      public_url: receipt.proofUrl || null,
+      storage_path: receipt.proofStoragePath || null,
+      notes: [
+        `Invoice: ${invoice.invoiceNumber}`,
+        `Receipt: ${receipt.receiptNumber}`,
+        `Amount received: ${formatCurrency(receipt.amount)}`,
+        `Payment method: ${receipt.paymentMethod}`,
+        `Payment date: ${formatDate(receipt.paymentDate)}`,
+        receipt.reference ? `Reference: ${receipt.reference}` : "",
+        client ? `Client: ${getClientName(client)}` : "",
+        project ? `Project: ${project.title}` : "",
+        receipt.notes || "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
+
+    if (error) throw error;
+  }
+
+  async function handleDeleteReceipt(receiptId) {
+    if (!supabase || !selectedInvoice || !receiptId) return;
+
+    const confirmed = window.confirm("Delete this receipt record from the invoice?");
+    if (!confirmed) return;
+
+    try {
+      setReceiptSaveState({ loading: true, error: "", success: "" });
+
+      const nextReceipts = getInvoiceReceipts(selectedInvoice).filter((receipt) => receipt.id !== receiptId);
+      const nextPaidAmount = getReceiptTotal(nextReceipts);
+      const updatedInvoice = {
+        ...selectedInvoice,
+        receipts: nextReceipts,
+        paidAmount: nextPaidAmount,
+        paymentStatus: normalisePaymentStatus("sent", Number(selectedInvoice.amount) || 0, nextPaidAmount, selectedInvoice.dueDate),
+        paidAt: nextPaidAmount >= (Number(selectedInvoice.amount) || 0) ? selectedInvoice.paidAt : "",
+        updatedAt: new Date().toISOString(),
+      };
+
+      const nextInvoices = dataState.invoices.map((invoice) =>
+        invoice.id === selectedInvoice.id ? updatedInvoice : invoice
+      );
+
+      await saveInvoiceRecords(nextInvoices);
+      await upsertInvoiceFinanceRecord(updatedInvoice);
+
+      setDataState((current) => ({ ...current, invoices: nextInvoices }));
+      setReceiptForm(buildDefaultReceiptForm(updatedInvoice));
+      setReceiptSaveState({ loading: false, error: "", success: "Receipt deleted and invoice payment recalculated." });
+    } catch (error) {
+      setReceiptSaveState({ loading: false, error: error?.message || "Unable to delete receipt.", success: "" });
+    }
+  }
+
+  async function openPaymentProof(receipt) {
+    const location = receipt?.proofUrl || receipt?.proofStoragePath;
+    if (!location) return;
+
+    try {
+      if (receipt.proofUrl) {
+        window.open(receipt.proofUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const { data, error } = await supabase.storage
+        .from(storageBucketName)
+        .createSignedUrl(receipt.proofStoragePath, 60 * 10);
+
+      if (error) throw error;
+      window.open(data?.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setReceiptSaveState({
+        loading: false,
+        error: error?.message || "Unable to open payment proof. Check Supabase Storage policy.",
+        success: "",
+      });
+    }
+  }
+
+  async function copyPaymentReceiptText(receipt) {
+    await navigator.clipboard.writeText(buildPaymentReceiptText(selectedInvoice, receipt, dataState));
+    setReceiptSaveState({ loading: false, error: "", success: "Receipt text copied to clipboard." });
+  }
+
   async function handleMarkInvoicePaid(invoiceId) {
     const invoice = dataState.invoices.find((item) => item.id === invoiceId);
     if (!invoice || !supabase) return;
@@ -431,6 +665,17 @@ export default function BusinessInvoicesDashboard({ isActive }) {
     if (upsertError) throw upsertError;
   }
 
+  function handleOpenInvoice(invoiceId) {
+    setSelectedInvoiceId(invoiceId);
+
+    window.setTimeout(() => {
+      detailPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }
+
   function handleFormChange(event) {
     const { name, value } = event.target;
 
@@ -455,6 +700,45 @@ export default function BusinessInvoicesDashboard({ isActive }) {
     clearStatusMessage();
   }
 
+  function handleReceiptChange(event) {
+    const { name, value, checked, type } = event.target;
+
+    setReceiptForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
+    clearReceiptStatusMessage();
+  }
+
+  function handleProofFileChange(event) {
+    const file = event.target.files?.[0] || null;
+
+    if (file && file.size > maxProofUploadSizeBytes) {
+      setProofUploadState({
+        file: null,
+        error: "Payment proof file must be 10 MB or smaller.",
+        success: "",
+      });
+      return;
+    }
+
+    setProofUploadState({
+      file,
+      error: "",
+      success: file ? `${file.name} selected for upload.` : "",
+    });
+
+    if (file) {
+      setReceiptForm((current) => ({
+        ...current,
+        reference: current.reference || file.name.replace(/\.[^/.]+$/, ""),
+      }));
+    }
+
+    clearReceiptStatusMessage();
+  }
+
   function handleFilterChange(event) {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
@@ -463,6 +747,12 @@ export default function BusinessInvoicesDashboard({ isActive }) {
   function clearStatusMessage() {
     if (saveState.error || saveState.success) {
       setSaveState({ loading: false, error: "", success: "" });
+    }
+  }
+
+  function clearReceiptStatusMessage() {
+    if (receiptSaveState.error || receiptSaveState.success) {
+      setReceiptSaveState({ loading: false, error: "", success: "" });
     }
   }
 
@@ -525,14 +815,46 @@ export default function BusinessInvoicesDashboard({ isActive }) {
         {saveState.success && <StatusMessage type="success" message={saveState.success} />}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
         <InvoiceStatCard label="Total Billed" value={formatCurrency(invoiceStats.totalBilled)} />
         <InvoiceStatCard label="Paid" value={formatCurrency(invoiceStats.totalPaid)} />
         <InvoiceStatCard label="Outstanding" value={formatCurrency(invoiceStats.outstanding)} />
+        <InvoiceStatCard label="Receipts" value={invoiceStats.receiptCount} />
+        <InvoiceStatCard label="Proof Docs" value={invoiceStats.proofCount} />
         <InvoiceStatCard label="Sent" value={invoiceStats.sent} />
         <InvoiceStatCard label="Paid Invoices" value={invoiceStats.paid} />
         <InvoiceStatCard label="Overdue" value={invoiceStats.overdue} />
       </div>
+
+      {selectedInvoice && (
+        <div
+          ref={detailPanelRef}
+          id="invoice-detail-panel"
+          className="scroll-mt-28"
+        >
+          <InvoiceDetailPanel
+            invoice={selectedInvoice}
+            dataState={dataState}
+            paymentForm={paymentForm}
+            receiptForm={receiptForm}
+            proofUploadState={proofUploadState}
+            saveState={saveState}
+            receiptSaveState={receiptSaveState}
+            onClose={() => setSelectedInvoiceId(null)}
+            onPaymentChange={handlePaymentChange}
+            onReceiptChange={handleReceiptChange}
+            onProofFileChange={handleProofFileChange}
+            onUpdatePayment={handleUpdatePayment}
+            onAddReceipt={handleAddReceipt}
+            onDeleteReceipt={handleDeleteReceipt}
+            onOpenProof={openPaymentProof}
+            onCopyReceipt={copyPaymentReceiptText}
+            onPrint={() => printInvoice(selectedInvoice, dataState)}
+            onCopyEmail={() => copyInvoiceEmail(selectedInvoice)}
+            onOpenEmail={() => openInvoiceEmail(selectedInvoice, dataState)}
+          />
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <form onSubmit={handleCreateInvoice} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
@@ -669,6 +991,7 @@ export default function BusinessInvoicesDashboard({ isActive }) {
                       <Th>Client</Th>
                       <Th>Amount</Th>
                       <Th>Paid</Th>
+                      <Th>Receipts</Th>
                       <Th>Due</Th>
                       <Th>Status</Th>
                       <Th>Action</Th>
@@ -678,7 +1001,7 @@ export default function BusinessInvoicesDashboard({ isActive }) {
                   <tbody>
                     {dataState.loading && (
                       <tr>
-                        <td colSpan="7" className="px-5 py-10 text-center">
+                        <td colSpan="8" className="px-5 py-10 text-center">
                           <Loader2 className="mx-auto animate-spin text-[#0B7CFF]" size={28} />
                           <p className="mt-3 text-sm font-black text-slate-500">Loading invoices...</p>
                         </td>
@@ -687,7 +1010,7 @@ export default function BusinessInvoicesDashboard({ isActive }) {
 
                     {!dataState.loading && visibleInvoices.length === 0 && (
                       <tr>
-                        <td colSpan="7" className="px-5 py-10 text-center">
+                        <td colSpan="8" className="px-5 py-10 text-center">
                           <FileText className="mx-auto text-slate-400" size={28} />
                           <p className="mt-3 text-sm font-black text-slate-500">No invoice records found.</p>
                         </td>
@@ -699,7 +1022,7 @@ export default function BusinessInvoicesDashboard({ isActive }) {
                         key={invoice.id}
                         invoice={invoice}
                         dataState={dataState}
-                        onView={() => setSelectedInvoiceId(invoice.id)}
+                        onView={() => handleOpenInvoice(invoice.id)}
                         onPrint={() => printInvoice(invoice, dataState)}
                         onEmail={() => openInvoiceEmail(invoice, dataState)}
                         onMarkPaid={() => handleMarkInvoicePaid(invoice.id)}
@@ -714,20 +1037,6 @@ export default function BusinessInvoicesDashboard({ isActive }) {
         </div>
       </div>
 
-      {selectedInvoice && (
-        <InvoiceDetailPanel
-          invoice={selectedInvoice}
-          dataState={dataState}
-          paymentForm={paymentForm}
-          saveState={saveState}
-          onClose={() => setSelectedInvoiceId(null)}
-          onPaymentChange={handlePaymentChange}
-          onUpdatePayment={handleUpdatePayment}
-          onPrint={() => printInvoice(selectedInvoice, dataState)}
-          onCopyEmail={() => copyInvoiceEmail(selectedInvoice)}
-          onOpenEmail={() => openInvoiceEmail(selectedInvoice, dataState)}
-        />
-      )}
     </section>
   );
 }
@@ -792,6 +1101,7 @@ function InvoiceRow({ invoice, dataState, onView, onPrint, onEmail, onMarkPaid, 
       <Td>{client ? getClientName(client) : "No client linked"}</Td>
       <Td>{formatCurrency(invoice.amount)}</Td>
       <Td>{formatCurrency(invoice.paidAmount)}</Td>
+      <Td>{getInvoiceReceipts(invoice).length}</Td>
       <Td>{formatDate(invoice.dueDate)}</Td>
       <Td><StatusBadge status={status} /></Td>
       <Td>
@@ -811,10 +1121,19 @@ function InvoiceDetailPanel({
   invoice,
   dataState,
   paymentForm,
+  receiptForm,
+  proofUploadState,
   saveState,
+  receiptSaveState,
   onClose,
   onPaymentChange,
+  onReceiptChange,
+  onProofFileChange,
   onUpdatePayment,
+  onAddReceipt,
+  onDeleteReceipt,
+  onOpenProof,
+  onCopyReceipt,
   onPrint,
   onCopyEmail,
   onOpenEmail,
@@ -946,6 +1265,19 @@ function InvoiceDetailPanel({
             </div>
           </form>
 
+          <PaymentReceiptsPanel
+            invoice={invoice}
+            receiptForm={receiptForm}
+            proofUploadState={proofUploadState}
+            receiptSaveState={receiptSaveState}
+            onReceiptChange={onReceiptChange}
+            onProofFileChange={onProofFileChange}
+            onAddReceipt={onAddReceipt}
+            onDeleteReceipt={onDeleteReceipt}
+            onOpenProof={onOpenProof}
+            onCopyReceipt={onCopyReceipt}
+          />
+
           <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-xl font-black text-[#020B1F]">Client-ready actions</h3>
             <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
@@ -966,6 +1298,157 @@ function InvoiceDetailPanel({
               </button>
             </div>
           </section>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PaymentReceiptsPanel({
+  invoice,
+  receiptForm,
+  proofUploadState,
+  receiptSaveState,
+  onReceiptChange,
+  onProofFileChange,
+  onAddReceipt,
+  onDeleteReceipt,
+  onOpenProof,
+  onCopyReceipt,
+}) {
+  const receipts = getInvoiceReceipts(invoice);
+  const outstanding = getInvoiceOutstanding(invoice);
+
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+          <FileText size={22} />
+        </div>
+        <div>
+          <h3 className="text-xl font-black text-[#020B1F]">Receipts & payment proof</h3>
+          <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
+            Record each payment, attach proof and keep a proper invoice receipt history.
+          </p>
+        </div>
+      </div>
+
+      {receiptSaveState.error && <StatusMessage type="error" message={receiptSaveState.error} />}
+      {receiptSaveState.success && <StatusMessage type="success" message={receiptSaveState.success} />}
+      {proofUploadState.error && <StatusMessage type="error" message={proofUploadState.error} />}
+      {proofUploadState.success && <StatusMessage type="success" message={proofUploadState.success} />}
+
+      <form onSubmit={onAddReceipt} className="mt-5 grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InputField label="Receipt Number" name="receiptNumber" value={receiptForm.receiptNumber} onChange={onReceiptChange} />
+          <InputField label="Amount Received" name="amount" value={receiptForm.amount} onChange={onReceiptChange} inputMode="decimal" placeholder={formatCurrency(outstanding)} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField label="Payment Method" name="paymentMethod" value={receiptForm.paymentMethod} onChange={onReceiptChange} options={paymentMethodOptions} />
+          <InputField label="Payment Date" name="paymentDate" type="date" value={receiptForm.paymentDate} onChange={onReceiptChange} />
+        </div>
+
+        <InputField label="Payment Reference" name="reference" value={receiptForm.reference} onChange={onReceiptChange} placeholder="EFT reference, bank ref or receipt ref" />
+
+        <label className="block">
+          <span className="text-sm font-black text-[#061A33]">External Proof Link</span>
+          <input
+            name="proofUrl"
+            value={receiptForm.proofUrl}
+            onChange={onReceiptChange}
+            placeholder="Google Drive, bank proof link or shared file URL"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+          />
+        </label>
+
+        <label className="block rounded-2xl border border-dashed border-cyan-200 bg-[#F8FCFF] p-4">
+          <span className="inline-flex items-center text-sm font-black text-[#061A33]">
+            <UploadCloud size={17} className="mr-2 text-[#0B7CFF]" />
+            Upload Payment Proof
+          </span>
+          <input
+            type="file"
+            onChange={onProofFileChange}
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            className="mt-3 block w-full text-sm font-semibold text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-[#061A33] file:px-4 file:py-2 file:text-sm file:font-black file:text-white hover:file:bg-[#0B7CFF]"
+          />
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
+            PDF, PNG, JPG or WEBP only. Maximum file size: 10 MB. Files are stored in the private MKETICS documents bucket.
+          </p>
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-black text-[#061A33]">Receipt Notes</span>
+          <textarea
+            name="notes"
+            value={receiptForm.notes}
+            onChange={onReceiptChange}
+            rows={4}
+            placeholder="Example: Proof received by WhatsApp and verified against business account."
+            className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold leading-7 outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+          />
+        </label>
+
+        <div className="grid gap-3">
+          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+            <input type="checkbox" name="syncFinance" checked={receiptForm.syncFinance} onChange={onReceiptChange} className="mt-1 h-4 w-4 accent-[#0B7CFF]" />
+            <span className="text-sm font-bold leading-6 text-slate-700">Sync receipt totals to Finance dashboard.</span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+            <input type="checkbox" name="createDocumentRecord" checked={receiptForm.createDocumentRecord} onChange={onReceiptChange} className="mt-1 h-4 w-4 accent-[#0B7CFF]" />
+            <span className="text-sm font-bold leading-6 text-slate-700">Create a proof of payment document record.</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={receiptSaveState.loading}
+          className="inline-flex w-full items-center justify-center rounded-full bg-[#061A33] px-6 py-3 font-black text-white transition hover:bg-[#0B7CFF] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {receiptSaveState.loading ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Save size={18} className="mr-2" />}
+          Save Receipt & Proof
+        </button>
+      </form>
+
+      <div className="mt-6 rounded-[1.25rem] border border-slate-200 bg-[#F8FCFF] p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h4 className="text-sm font-black uppercase tracking-[0.18em] text-[#0B7CFF]">Receipt History</h4>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+            {receipts.length} receipts • {formatCurrency(getReceiptTotal(receipts))} received
+          </p>
+        </div>
+
+        {receipts.length === 0 && (
+          <p className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold leading-6 text-slate-600">
+            No receipt records or payment proof documents have been saved for this invoice yet.
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-3">
+          {receipts.map((receipt) => (
+            <article key={receipt.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black text-[#020B1F]">{receipt.receiptNumber}</p>
+                  <p className="mt-1 text-sm font-bold text-slate-700">
+                    {formatCurrency(receipt.amount)} • {receipt.paymentMethod} • {formatDate(receipt.paymentDate)}
+                  </p>
+                  {receipt.reference && <p className="mt-1 text-xs font-bold text-slate-500">Reference: {receipt.reference}</p>}
+                  {receipt.notes && <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-600">{receipt.notes}</p>}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {(receipt.proofUrl || receipt.proofStoragePath) && (
+                    <ActionButton onClick={() => onOpenProof(receipt)} label="Proof" icon={LinkIcon} />
+                  )}
+                  <ActionButton onClick={() => onCopyReceipt(receipt)} label="Copy" icon={Clipboard} />
+                  <ActionButton onClick={() => onDeleteReceipt(receipt.id)} label="Delete" icon={Trash2} danger />
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -1157,12 +1640,66 @@ function normaliseInvoices(invoices) {
       terms: invoice.terms || defaultInvoiceTerms,
       reference: invoice.reference || "",
       notes: invoice.notes || "",
+      receipts: normaliseReceipts(invoice.receipts || []),
       sentAt: invoice.sentAt || "",
       paidAt: invoice.paidAt || "",
       createdAt: invoice.createdAt || new Date().toISOString(),
       updatedAt: invoice.updatedAt || invoice.createdAt || new Date().toISOString(),
     }))
     .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+}
+
+function buildDefaultReceiptForm(invoice) {
+  const outstanding = invoice ? getInvoiceOutstanding(invoice) : 0;
+
+  return {
+    receiptNumber: generateReceiptNumber(),
+    amount: outstanding > 0 ? String(outstanding) : "",
+    paymentMethod: invoice?.paymentMethod && invoice.paymentMethod !== "Not Set" ? invoice.paymentMethod : "EFT",
+    paymentDate: getTodayInputValue(),
+    reference: invoice?.invoiceNumber || "",
+    proofUrl: "",
+    proofStoragePath: "",
+    notes: "",
+    syncFinance: true,
+    createDocumentRecord: true,
+    markInvoicePaid: true,
+  };
+}
+
+function normaliseReceipts(receipts) {
+  if (!Array.isArray(receipts)) return [];
+
+  return receipts
+    .filter((receipt) => receipt && receipt.id)
+    .map((receipt) => ({
+      id: receipt.id,
+      receiptNumber: receipt.receiptNumber || generateReceiptNumber(),
+      amount: Number(receipt.amount) || 0,
+      paymentMethod: receipt.paymentMethod || "EFT",
+      paymentDate: receipt.paymentDate || getTodayInputValue(),
+      reference: receipt.reference || "",
+      proofUrl: receipt.proofUrl || "",
+      proofStoragePath: receipt.proofStoragePath || "",
+      notes: receipt.notes || "",
+      createdAt: receipt.createdAt || new Date().toISOString(),
+      updatedAt: receipt.updatedAt || receipt.createdAt || new Date().toISOString(),
+    }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function getInvoiceReceipts(invoice) {
+  return normaliseReceipts(invoice?.receipts || []);
+}
+
+function getReceiptTotal(receipts) {
+  return normaliseReceipts(receipts).reduce((total, receipt) => total + (Number(receipt.amount) || 0), 0);
+}
+
+function getInvoiceOutstanding(invoice) {
+  const amount = Number(invoice?.amount) || 0;
+  const paid = Number(invoice?.paidAmount) || getReceiptTotal(invoice?.receipts || []);
+  return Math.max(amount - paid, 0);
 }
 
 function normalisePaymentStatus(status, amount, paidAmount, dueDate) {
@@ -1188,7 +1725,7 @@ function mapInvoiceStatusToFinanceStatus(status) {
 function buildInvoiceSummaryText({ invoices, dataState, stats }) {
   const rows = invoices.slice(0, 12).map((invoice) => {
     const client = dataState.clients.find((item) => item.id === invoice.clientId);
-    return `- ${invoice.invoiceNumber}: ${invoice.title} | ${client ? getClientName(client) : "No client"} | ${formatCurrency(invoice.amount)} | Paid ${formatCurrency(invoice.paidAmount)} | ${toReadableLabel(getInvoiceDisplayStatus(invoice))}`;
+    return `- ${invoice.invoiceNumber}: ${invoice.title} | ${client ? getClientName(client) : "No client"} | ${formatCurrency(invoice.amount)} | Paid ${formatCurrency(invoice.paidAmount)} | Receipts ${getInvoiceReceipts(invoice).length} | ${toReadableLabel(getInvoiceDisplayStatus(invoice))}`;
   });
 
   return [
@@ -1225,6 +1762,29 @@ function buildInvoiceEmail(invoice, dataState) {
     "MKETICS (PTY) LTD",
     "Speak Innovation. Deliver Value.",
   ].join("\n");
+}
+
+function buildPaymentReceiptText(invoice, receipt, dataState) {
+  const client = dataState.clients.find((item) => item.id === invoice?.clientId);
+  const outstanding = getInvoiceOutstanding(invoice);
+
+  return [
+    "MKETICS Payment Receipt Record",
+    "",
+    `Invoice: ${invoice?.invoiceNumber || "Invoice"}`,
+    `Receipt: ${receipt?.receiptNumber || "Receipt"}`,
+    `Client: ${client ? getClientName(client) : "No client linked"}`,
+    `Amount received: ${formatCurrency(receipt?.amount)}`,
+    `Payment method: ${receipt?.paymentMethod || "Not set"}`,
+    `Payment date: ${formatDate(receipt?.paymentDate)}`,
+    receipt?.reference ? `Reference: ${receipt.reference}` : "",
+    `Invoice outstanding balance: ${formatCurrency(outstanding)}`,
+    receipt?.proofUrl || receipt?.proofStoragePath ? `Proof location: ${receipt.proofUrl || receipt.proofStoragePath}` : "",
+    "",
+    receipt?.notes || "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function openInvoiceEmail(invoice, dataState) {
@@ -1314,6 +1874,8 @@ function buildInvoicePrintHtml(invoice, dataState) {
     <div><p class="label">Outstanding</p><p class="value">${escapeHtml(formatCurrency(outstanding))}</p></div>
   </section>
 
+  ${buildReceiptsPrintSection(invoice)}
+
   ${invoice.terms ? `<section class="box"><p class="label">Terms</p><p class="value">${escapeHtml(invoice.terms)}</p></section>` : ""}
   ${invoice.notes ? `<section class="box"><p class="label">Notes</p><p class="value">${escapeHtml(invoice.notes)}</p></section>` : ""}
 
@@ -1322,6 +1884,40 @@ function buildInvoicePrintHtml(invoice, dataState) {
   </section>
 </body>
 </html>`;
+}
+
+function buildReceiptsPrintSection(invoice) {
+  const receipts = getInvoiceReceipts(invoice);
+  if (receipts.length === 0) return "";
+
+  const rows = receipts
+    .map(
+      (receipt) => `<div style="border-top:1px solid #d9e7f5; padding:10px 0;">
+        <p class="value" style="margin:0;">${escapeHtml(receipt.receiptNumber)} • ${escapeHtml(formatCurrency(receipt.amount))}</p>
+        <p class="muted" style="margin:4px 0 0;">${escapeHtml(receipt.paymentMethod)} • ${escapeHtml(formatDate(receipt.paymentDate))}${receipt.reference ? ` • Ref: ${escapeHtml(receipt.reference)}` : ""}</p>
+      </div>`
+    )
+    .join("");
+
+  return `<section class="box"><p class="label">Payment Receipt History</p>${rows}</section>`;
+}
+
+function generateReceiptNumber() {
+  const now = new Date();
+  const datePart = [now.getFullYear(), pad(now.getMonth() + 1), pad(now.getDate())].join("");
+  const timePart = [pad(now.getHours()), pad(now.getMinutes())].join("");
+  const randomPart = Math.random().toString(36).slice(2, 5).toUpperCase();
+  return `MKR-${datePart}-${timePart}${randomPart}`;
+}
+
+function buildProofStoragePath(file, invoice) {
+  const safeName = String(file?.name || "payment-proof")
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return `payment-proofs/${invoice?.id || "invoice"}/${Date.now()}-${safeName}`;
 }
 
 function generateInvoiceNumber() {
@@ -1342,9 +1938,9 @@ function getFutureInputValue(days) {
   return date.toISOString().slice(0, 10);
 }
 
-function createId() {
+function createId(prefix = "invoice") {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return `invoice-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function parseMoney(value) {
