@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   StickyNote,
+  ShoppingBag,
   Timer,
   UsersRound,
   WalletCards,
@@ -56,6 +57,7 @@ import ClientMessagesDashboard from "../components/admin/ClientMessagesDashboard
 import SupportTicketsDashboard from "../components/admin/SupportTicketsDashboard";
 import AppointmentsDashboard from "../components/admin/AppointmentsDashboard";
 import ProjectProgressDashboard from "../components/admin/ProjectProgressDashboard";
+import ServiceRequestsDashboard from "../components/admin/ServiceRequestsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1038,6 +1040,8 @@ export default function Admin() {
             <AppointmentsDashboard isActive={activeConsoleTab === "appointments"} />
           ) : activeConsoleTab === "projectProgress" ? (
             <ProjectProgressDashboard isActive={activeConsoleTab === "projectProgress"} />
+          ) : activeConsoleTab === "serviceRequests" ? (
+            <ServiceRequestsDashboard isActive={activeConsoleTab === "serviceRequests"} profile={authState.profile} />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "planner" ? (
@@ -1393,6 +1397,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Project Progress",
       description: "Manage milestones, deliverables, risks and client approvals.",
       icon: Target,
+    },
+    {
+      id: "serviceRequests",
+      label: "Service Requests",
+      description: "Review, quote and convert new client service requests.",
+      icon: ShoppingBag,
     },
     {
       id: "documents",

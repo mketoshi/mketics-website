@@ -20,6 +20,7 @@ import {
   Printer,
   RefreshCw,
   Send,
+  ShoppingBag,
   ShieldCheck,
   UploadCloud,
   WalletCards,
@@ -29,6 +30,7 @@ import ClientMessages from "./ClientMessages";
 import ClientSupportTicketCentre from "./ClientSupportTicketCentre";
 import ClientAppointmentCentre from "./ClientAppointmentCentre";
 import ClientProjectProgressCentre from "./ClientProjectProgressCentre";
+import ClientServiceRequestCentre from "./ClientServiceRequestCentre";
 
 const supportPriorities = ["low", "normal", "high", "urgent"];
 
@@ -96,6 +98,11 @@ const portalTabs = [
     id: "appointments",
     label: "Appointments",
     icon: CalendarDays,
+  },
+  {
+    id: "serviceRequests",
+    label: "Service Requests",
+    icon: ShoppingBag,
   },
   {
     id: "documents",
@@ -1303,6 +1310,8 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
             projects={portalState.projects}
             clients={portalState.clients}
           />
+        ) : activeTab === "serviceRequests" ? (
+          <ClientServiceRequestCentre clients={portalState.clients} />
         ) : activeTab === "documents" ? (
           <DocumentsTab
             documents={portalState.documents}
