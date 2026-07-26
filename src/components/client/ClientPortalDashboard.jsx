@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Send,
   ShieldCheck,
+  UploadCloud,
   WalletCards,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
@@ -158,6 +159,15 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
   const [documentActionState, setDocumentActionState] = useState({
     loadingId: "",
     error: "",
+    success: "",
+  });
+
+  const [documentUpload, setDocumentUpload] = useState({
+    title: "",
+    documentType: "support_document",
+    clientId: "",
+    requestId: "",
+    file: null,
   });
 
   const [receiptActionState, setReceiptActionState] = useState({
@@ -245,6 +255,15 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
     }
   }, [primaryClient?.id, supportForm.clientId]);
 
+  useEffect(() => {
+    if (!documentUpload.clientId && primaryClient?.id) {
+      setDocumentUpload((current) => ({
+        ...current,
+        clientId: primaryClient.id,
+      }));
+    }
+  }, [primaryClient?.id, documentUpload.clientId]);
+
   async function fetchPortalData() {
     if (!supabase || !profile?.id) return;
 
@@ -315,7 +334,7 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
           supabase
             .from("documents")
             .select(
-              "id, client_id, project_id, quote_id, title, document_type, storage_path, public_url, notes, created_at, updated_at"
+              "id, client_id, project_id, quote_id, title, document_type, storage_path, public_url, notes, file_name, mime_type, file_size, client_visible, upload_status, requested_due_at, uploaded_by, created_at, updated_at"
             )
             .in("client_id", ids)
             .order("created_at", { ascending: false }),
@@ -872,11 +891,11 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
     if (!document?.id) return;
 
     try {
-      setDocumentActionState({ loadingId: document.id, error: "" });
+      setDocumentActionState({ loadingId: document.id, error: "", success: "" });
 
       if (document.public_url) {
         window.open(document.public_url, "_blank", "noopener,noreferrer");
-        setDocumentActionState({ loadingId: "", error: "" });
+        setDocumentActionState({ loadingId: "", error: "", success: "" });
         return;
       }
 
@@ -884,6 +903,7 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
         setDocumentActionState({
           loadingId: "",
           error: "This document record does not have a file link yet.",
+          success: "",
         });
         return;
       }
@@ -896,13 +916,121 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
 
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
 
-      setDocumentActionState({ loadingId: "", error: "" });
+      setDocumentActionState({ loadingId: "", error: "", success: "" });
     } catch (error) {
       setDocumentActionState({
         loadingId: "",
         error:
           error?.message ||
           "Unable to open this document. Check storage permissions.",
+        success: "",
+      });
+    }
+  }
+
+  async function handleDocumentUpload(event) {
+    event.preventDefault();
+
+    const file = documentUpload.file;
+    const clientId = documentUpload.clientId || primaryClient?.id;
+
+    if (!file || !clientId) {
+      setDocumentActionState({
+        loadingId: "",
+        error: "Select a file and linked client account before uploading.",
+        success: "",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setDocumentActionState({
+        loadingId: "",
+        error: "The selected file is larger than the 10 MB limit.",
+        success: "",
+      });
+      return;
+    }
+
+    const request = portalState.documents.find(
+      (document) => document.id === documentUpload.requestId
+    );
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-");
+    const storagePath = `clients/${clientId}/client-uploads/${Date.now()}-${safeName}`;
+
+    try {
+      setDocumentActionState({ loadingId: "upload", error: "", success: "" });
+
+      const { error: storageError } = await supabase.storage
+        .from("mketics-documents")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (storageError) throw storageError;
+
+      const values = {
+        client_id: clientId,
+        title:
+          documentUpload.title.trim() ||
+          request?.title ||
+          file.name.replace(/\.[^/.]+$/, ""),
+        document_type:
+          request?.document_type || documentUpload.documentType,
+        storage_path: storagePath,
+        public_url: null,
+        notes: request
+          ? `Uploaded by client in response to document request: ${request.title}`
+          : "Uploaded securely by client through the Document Centre.",
+        file_name: file.name,
+        mime_type: file.type || "application/octet-stream",
+        file_size: file.size,
+        client_visible: true,
+        upload_status: "uploaded_by_client",
+        uploaded_by: profile.id,
+      };
+
+      const query = request
+        ? supabase
+            .from("documents")
+            .update(values)
+            .eq("id", request.id)
+            .select()
+            .single()
+        : supabase.from("documents").insert(values).select().single();
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      setPortalState((current) => ({
+        ...current,
+        documents: request
+          ? current.documents.map((document) =>
+              document.id === request.id ? data : document
+            )
+          : [data, ...current.documents],
+      }));
+      setDocumentUpload({
+        title: "",
+        documentType: "support_document",
+        clientId,
+        requestId: "",
+        file: null,
+      });
+      setDocumentActionState({
+        loadingId: "",
+        error: "",
+        success: "Document uploaded securely. MKETICS can now review it.",
+      });
+    } catch (error) {
+      setDocumentActionState({
+        loadingId: "",
+        error:
+          error?.message ||
+          "Unable to upload the document. Check Document Centre permissions.",
+        success: "",
       });
     }
   }
@@ -1179,7 +1307,11 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
             documents={portalState.documents}
             projects={portalState.projects}
             quotes={portalState.quotes}
+            clients={portalState.clients}
             actionState={documentActionState}
+            upload={documentUpload}
+            onUploadChange={setDocumentUpload}
+            onUpload={handleDocumentUpload}
             onOpenDocument={handleOpenDocument}
           />
         ) : (
@@ -2187,13 +2319,141 @@ function SupportTab({ tickets, projects, clients, form, saveState, onChange, onS
   );
 }
 
-function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument }) {
+function DocumentsTab({
+  documents,
+  projects,
+  quotes,
+  clients,
+  actionState,
+  upload,
+  onUploadChange,
+  onUpload,
+  onOpenDocument,
+}) {
   const projectById = new Map(projects.map((project) => [project.id, project]));
   const quoteById = new Map(quotes.map((quote) => [quote.id, quote]));
+  const requests = documents.filter(
+    (document) => document.upload_status === "requested"
+  );
 
   return (
-    <RecordSection title="Documents" description="Open documents and shared files linked to your MKETICS client record.">
+    <RecordSection title="Document Centre" description="Download files shared by MKETICS and upload requested supporting documents securely.">
       {actionState.error && <StatusMessage type="error" message={actionState.error} />}
+      {actionState.success && <StatusMessage type="success" message={actionState.success} />}
+
+      <form
+        onSubmit={onUpload}
+        className="mb-6 rounded-[1.5rem] border border-cyan-200 bg-[#F8FCFF] p-5"
+      >
+        <div className="flex items-start gap-4">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+            <UploadCloud size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-[#020B1F]">
+              Upload supporting document
+            </h3>
+            <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+              PDF, image, Word or spreadsheet files up to 10 MB.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {clients.length > 1 && (
+            <select
+              value={upload.clientId}
+              onChange={(event) =>
+                onUploadChange((current) => ({
+                  ...current,
+                  clientId: event.target.value,
+                }))
+              }
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+            >
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.organisation || client.full_name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {requests.length > 0 && (
+            <select
+              value={upload.requestId}
+              onChange={(event) =>
+                onUploadChange((current) => ({
+                  ...current,
+                  requestId: event.target.value,
+                }))
+              }
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+            >
+              <option value="">General supporting document</option>
+              {requests.map((request) => (
+                <option key={request.id} value={request.id}>
+                  Requested: {request.title}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <input
+            value={upload.title}
+            onChange={(event) =>
+              onUploadChange((current) => ({
+                ...current,
+                title: event.target.value,
+              }))
+            }
+            placeholder="Document title (optional)"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+          />
+
+          <select
+            value={upload.documentType}
+            onChange={(event) =>
+              onUploadChange((current) => ({
+                ...current,
+                documentType: event.target.value,
+              }))
+            }
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+          >
+            <option value="support_document">Supporting document</option>
+            <option value="proof_of_payment">Proof of payment</option>
+            <option value="signed_agreement">Signed agreement</option>
+            <option value="content_pack">Content pack</option>
+            <option value="client_logo">Logo / brand asset</option>
+            <option value="other">Other</option>
+          </select>
+
+          <input
+            type="file"
+            onChange={(event) =>
+              onUploadChange((current) => ({
+                ...current,
+                file: event.target.files?.[0] || null,
+              }))
+            }
+            className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold file:mr-3 file:rounded-full file:border-0 file:bg-[#061A33] file:px-4 file:py-2 file:text-xs file:font-black file:text-white md:col-span-2"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={actionState.loadingId === "upload"}
+          className="mt-4 inline-flex items-center rounded-full bg-gradient-to-r from-[#0B7CFF] to-[#00AEEF] px-5 py-3 text-sm font-black text-white shadow-[0_14px_35px_rgba(0,174,239,0.22)] disabled:opacity-70"
+        >
+          {actionState.loadingId === "upload" ? (
+            <Loader2 size={16} className="mr-2 animate-spin" />
+          ) : (
+            <UploadCloud size={16} className="mr-2" />
+          )}
+          Upload Securely
+        </button>
+      </form>
 
       {documents.length === 0 ? (
         <EmptyState message="No documents have been linked to your portal yet." />
@@ -2211,6 +2471,11 @@ function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument
                     {toReadableLabel(document.document_type)}
                   </p>
                   <h3 className="mt-2 text-lg font-black text-[#020B1F]">{document.title}</h3>
+                  <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                    {document.upload_status === "requested"
+                      ? `Upload requested${document.requested_due_at ? ` • Due ${formatDate(document.requested_due_at)}` : ""}`
+                      : `${document.file_name || "Shared file"}${document.file_size ? ` • ${formatFileSize(document.file_size)}` : ""}`}
+                  </p>
                   <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
                     {document.project_id && projectById.get(document.project_id)
                       ? `Project: ${projectById.get(document.project_id).title}`
@@ -2225,7 +2490,16 @@ function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument
 
                   <button
                     type="button"
-                    onClick={() => onOpenDocument(document)}
+                    onClick={() =>
+                      document.upload_status === "requested"
+                        ? onUploadChange((current) => ({
+                            ...current,
+                            requestId: document.id,
+                            title: document.title,
+                            clientId: document.client_id,
+                          }))
+                        : onOpenDocument(document)
+                    }
                     disabled={actionState.loadingId === document.id}
                     className="mt-4 inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300 disabled:opacity-70"
                   >
@@ -2234,7 +2508,9 @@ function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument
                     ) : (
                       <Download size={14} className="mr-2" />
                     )}
-                    Open Document
+                    {document.upload_status === "requested"
+                      ? "Select Request"
+                      : "Open / Download"}
                   </button>
                 </div>
               </div>
@@ -3254,6 +3530,14 @@ function toReadableLabel(value) {
     .replace(/[_-]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size < 0) return "";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function normaliseClientAnnouncements(value) {

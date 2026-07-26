@@ -21,6 +21,7 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 
 const documentTypes = [
+  "requested_document",
   "project_brief",
   "quote_pdf",
   "signed_agreement",
@@ -51,6 +52,9 @@ const emptyDocumentForm = {
   publicUrl: "",
   storagePath: "",
   notes: "",
+  clientVisible: true,
+  requestUpload: false,
+  requestedDueAt: "",
 };
 
 export default function DocumentsDashboard({ isActive }) {
@@ -215,6 +219,12 @@ export default function DocumentsDashboard({ isActive }) {
               storage_path,
               public_url,
               notes,
+              file_name,
+              mime_type,
+              file_size,
+              client_visible,
+              upload_status,
+              requested_due_at,
               created_at,
               updated_at
             `
@@ -309,6 +319,19 @@ export default function DocumentsDashboard({ isActive }) {
         public_url: form.publicUrl.trim() || null,
         storage_path: uploadedStoragePath || form.storagePath.trim() || null,
         notes: form.notes.trim() || null,
+        file_name: uploadState.file?.name || null,
+        mime_type: uploadState.file?.type || null,
+        file_size: uploadState.file?.size || null,
+        client_visible: form.clientVisible,
+        upload_status: form.requestUpload
+          ? "requested"
+          : uploadedStoragePath || form.storagePath.trim() || form.publicUrl.trim()
+          ? "available"
+          : "pending",
+        requested_due_at:
+          form.requestUpload && form.requestedDueAt
+            ? new Date(`${form.requestedDueAt}T23:59:59`).toISOString()
+            : null,
       };
 
       const { data, error } = await supabase
@@ -325,6 +348,12 @@ export default function DocumentsDashboard({ isActive }) {
           storage_path,
           public_url,
           notes,
+          file_name,
+          mime_type,
+          file_size,
+          client_visible,
+          upload_status,
+          requested_due_at,
           created_at,
           updated_at
         `
@@ -631,6 +660,72 @@ export default function DocumentsDashboard({ isActive }) {
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
             </label>
+
+            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="clientVisible"
+                  checked={form.clientVisible}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      clientVisible: event.target.checked,
+                    }))
+                  }
+                  className="mt-1 h-4 w-4 accent-[#0B7CFF]"
+                />
+                <span>
+                  <span className="block text-sm font-black text-[#061A33]">
+                    Visible in Client Document Centre
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600">
+                    Keep internal working files hidden until they are ready to share.
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="requestUpload"
+                  checked={form.requestUpload}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      requestUpload: event.target.checked,
+                      documentType: event.target.checked
+                        ? "requested_document"
+                        : current.documentType,
+                    }))
+                  }
+                  className="mt-1 h-4 w-4 accent-[#0B7CFF]"
+                />
+                <span>
+                  <span className="block text-sm font-black text-[#061A33]">
+                    Request a file from this client
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600">
+                    Creates a pending request the client can fulfil securely.
+                  </span>
+                </span>
+              </label>
+
+              {form.requestUpload && (
+                <label className="block">
+                  <span className="text-sm font-black text-[#061A33]">
+                    Requested Due Date
+                  </span>
+                  <input
+                    type="date"
+                    name="requestedDueAt"
+                    value={form.requestedDueAt}
+                    onChange={updateFormField}
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+                  />
+                </label>
+              )}
+            </div>
 
             <label className="block">
               <span className="text-sm font-black text-[#061A33]">
@@ -1341,9 +1436,7 @@ function buildStoragePath({ file, form, client, project, quote }) {
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const clientPart = safePathSegment(
-    client?.organisation || client?.full_name || form.clientId || "unlinked-client"
-  );
+  const clientPart = form.clientId || client?.id || "unlinked-client";
   const projectPart = safePathSegment(project?.title || form.projectId || "general");
   const quotePart = safePathSegment(quote?.quote_number || form.quoteId || "no-quote");
   const typePart = safePathSegment(form.documentType || "document");
