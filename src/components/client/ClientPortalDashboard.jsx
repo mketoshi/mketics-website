@@ -28,6 +28,7 @@ import { supabase } from "../../lib/supabaseClient";
 import ClientMessages from "./ClientMessages";
 import ClientSupportTicketCentre from "./ClientSupportTicketCentre";
 import ClientAppointmentCentre from "./ClientAppointmentCentre";
+import ClientProjectProgressCentre from "./ClientProjectProgressCentre";
 
 const supportPriorities = ["low", "normal", "high", "urgent"];
 
@@ -1266,15 +1267,7 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
         ) : activeTab === "messages" ? (
           <ClientMessages clients={portalState.clients} profile={profile} />
         ) : activeTab === "projects" ? (
-          <ProjectsTab
-            projects={portalState.projects}
-            progressUpdates={portalState.progressUpdates}
-            approvals={portalState.approvals}
-            approvalForms={approvalForms}
-            approvalSaveState={approvalSaveState}
-            onApprovalChange={updateApprovalForm}
-            onApprovalSubmit={handleSubmitProjectApproval}
-          />
+          <ClientProjectProgressCentre projects={portalState.projects} />
         ) : activeTab === "quotes" ? (
           <QuotesTab
             quotes={portalState.quotes}

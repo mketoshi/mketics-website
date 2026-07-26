@@ -55,6 +55,7 @@ import ClientPortalAnnouncementsDashboard from "../components/admin/ClientPortal
 import ClientMessagesDashboard from "../components/admin/ClientMessagesDashboard";
 import SupportTicketsDashboard from "../components/admin/SupportTicketsDashboard";
 import AppointmentsDashboard from "../components/admin/AppointmentsDashboard";
+import ProjectProgressDashboard from "../components/admin/ProjectProgressDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1035,6 +1036,8 @@ export default function Admin() {
             />
           ) : activeConsoleTab === "appointments" ? (
             <AppointmentsDashboard isActive={activeConsoleTab === "appointments"} />
+          ) : activeConsoleTab === "projectProgress" ? (
+            <ProjectProgressDashboard isActive={activeConsoleTab === "projectProgress"} />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "planner" ? (
@@ -1274,6 +1277,7 @@ function canAccessConsoleTab(tabId, profile) {
       "documents",
       "supportTickets",
       "appointments",
+      "projectProgress",
     ].includes(tabId);
   }
 
@@ -1383,6 +1387,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Appointments",
       description: "Confirm bookings, assign staff and prevent scheduling conflicts.",
       icon: CalendarDays,
+    },
+    {
+      id: "projectProgress",
+      label: "Project Progress",
+      description: "Manage milestones, deliverables, risks and client approvals.",
+      icon: Target,
     },
     {
       id: "documents",
