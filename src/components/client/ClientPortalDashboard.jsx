@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import ClientMessages from "./ClientMessages";
+import ClientSupportTicketCentre from "./ClientSupportTicketCentre";
 
 const supportPriorities = ["low", "normal", "high", "urgent"];
 
@@ -1293,14 +1294,9 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
             onSubmitPaymentRequest={handleSubmitInvoicePaymentRequest}
           />
         ) : activeTab === "support" ? (
-          <SupportTab
-            tickets={portalState.tickets}
+          <ClientSupportTicketCentre
             projects={portalState.projects}
             clients={portalState.clients}
-            form={supportForm}
-            saveState={supportSaveState}
-            onChange={updateSupportForm}
-            onSubmit={handleCreateSupportTicket}
           />
         ) : activeTab === "documents" ? (
           <DocumentsTab

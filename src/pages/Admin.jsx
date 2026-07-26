@@ -52,6 +52,7 @@ import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashb
 import ClientPortalResponseInbox from "../components/admin/ClientPortalResponseInbox";
 import ClientPortalAnnouncementsDashboard from "../components/admin/ClientPortalAnnouncementsDashboard";
 import ClientMessagesDashboard from "../components/admin/ClientMessagesDashboard";
+import SupportTicketsDashboard from "../components/admin/SupportTicketsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1025,6 +1026,11 @@ export default function Admin() {
             />
           ) : activeConsoleTab === "documents" ? (
             <DocumentsDashboard isActive={activeConsoleTab === "documents"} />
+          ) : activeConsoleTab === "supportTickets" ? (
+            <SupportTicketsDashboard
+              isActive={activeConsoleTab === "supportTickets"}
+              profile={authState.profile}
+            />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "planner" ? (
@@ -1051,7 +1057,10 @@ export default function Admin() {
               profile={authState.profile}
             />
           ) : activeConsoleTab === "announcements" ? (
-            <ClientPortalAnnouncementsDashboard isActive={activeConsoleTab === "announcements"} />
+            <ClientPortalAnnouncementsDashboard
+              isActive={activeConsoleTab === "announcements"}
+              profile={authState.profile}
+            />
           ) : activeConsoleTab === "users" ? (
             <AdminUserManagementDashboard
               isActive={activeConsoleTab === "users"}
@@ -1259,6 +1268,7 @@ function canAccessConsoleTab(tabId, profile) {
       "time",
       "reports",
       "documents",
+      "supportTickets",
     ].includes(tabId);
   }
 
@@ -1358,6 +1368,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       icon: FileText,
     },
     {
+      id: "supportTickets",
+      label: "Support Tickets",
+      description: "Assign, reply to and resolve client support requests.",
+      icon: MessageCircle,
+    },
+    {
       id: "documents",
       label: "Documents",
       description: "Track client files, project records and quote documents.",
@@ -1384,7 +1400,7 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
   ];
 
   return (
-    <div className="mb-6 grid gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-12">
+    <div className="admin-console-nav mb-6">
       {tabs.filter((tab) => canAccessConsoleTab(tab.id, profile)).map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
