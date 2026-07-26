@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Bell,
   BriefcaseBusiness,
   CheckCircle2,
   Clipboard,
@@ -21,6 +22,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import ClientMessages from "./ClientMessages";
 
 const supportPriorities = ["low", "normal", "high", "urgent"];
 
@@ -31,9 +33,9 @@ const projectApprovalDecisions = [
 ];
 
 const projectProgressSettingKey = "client_portal_project_progress_updates_v1";
-const projectApprovalSettingKey = "client_portal_project_approvals_v1";
 const quoteResponseSettingKey = "client_portal_quote_responses_v1";
 const invoicePaymentRequestSettingKey = "client_portal_invoice_payment_requests_v1";
+const portalAnnouncementsSettingKey = "client_portal_announcements_v1";
 
 const quoteResponseTypes = [
   { value: "accepted", label: "Accept quote" },
@@ -54,6 +56,16 @@ const portalTabs = [
     id: "overview",
     label: "Overview",
     icon: ShieldCheck,
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    icon: MessageCircle,
   },
   {
     id: "projects",
@@ -87,7 +99,7 @@ const portalTabs = [
   },
 ];
 
-export default function ClientPortalDashboard({ profile }) {
+export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [portalState, setPortalState] = useState({
     loading: false,
@@ -102,6 +114,7 @@ export default function ClientPortalDashboard({ profile }) {
     approvals: [],
     quoteResponses: [],
     paymentRequests: [],
+    announcements: [],
   });
 
   const [supportForm, setSupportForm] = useState({
@@ -259,6 +272,7 @@ export default function ClientPortalDashboard({ profile }) {
           approvals: [],
           quoteResponses: [],
           paymentRequests: [],
+          announcements: [],
         });
         return;
       }
@@ -271,6 +285,7 @@ export default function ClientPortalDashboard({ profile }) {
         invoicesResult,
         projectActivityResult,
         commerceActivityResult,
+        announcementsResult,
       ] = await Promise.all([
           supabase
             .from("projects")
@@ -303,6 +318,7 @@ export default function ClientPortalDashboard({ profile }) {
           fetchClientPortalInvoices(),
           fetchClientPortalProjectActivity(ids),
           fetchClientPortalCommerceActivity(ids),
+          fetchClientPortalAnnouncements(ids),
         ]);
 
       const firstError =
@@ -312,7 +328,8 @@ export default function ClientPortalDashboard({ profile }) {
         documentsResult.error ||
         invoicesResult.error ||
         projectActivityResult.error ||
-        commerceActivityResult.error;
+        commerceActivityResult.error ||
+        announcementsResult.error;
 
       if (firstError) throw firstError;
 
@@ -329,6 +346,7 @@ export default function ClientPortalDashboard({ profile }) {
         approvals: projectActivityResult.approvals || [],
         quoteResponses: commerceActivityResult.quoteResponses || [],
         paymentRequests: commerceActivityResult.paymentRequests || [],
+        announcements: announcementsResult.announcements || [],
       });
     } catch (error) {
       setPortalState({
@@ -346,6 +364,7 @@ export default function ClientPortalDashboard({ profile }) {
         approvals: [],
         quoteResponses: [],
         paymentRequests: [],
+        announcements: [],
       });
     }
   }
@@ -406,23 +425,25 @@ export default function ClientPortalDashboard({ profile }) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("setting_key, setting_value")
-        .in("setting_key", [projectProgressSettingKey, projectApprovalSettingKey]);
+      const [progressResult, approvalsResult] = await Promise.all([
+        supabase
+          .from("settings")
+          .select("setting_key, setting_value")
+          .eq("setting_key", projectProgressSettingKey)
+          .maybeSingle(),
+        supabase.rpc("get_client_project_approvals"),
+      ]);
 
-      if (error) throw error;
-
-      const settings = new Map((data || []).map((item) => [item.setting_key, item.setting_value]));
+      if (progressResult.error) throw progressResult.error;
+      if (approvalsResult.error) throw approvalsResult.error;
       const clientSet = new Set(clientIds);
 
       const progressUpdates = normaliseProjectProgressUpdates(
-        settings.get(projectProgressSettingKey)
+        progressResult.data?.setting_value
       ).filter((update) => clientSet.has(update.clientId));
 
-      const approvals = normaliseProjectApprovals(
-        settings.get(projectApprovalSettingKey)
-      ).filter((approval) => clientSet.has(approval.clientId));
+      const approvals = normaliseProjectApprovals(approvalsResult.data)
+        .filter((approval) => clientSet.has(approval.clientId));
 
       return { progressUpdates, approvals, error: null };
     } catch (error) {
@@ -460,6 +481,35 @@ export default function ClientPortalDashboard({ profile }) {
     }
   }
 
+  async function fetchClientPortalAnnouncements(clientIds = []) {
+    if (!supabase || clientIds.length === 0) {
+      return { announcements: [], error: null };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("setting_key, setting_value")
+        .eq("setting_key", portalAnnouncementsSettingKey)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const clientSet = new Set(clientIds);
+      const projectSet = new Set(portalState.projects.map((project) => project.id));
+
+      const announcements = normaliseClientAnnouncements(
+        data?.setting_value?.announcements || data?.setting_value
+      ).filter((announcement) =>
+        isAnnouncementVisibleToClient(announcement, clientSet, projectSet)
+      );
+
+      return { announcements, error: null };
+    } catch (error) {
+      return { announcements: [], error };
+    }
+  }
+
   async function handleSubmitProjectApproval(project) {
     if (!supabase || !project?.id) return;
 
@@ -482,25 +532,14 @@ export default function ClientPortalDashboard({ profile }) {
         success: "",
       });
 
-      const existingApprovals = normaliseProjectApprovals(
-        await getSettingsValue(projectApprovalSettingKey)
-      );
+      const { data, error } = await supabase.rpc("submit_client_project_approval", {
+        p_project_id: project.id,
+        p_decision: form.decision || "approved",
+        p_feedback: feedback,
+      });
+      if (error) throw error;
 
-      const approval = {
-        id: crypto.randomUUID?.() || `approval-${Date.now()}`,
-        clientId: project.client_id,
-        projectId: project.id,
-        projectTitle: project.title || "MKETICS Project",
-        clientName: primaryClient?.full_name || profile?.full_name || "Client",
-        clientEmail: primaryClient?.email || profile?.email || "",
-        decision: form.decision || "approved",
-        feedback,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const updatedApprovals = [approval, ...existingApprovals];
-      await upsertSettingsValue(projectApprovalSettingKey, updatedApprovals);
+      const [approval] = normaliseProjectApprovals([data]);
 
       setPortalState((current) => ({
         ...current,
@@ -802,6 +841,29 @@ export default function ClientPortalDashboard({ profile }) {
     }
   }
 
+  async function handleUpdateProfile(profileUpdates) {
+    if (!supabase) {
+      throw new Error("Client profile updates are not available.");
+    }
+
+    const { data, error } = await supabase.rpc("update_client_portal_profile", {
+      profile_full_name: profileUpdates.fullName.trim(),
+      profile_phone: profileUpdates.phone.trim() || null,
+      profile_organisation: profileUpdates.organisation.trim() || null,
+    });
+
+    if (error) throw error;
+
+    const updatedProfile = Array.isArray(data) ? data[0] : data;
+
+    if (!updatedProfile) {
+      throw new Error("The profile update completed but no profile was returned.");
+    }
+
+    onProfileUpdated?.(updatedProfile);
+    return updatedProfile;
+  }
+
   async function handleOpenDocument(document) {
     if (!document?.id) return;
 
@@ -982,7 +1044,7 @@ export default function ClientPortalDashboard({ profile }) {
   return (
     <section className="px-5 py-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
           {portalTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1055,7 +1117,14 @@ export default function ClientPortalDashboard({ profile }) {
             </p>
           </div>
         ) : activeTab === "overview" ? (
-          <OverviewTab stats={stats} projects={portalState.projects} tickets={portalState.tickets} quotes={portalState.quotes} invoices={portalState.invoices} documents={portalState.documents} />
+          <OverviewTab stats={stats} projects={portalState.projects} tickets={portalState.tickets} quotes={portalState.quotes} invoices={portalState.invoices} documents={portalState.documents} announcements={portalState.announcements} />
+        ) : activeTab === "notifications" ? (
+          <NotificationsTab
+            announcements={portalState.announcements}
+            profile={profile}
+          />
+        ) : activeTab === "messages" ? (
+          <ClientMessages clients={portalState.clients} profile={profile} />
         ) : activeTab === "projects" ? (
           <ProjectsTab
             projects={portalState.projects}
@@ -1110,17 +1179,22 @@ export default function ClientPortalDashboard({ profile }) {
             onOpenDocument={handleOpenDocument}
           />
         ) : (
-          <ProfileTab profile={profile} clients={portalState.clients} />
+          <ProfileTab
+            profile={profile}
+            clients={portalState.clients}
+            onSave={handleUpdateProfile}
+          />
         )}
       </div>
     </section>
   );
 }
 
-function OverviewTab({ stats, projects, tickets, quotes, invoices, documents }) {
+function OverviewTab({ stats, projects, tickets, quotes, invoices, documents, announcements }) {
   const recentProjects = projects.slice(0, 3);
   const recentTickets = tickets.slice(0, 3);
   const recentQuotes = quotes.slice(0, 3);
+  const recentAnnouncements = announcements.slice(0, 3);
   const recentInvoices = invoices.slice(0, 3);
   const recentDocuments = documents.slice(0, 3);
 
@@ -1155,8 +1229,112 @@ function OverviewTab({ stats, projects, tickets, quotes, invoices, documents }) 
         <SummaryCard title="Recent Documents" icon={FileText} items={recentDocuments} empty="No documents available yet." renderItem={(document) => (
           <MiniRecord title={document.title} meta={`${toReadableLabel(document.document_type)} • ${formatDate(document.created_at)}`} />
         )} />
+
+        <SummaryCard title="Portal Notifications" icon={Bell} items={recentAnnouncements} empty="No portal announcements available yet." renderItem={(announcement) => (
+          <MiniRecord title={announcement.title} meta={`${toReadableLabel(announcement.priority)} • ${formatDate(announcement.createdAt)}`} />
+        )} />
       </div>
     </div>
+  );
+}
+
+function NotificationsTab({ announcements, profile }) {
+  const [readIds, setReadIds] = useState(() => getStoredAnnouncementReads(profile?.id));
+
+  useEffect(() => {
+    setReadIds(getStoredAnnouncementReads(profile?.id));
+  }, [profile?.id]);
+
+  function markAsRead(announcementId) {
+    const nextIds = Array.from(new Set([...readIds, announcementId]));
+    setReadIds(nextIds);
+    storeAnnouncementReads(profile?.id, nextIds);
+  }
+
+  function markAllRead() {
+    const nextIds = announcements.map((announcement) => announcement.id);
+    setReadIds(nextIds);
+    storeAnnouncementReads(profile?.id, nextIds);
+  }
+
+  const unreadCount = announcements.filter((item) => !readIds.includes(item.id)).length;
+
+  return (
+    <RecordSection
+      title="Portal Notifications"
+      description="View MKETICS announcements, project updates and client portal notices."
+      action={
+        announcements.length > 0 ? (
+          <button
+            type="button"
+            onClick={markAllRead}
+            className="inline-flex items-center rounded-full border border-[#0B7CFF]/25 bg-[#EAF6FF] px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+          >
+            <CheckCircle2 size={14} className="mr-2" />
+            Mark All Read
+          </button>
+        ) : null
+      }
+    >
+      <div className="mb-5 grid gap-4 md:grid-cols-3">
+        <StatCard label="Notifications" value={announcements.length} />
+        <StatCard label="Unread" value={unreadCount} />
+        <StatCard label="Urgent" value={announcements.filter((item) => item.priority === "urgent").length} />
+      </div>
+
+      {announcements.length === 0 ? (
+        <EmptyState message="No MKETICS announcements are available yet." />
+      ) : (
+        <div className="grid gap-4">
+          {announcements.map((announcement) => {
+            const isRead = readIds.includes(announcement.id);
+
+            return (
+              <article
+                key={announcement.id}
+                className={`rounded-[1.5rem] border p-5 shadow-sm ${
+                  isRead
+                    ? "border-slate-200 bg-white"
+                    : "border-cyan-300 bg-cyan-50"
+                }`}
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+                      {isRead ? "Read" : "New"} • {toReadableLabel(announcement.priority)}
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black text-[#020B1F]">
+                      {announcement.title}
+                    </h3>
+
+                    <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-7 text-slate-700">
+                      {announcement.message}
+                    </p>
+
+                    <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      Published {formatDate(announcement.createdAt)}
+                      {announcement.expiresAt ? ` • Expires ${formatDate(announcement.expiresAt)}` : ""}
+                    </p>
+                  </div>
+
+                  {!isRead && (
+                    <button
+                      type="button"
+                      onClick={() => markAsRead(announcement.id)}
+                      className="inline-flex items-center justify-center rounded-full border border-[#0B7CFF]/25 bg-white px-4 py-2 text-xs font-black text-[#061A33] transition hover:border-cyan-300 hover:bg-cyan-300"
+                    >
+                      <CheckCircle2 size={14} className="mr-2" />
+                      Mark Read
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </RecordSection>
   );
 }
 
@@ -1400,8 +1578,6 @@ function QuotesTab({
     >
       {actionState.error && <StatusMessage type="error" message={actionState.error} />}
       {actionState.success && <StatusMessage type="success" message={actionState.success} />}
-      {paymentRequestSaveState.error && <StatusMessage type="error" message={paymentRequestSaveState.error} />}
-      {paymentRequestSaveState.success && <StatusMessage type="success" message={paymentRequestSaveState.success} />}
 
       {quotes.length === 0 ? (
         <EmptyState message="No quote records have been linked to your portal yet." />
@@ -2066,16 +2242,169 @@ function DocumentsTab({ documents, projects, quotes, actionState, onOpenDocument
   );
 }
 
-function ProfileTab({ profile, clients }) {
+function ProfileTab({ profile, clients, onSave }) {
+  const [form, setForm] = useState(() => ({
+    fullName: profile?.full_name || "",
+    phone: profile?.phone || "",
+    organisation: profile?.organisation || "",
+  }));
+  const [saveState, setSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+
+  useEffect(() => {
+    setForm({
+      fullName: profile?.full_name || "",
+      phone: profile?.phone || "",
+      organisation: profile?.organisation || "",
+    });
+  }, [profile?.full_name, profile?.phone, profile?.organisation]);
+
+  function updateField(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    setSaveState((current) => ({ ...current, error: "", success: "" }));
+  }
+
+  async function submitProfile(event) {
+    event.preventDefault();
+
+    if (!form.fullName.trim()) {
+      setSaveState({
+        loading: false,
+        error: "Enter your full name before saving.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setSaveState({ loading: true, error: "", success: "" });
+      const updatedProfile = await onSave(form);
+
+      setForm({
+        fullName: updatedProfile.full_name || "",
+        phone: updatedProfile.phone || "",
+        organisation: updatedProfile.organisation || "",
+      });
+      setSaveState({
+        loading: false,
+        error: "",
+        success: "Your profile details have been updated.",
+      });
+    } catch (error) {
+      setSaveState({
+        loading: false,
+        error:
+          error?.message ||
+          "Unable to update your profile. Check client profile permissions.",
+        success: "",
+      });
+    }
+  }
+
   return (
     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-      <DetailCard title="Portal Profile" icon={ShieldCheck}>
-        <DetailLine label="Name" value={profile?.full_name} />
-        <DetailLine label="Email" value={profile?.email} />
-        <DetailLine label="Phone" value={profile?.phone} />
-        <DetailLine label="Organisation" value={profile?.organisation} />
-        <DetailLine label="Role" value={toReadableLabel(profile?.role)} />
-      </DetailCard>
+      <form
+        onSubmit={submitProfile}
+        className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-[#020B1F]">Portal Profile</h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Keep your contact and organisation details current.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4">
+          <label className="text-sm font-black text-[#061A33]">
+            Full Name
+            <input
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={updateField}
+              autoComplete="name"
+              required
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Email
+            <input
+              type="email"
+              value={profile?.email || ""}
+              disabled
+              className="mt-2 w-full cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-500"
+            />
+            <span className="mt-2 block text-xs font-semibold text-slate-500">
+              Contact MKETICS support if your login email needs to change.
+            </span>
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Phone
+            <input
+              type="tel"
+              name="phone"
+              value={form.phone}
+              onChange={updateField}
+              autoComplete="tel"
+              placeholder="+27 00 000 0000"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Organisation
+            <input
+              type="text"
+              name="organisation"
+              value={form.organisation}
+              onChange={updateField}
+              autoComplete="organization"
+              placeholder="Company or organisation name"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+        </div>
+
+        {saveState.error && (
+          <div className="mt-4">
+            <StatusMessage type="error" message={saveState.error} />
+          </div>
+        )}
+        {saveState.success && (
+          <div className="mt-4">
+            <StatusMessage type="success" message={saveState.success} />
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={saveState.loading}
+          className="mt-5 inline-flex items-center rounded-full bg-[#0B7CFF] px-5 py-3 text-sm font-black text-white transition hover:bg-[#061A33] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {saveState.loading ? (
+            <Loader2 size={17} className="mr-2 animate-spin" />
+          ) : (
+            <CheckCircle2 size={17} className="mr-2" />
+          )}
+          {saveState.loading ? "Saving Profile" : "Save Profile"}
+        </button>
+
+        <p className="mt-4 text-xs font-bold text-slate-500">
+          Account role: {toReadableLabel(profile?.role)}
+        </p>
+      </form>
 
       <DetailCard title="Linked Client Records" icon={FolderOpen}>
         {clients.length === 0 ? (
@@ -2132,11 +2461,16 @@ function NoClientRecord({ profile }) {
   );
 }
 
-function RecordSection({ title, description, children }) {
+function RecordSection({ title, description, action, children }) {
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-2xl font-black text-[#020B1F]">{title}</h2>
-      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{description}</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-[#020B1F]">{title}</h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{description}</p>
+        </div>
+        {action}
+      </div>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -2303,18 +2637,25 @@ function normaliseProjectApprovals(value) {
   const approvals = Array.isArray(value) ? value : [];
 
   return approvals
-    .filter((approval) => approval && approval.id && approval.projectId)
+    .filter((approval) => approval && approval.id && (approval.projectId || approval.project_id))
     .map((approval) => ({
       id: approval.id,
-      clientId: approval.clientId || "",
-      projectId: approval.projectId || "",
+      clientId: approval.clientId || approval.client_id || "",
+      projectId: approval.projectId || approval.project_id || "",
       projectTitle: approval.projectTitle || "MKETICS Project",
       clientName: approval.clientName || "Client",
       clientEmail: approval.clientEmail || "",
       decision: approval.decision || "approved",
       feedback: approval.feedback || "",
-      createdAt: approval.createdAt || new Date().toISOString(),
-      updatedAt: approval.updatedAt || approval.createdAt || new Date().toISOString(),
+      inboxStatus: approval.inboxStatus || approval.inbox_status || "new",
+      adminNote: approval.adminNote || approval.admin_note || "",
+      createdAt: approval.createdAt || approval.created_at || new Date().toISOString(),
+      updatedAt:
+        approval.updatedAt ||
+        approval.updated_at ||
+        approval.createdAt ||
+        approval.created_at ||
+        new Date().toISOString(),
     }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
@@ -2676,20 +3017,32 @@ function parseAmount(value) {
 }
 
 function formatCurrency(amount, currency = "ZAR") {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-  }).format(parseAmount(amount));
+  const currencyCode =
+    typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency.trim())
+      ? currency.trim().toUpperCase()
+      : "ZAR";
+
+  try {
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: currencyCode,
+    }).format(parseAmount(amount));
+  } catch {
+    return `R ${parseAmount(amount).toFixed(2)}`;
+  }
 }
 
 function formatDate(value) {
   if (!value) return "Not available";
 
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
   return new Intl.DateTimeFormat("en-ZA", {
     year: "numeric",
     month: "short",
     day: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function toReadableLabel(value) {
@@ -2699,4 +3052,72 @@ function toReadableLabel(value) {
     .replace(/[_-]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function normaliseClientAnnouncements(value) {
+  const source = Array.isArray(value)
+    ? value
+    : Array.isArray(value?.announcements)
+      ? value.announcements
+      : [];
+
+  return source
+    .filter(Boolean)
+    .map((item) => ({
+      id: item.id || `announcement-${Date.now()}-${Math.random()}`,
+      title: item.title || "MKETICS Announcement",
+      message: item.message || "",
+      audienceType: item.audienceType || item.audience_type || "all",
+      clientId: item.clientId || item.client_id || "",
+      projectId: item.projectId || item.project_id || "",
+      priority: item.priority || "normal",
+      status: item.status || "published",
+      expiresAt: item.expiresAt || item.expires_at || "",
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.updated_at || item.createdAt || new Date().toISOString(),
+    }))
+    .filter((item) => item.status === "published")
+    .filter((item) => !item.expiresAt || new Date(item.expiresAt) >= startOfToday())
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function isAnnouncementVisibleToClient(announcement, clientSet, projectSet) {
+  if (!announcement) return false;
+
+  if (announcement.audienceType === "all") return true;
+  if (announcement.audienceType === "client") return clientSet.has(announcement.clientId);
+  if (announcement.audienceType === "project") return projectSet.has(announcement.projectId);
+
+  return true;
+}
+
+function getStoredAnnouncementReads(profileId) {
+  if (!profileId || typeof window === "undefined") return [];
+
+  try {
+    const rawValue = window.localStorage.getItem(`mketics_portal_reads_${profileId}`);
+    const parsed = JSON.parse(rawValue || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeAnnouncementReads(profileId, readIds) {
+  if (!profileId || typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      `mketics_portal_reads_${profileId}`,
+      JSON.stringify(readIds || [])
+    );
+  } catch {
+    // Ignore local storage errors. Notifications will still display.
+  }
+}
+
+function startOfToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
