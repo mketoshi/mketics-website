@@ -1051,7 +1051,18 @@ export default function ClientPortal() {
         </div>
       </section>
 
-      <ClientPortalDashboard profile={portalState.profile} />
+          <ClientPortalDashboard
+            profile={portalState.profile}
+            onProfileUpdated={(updatedProfile) =>
+              setPortalState((current) => ({
+                ...current,
+                profile: {
+                  ...current.profile,
+                  ...updatedProfile,
+                },
+              }))
+            }
+          />
     </main>
   );
 }
