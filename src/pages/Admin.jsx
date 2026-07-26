@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   StickyNote,
   ShoppingBag,
+  ScrollText,
   Timer,
   UsersRound,
   WalletCards,
@@ -58,6 +59,7 @@ import SupportTicketsDashboard from "../components/admin/SupportTicketsDashboard
 import AppointmentsDashboard from "../components/admin/AppointmentsDashboard";
 import ProjectProgressDashboard from "../components/admin/ProjectProgressDashboard";
 import ServiceRequestsDashboard from "../components/admin/ServiceRequestsDashboard";
+import ContractsDashboard from "../components/admin/ContractsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1042,6 +1044,8 @@ export default function Admin() {
             <ProjectProgressDashboard isActive={activeConsoleTab === "projectProgress"} />
           ) : activeConsoleTab === "serviceRequests" ? (
             <ServiceRequestsDashboard isActive={activeConsoleTab === "serviceRequests"} profile={authState.profile} />
+          ) : activeConsoleTab === "contracts" ? (
+            <ContractsDashboard isActive={activeConsoleTab === "contracts"} profile={authState.profile} />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "planner" ? (
@@ -1403,6 +1407,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Service Requests",
       description: "Review, quote and convert new client service requests.",
       icon: ShoppingBag,
+    },
+    {
+      id: "contracts",
+      label: "Contracts & Approvals",
+      description: "Issue agreements, manage versions and monitor digital decisions.",
+      icon: ScrollText,
     },
     {
       id: "documents",
