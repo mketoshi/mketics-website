@@ -50,6 +50,8 @@ import AdminUserManagementDashboard from "../components/admin/AdminUserManagemen
 import BusinessFinanceDashboard from "../components/admin/BusinessFinanceDashboard";
 import BusinessInvoicesDashboard from "../components/admin/BusinessInvoicesDashboard";
 import ClientPortalResponseInbox from "../components/admin/ClientPortalResponseInbox";
+import ClientPortalAnnouncementsDashboard from "../components/admin/ClientPortalAnnouncementsDashboard";
+import ClientMessagesDashboard from "../components/admin/ClientMessagesDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1043,6 +1045,13 @@ export default function Admin() {
             <BusinessInvoicesDashboard isActive={activeConsoleTab === "invoices"} />
           ) : activeConsoleTab === "portalInbox" ? (
             <ClientPortalResponseInbox isActive={activeConsoleTab === "portalInbox"} />
+          ) : activeConsoleTab === "clientMessages" ? (
+            <ClientMessagesDashboard
+              isActive={activeConsoleTab === "clientMessages"}
+              profile={authState.profile}
+            />
+          ) : activeConsoleTab === "announcements" ? (
+            <ClientPortalAnnouncementsDashboard isActive={activeConsoleTab === "announcements"} />
           ) : activeConsoleTab === "users" ? (
             <AdminUserManagementDashboard
               isActive={activeConsoleTab === "users"}
@@ -1242,6 +1251,8 @@ function canAccessConsoleTab(tabId, profile) {
     return [
       "overview",
       "notifications",
+      "announcements",
+      "clientMessages",
       "leads",
       "projects",
       "tasks",
@@ -1273,6 +1284,18 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Portal Inbox",
       description: "Review client quote responses, approvals and payment requests.",
       icon: Inbox,
+    },
+    {
+      id: "clientMessages",
+      label: "Client Messages",
+      description: "Open client conversations and send direct admin replies.",
+      icon: MessageCircle,
+    },
+    {
+      id: "announcements",
+      label: "Announcements",
+      description: "Publish notifications and updates to the client portal.",
+      icon: Bell,
     },
     {
       id: "leads",
