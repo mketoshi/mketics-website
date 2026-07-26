@@ -14,6 +14,7 @@ import {
   Loader2,
   Mail,
   MessageCircle,
+  KeyRound,
   Phone,
   Printer,
   RefreshCw,
@@ -849,6 +850,10 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
       profile_full_name: profileUpdates.fullName.trim(),
       profile_phone: profileUpdates.phone.trim() || null,
       profile_organisation: profileUpdates.organisation.trim() || null,
+      profile_billing_name: profileUpdates.billingName.trim() || null,
+      profile_billing_email: profileUpdates.billingEmail.trim() || null,
+      profile_billing_address: profileUpdates.billingAddress.trim() || null,
+      profile_tax_number: profileUpdates.taxNumber.trim() || null,
     });
 
     if (error) throw error;
@@ -2246,8 +2251,21 @@ function ProfileTab({ profile, clients, onSave }) {
     fullName: profile?.full_name || "",
     phone: profile?.phone || "",
     organisation: profile?.organisation || "",
+    billingName: profile?.billing_name || "",
+    billingEmail: profile?.billing_email || "",
+    billingAddress: profile?.billing_address || "",
+    taxNumber: profile?.tax_number || "",
   }));
   const [saveState, setSaveState] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [passwordState, setPasswordState] = useState({
     loading: false,
     error: "",
     success: "",
@@ -2258,8 +2276,20 @@ function ProfileTab({ profile, clients, onSave }) {
       fullName: profile?.full_name || "",
       phone: profile?.phone || "",
       organisation: profile?.organisation || "",
+      billingName: profile?.billing_name || "",
+      billingEmail: profile?.billing_email || "",
+      billingAddress: profile?.billing_address || "",
+      taxNumber: profile?.tax_number || "",
     });
-  }, [profile?.full_name, profile?.phone, profile?.organisation]);
+  }, [
+    profile?.full_name,
+    profile?.phone,
+    profile?.organisation,
+    profile?.billing_name,
+    profile?.billing_email,
+    profile?.billing_address,
+    profile?.tax_number,
+  ]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -2287,6 +2317,10 @@ function ProfileTab({ profile, clients, onSave }) {
         fullName: updatedProfile.full_name || "",
         phone: updatedProfile.phone || "",
         organisation: updatedProfile.organisation || "",
+        billingName: updatedProfile.billing_name || "",
+        billingEmail: updatedProfile.billing_email || "",
+        billingAddress: updatedProfile.billing_address || "",
+        taxNumber: updatedProfile.tax_number || "",
       });
       setSaveState({
         loading: false,
@@ -2299,6 +2333,55 @@ function ProfileTab({ profile, clients, onSave }) {
         error:
           error?.message ||
           "Unable to update your profile. Check client profile permissions.",
+        success: "",
+      });
+    }
+  }
+
+  function updatePasswordField(event) {
+    const { name, value } = event.target;
+    setPasswordForm((current) => ({ ...current, [name]: value }));
+    setPasswordState({ loading: false, error: "", success: "" });
+  }
+
+  async function submitPassword(event) {
+    event.preventDefault();
+
+    if (passwordForm.password.length < 8) {
+      setPasswordState({
+        loading: false,
+        error: "Use at least 8 characters for your new password.",
+        success: "",
+      });
+      return;
+    }
+
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      setPasswordState({
+        loading: false,
+        error: "The new passwords do not match.",
+        success: "",
+      });
+      return;
+    }
+
+    try {
+      setPasswordState({ loading: true, error: "", success: "" });
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.password,
+      });
+      if (error) throw error;
+
+      setPasswordForm({ password: "", confirmPassword: "" });
+      setPasswordState({
+        loading: false,
+        error: "",
+        success: "Your password has been changed securely.",
+      });
+    } catch (error) {
+      setPasswordState({
+        loading: false,
+        error: error?.message || "Unable to change your password.",
         success: "",
       });
     }
@@ -2374,6 +2457,63 @@ function ProfileTab({ profile, clients, onSave }) {
               className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
             />
           </label>
+
+          <div className="mt-2 border-t border-slate-200 pt-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0B7CFF]">
+              Billing Details
+            </p>
+          </div>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Billing Name
+            <input
+              type="text"
+              name="billingName"
+              value={form.billingName}
+              onChange={updateField}
+              autoComplete="organization"
+              placeholder="Name shown on invoices"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Billing Email
+            <input
+              type="email"
+              name="billingEmail"
+              value={form.billingEmail}
+              onChange={updateField}
+              autoComplete="email"
+              placeholder="accounts@example.com"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            Billing Address
+            <textarea
+              name="billingAddress"
+              value={form.billingAddress}
+              onChange={updateField}
+              rows={4}
+              autoComplete="street-address"
+              placeholder="Street, suburb, city and postal code"
+              className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
+
+          <label className="text-sm font-black text-[#061A33]">
+            VAT / Tax Number
+            <input
+              type="text"
+              name="taxNumber"
+              value={form.taxNumber}
+              onChange={updateField}
+              placeholder="Optional"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+            />
+          </label>
         </div>
 
         {saveState.error && (
@@ -2405,22 +2545,85 @@ function ProfileTab({ profile, clients, onSave }) {
         </p>
       </form>
 
-      <DetailCard title="Linked Client Records" icon={FolderOpen}>
-        {clients.length === 0 ? (
-          <p className="text-sm font-bold leading-6 text-slate-600">
-            No linked client records found.
+      <div className="grid content-start gap-5">
+        <DetailCard title="Linked Client Records" icon={FolderOpen}>
+          {clients.length === 0 ? (
+            <p className="text-sm font-bold leading-6 text-slate-600">
+              No linked client records found.
+            </p>
+          ) : (
+            clients.map((client) => (
+              <div key={client.id} className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
+                <DetailLine label="Client" value={client.full_name} />
+                <DetailLine label="Email" value={client.email} />
+                <DetailLine label="Phone" value={client.phone} />
+                <DetailLine label="Organisation" value={client.organisation} />
+              </div>
+            ))
+          )}
+          <p className="mt-4 text-xs font-bold leading-5 text-slate-500">
+            Client links, role, status and login email are controlled by MKETICS.
           </p>
-        ) : (
-          clients.map((client) => (
-            <div key={client.id} className="rounded-2xl border border-slate-200 bg-[#F8FCFF] p-4">
-              <DetailLine label="Client" value={client.full_name} />
-              <DetailLine label="Email" value={client.email} />
-              <DetailLine label="Phone" value={client.phone} />
-              <DetailLine label="Organisation" value={client.organisation} />
+        </DetailCard>
+
+        <form
+          onSubmit={submitPassword}
+          className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#061A33] text-cyan-300">
+              <KeyRound size={20} />
             </div>
-          ))
-        )}
-      </DetailCard>
+            <div>
+              <h2 className="text-xl font-black text-[#020B1F]">Change Password</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-500">
+                Update the password for this signed-in account.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4">
+            <label className="text-sm font-black text-[#061A33]">
+              New Password
+              <input
+                type="password"
+                name="password"
+                value={passwordForm.password}
+                onChange={updatePasswordField}
+                minLength={8}
+                autoComplete="new-password"
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+              />
+            </label>
+            <label className="text-sm font-black text-[#061A33]">
+              Confirm New Password
+              <input
+                type="password"
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={updatePasswordField}
+                minLength={8}
+                autoComplete="new-password"
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-[#F8FCFF] px-4 py-3 text-sm font-semibold text-[#020B1F] outline-none transition focus:border-[#0B7CFF] focus:ring-4 focus:ring-[#0B7CFF]/10"
+              />
+            </label>
+          </div>
+
+          {passwordState.error && <div className="mt-4"><StatusMessage type="error" message={passwordState.error} /></div>}
+          {passwordState.success && <div className="mt-4"><StatusMessage type="success" message={passwordState.success} /></div>}
+
+          <button
+            type="submit"
+            disabled={passwordState.loading}
+            className="mt-5 inline-flex items-center rounded-full bg-[#061A33] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0B7CFF] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {passwordState.loading ? <Loader2 size={17} className="mr-2 animate-spin" /> : <KeyRound size={17} className="mr-2" />}
+            {passwordState.loading ? "Changing Password" : "Change Password"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

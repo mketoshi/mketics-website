@@ -365,7 +365,9 @@ export default function ClientPortal() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, full_name, email, role, phone, organisation")
+        .select(
+          "id, full_name, email, role, phone, organisation, billing_name, billing_email, billing_address, tax_number"
+        )
         .eq("id", user.id)
         .maybeSingle();
 
