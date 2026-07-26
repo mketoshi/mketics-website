@@ -3,6 +3,7 @@ import {
   AlertCircle,
   Bell,
   BriefcaseBusiness,
+  CalendarDays,
   CheckCircle2,
   Clipboard,
   ClipboardList,
@@ -26,6 +27,7 @@ import {
 import { supabase } from "../../lib/supabaseClient";
 import ClientMessages from "./ClientMessages";
 import ClientSupportTicketCentre from "./ClientSupportTicketCentre";
+import ClientAppointmentCentre from "./ClientAppointmentCentre";
 
 const supportPriorities = ["low", "normal", "high", "urgent"];
 
@@ -88,6 +90,11 @@ const portalTabs = [
     id: "support",
     label: "Support",
     icon: LifeBuoy,
+  },
+  {
+    id: "appointments",
+    label: "Appointments",
+    icon: CalendarDays,
   },
   {
     id: "documents",
@@ -1295,6 +1302,11 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
           />
         ) : activeTab === "support" ? (
           <ClientSupportTicketCentre
+            projects={portalState.projects}
+            clients={portalState.clients}
+          />
+        ) : activeTab === "appointments" ? (
+          <ClientAppointmentCentre
             projects={portalState.projects}
             clients={portalState.clients}
           />

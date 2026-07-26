@@ -7,6 +7,7 @@ import {
   TrendingUp,
   ArrowRight,
   BriefcaseBusiness,
+  CalendarDays,
   CheckCircle2,
   ClipboardList,
   Clock,
@@ -53,6 +54,7 @@ import ClientPortalResponseInbox from "../components/admin/ClientPortalResponseI
 import ClientPortalAnnouncementsDashboard from "../components/admin/ClientPortalAnnouncementsDashboard";
 import ClientMessagesDashboard from "../components/admin/ClientMessagesDashboard";
 import SupportTicketsDashboard from "../components/admin/SupportTicketsDashboard";
+import AppointmentsDashboard from "../components/admin/AppointmentsDashboard";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 const allowedRoles = ["admin", "staff"];
@@ -1031,6 +1033,8 @@ export default function Admin() {
               isActive={activeConsoleTab === "supportTickets"}
               profile={authState.profile}
             />
+          ) : activeConsoleTab === "appointments" ? (
+            <AppointmentsDashboard isActive={activeConsoleTab === "appointments"} />
           ) : activeConsoleTab === "ai" ? (
             <AIProposalAssistant isActive={activeConsoleTab === "ai"} />
           ) : activeConsoleTab === "planner" ? (
@@ -1269,6 +1273,7 @@ function canAccessConsoleTab(tabId, profile) {
       "reports",
       "documents",
       "supportTickets",
+      "appointments",
     ].includes(tabId);
   }
 
@@ -1372,6 +1377,12 @@ function AdminConsoleTabs({ activeTab, profile, onChange }) {
       label: "Support Tickets",
       description: "Assign, reply to and resolve client support requests.",
       icon: MessageCircle,
+    },
+    {
+      id: "appointments",
+      label: "Appointments",
+      description: "Confirm bookings, assign staff and prevent scheduling conflicts.",
+      icon: CalendarDays,
     },
     {
       id: "documents",
