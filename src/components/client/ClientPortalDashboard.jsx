@@ -35,7 +35,6 @@ const projectApprovalDecisions = [
 const projectProgressSettingKey = "client_portal_project_progress_updates_v1";
 const quoteResponseSettingKey = "client_portal_quote_responses_v1";
 const invoicePaymentRequestSettingKey = "client_portal_invoice_payment_requests_v1";
-const portalAnnouncementsSettingKey = "client_portal_announcements_v1";
 
 const quoteResponseTypes = [
   { value: "accepted", label: "Accept quote" },
@@ -259,6 +258,10 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
       const ids = clients.map((client) => client.id).filter(Boolean);
 
       if (ids.length === 0) {
+        const announcementsResult = await fetchClientPortalAnnouncements();
+
+        if (announcementsResult.error) throw announcementsResult.error;
+
         setPortalState({
           loading: false,
           error: "",
@@ -272,7 +275,7 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
           approvals: [],
           quoteResponses: [],
           paymentRequests: [],
-          announcements: [],
+          announcements: announcementsResult.announcements || [],
         });
         return;
       }
@@ -318,7 +321,7 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
           fetchClientPortalInvoices(),
           fetchClientPortalProjectActivity(ids),
           fetchClientPortalCommerceActivity(ids),
-          fetchClientPortalAnnouncements(ids),
+          fetchClientPortalAnnouncements(),
         ]);
 
       const firstError =
@@ -481,28 +484,24 @@ export default function ClientPortalDashboard({ profile, onProfileUpdated }) {
     }
   }
 
-  async function fetchClientPortalAnnouncements(clientIds = []) {
-    if (!supabase || clientIds.length === 0) {
+  async function fetchClientPortalAnnouncements() {
+    if (!supabase) {
       return { announcements: [], error: null };
     }
 
     try {
       const { data, error } = await supabase
-        .from("settings")
-        .select("setting_key, setting_value")
-        .eq("setting_key", portalAnnouncementsSettingKey)
-        .maybeSingle();
+        .from("announcements")
+        .select("id, title, message, audience_type, client_id, project_id, priority, status, expires_at, created_at, updated_at")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const clientSet = new Set(clientIds);
-      const projectSet = new Set(portalState.projects.map((project) => project.id));
-
-      const announcements = normaliseClientAnnouncements(
-        data?.setting_value?.announcements || data?.setting_value
-      ).filter((announcement) =>
-        isAnnouncementVisibleToClient(announcement, clientSet, projectSet)
-      );
+      // Supabase RLS determines which all-client, client-specific and
+      // project-specific announcements this authenticated user may read.
+      // Filtering again here can incorrectly hide valid rows while the
+      // linked client/project records are still loading.
+      const announcements = normaliseClientAnnouncements(data);
 
       return { announcements, error: null };
     } catch (error) {
@@ -3079,16 +3078,6 @@ function normaliseClientAnnouncements(value) {
     .filter((item) => item.status === "published")
     .filter((item) => !item.expiresAt || new Date(item.expiresAt) >= startOfToday())
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-}
-
-function isAnnouncementVisibleToClient(announcement, clientSet, projectSet) {
-  if (!announcement) return false;
-
-  if (announcement.audienceType === "all") return true;
-  if (announcement.audienceType === "client") return clientSet.has(announcement.clientId);
-  if (announcement.audienceType === "project") return projectSet.has(announcement.projectId);
-
-  return true;
 }
 
 function getStoredAnnouncementReads(profileId) {
